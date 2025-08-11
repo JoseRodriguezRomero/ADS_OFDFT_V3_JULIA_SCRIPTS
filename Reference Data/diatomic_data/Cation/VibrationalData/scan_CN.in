@@ -1,0 +1,21 @@
+molecule { 
+1 3
+N           0.000000           0.000000           0.000000
+C           0.000000           0.000000           1.242755
+}
+
+set { 
+basis              cc-pvtz
+reference          uks
+maxiter            500
+DAMPING_PERCENTAGE 1
+E_CONVERGENCE      1.0E-8
+D_CONVERGENCE      1.0E-8
+DIIS_MAX_VECS      400
+MBIS_MAXITER       8000
+guess              SAP
+}
+
+E, wfn = optimize('b3lyp', return_wfn=True)
+frequencies('b3lyp', wfn=wfn, return_wfn=True)
+properties('b3lyp','MULLIKEN_CHARGES', wfn=wfn)

@@ -1,0 +1,109 @@
+
+    -----------------------------------------------------------------------
+          Psi4: An Open-Source Ab Initio Electronic Structure Package
+                               Psi4 1.9.1 release
+
+                         Git: Rev {} zzzzzzz 
+
+
+    D. G. A. Smith, L. A. Burns, A. C. Simmonett, R. M. Parrish,
+    M. C. Schieber, R. Galvelis, P. Kraus, H. Kruse, R. Di Remigio,
+    A. Alenaizan, A. M. James, S. Lehtola, J. P. Misiewicz, M. Scheurer,
+    R. A. Shaw, J. B. Schriber, Y. Xie, Z. L. Glick, D. A. Sirianni,
+    J. S. O'Brien, J. M. Waldrop, A. Kumar, E. G. Hohenstein,
+    B. P. Pritchard, B. R. Brooks, H. F. Schaefer III, A. Yu. Sokolov,
+    K. Patkowski, A. E. DePrince III, U. Bozkaya, R. A. King,
+    F. A. Evangelista, J. M. Turney, T. D. Crawford, C. D. Sherrill,
+    J. Chem. Phys. 152(18) 184108 (2020). https://doi.org/10.1063/5.0006002
+
+                            Additional Code Authors
+    E. T. Seidl, C. L. Janssen, E. F. Valeev, M. L. Leininger,
+    J. F. Gonthier, R. M. Richard, H. R. McAlexander, M. Saitow, X. Wang,
+    P. Verma, M. H. Lechner, A. Jiang, S. Behnle, A. G. Heide,
+    M. F. Herbst, and D. L. Poole
+
+             Previous Authors, Complete List of Code Contributors,
+                       and Citations for Specific Modules
+    https://github.com/psi4/psi4/blob/master/codemeta.json
+    https://github.com/psi4/psi4/graphs/contributors
+    http://psicode.org/psi4manual/master/introduction.html#citing-psifour
+
+    -----------------------------------------------------------------------
+
+
+    Psi4 started on: Saturday, 25 January 2025 09:14PM
+
+    Process ID: 6689
+    Host:       Joses-MacBook-Pro-2.local
+    PSIDATADIR: /Users/joseantoniorodriguesromero/anaconda3/share/psi4
+    Memory:     500.0 MiB
+    Threads:    1
+    
+  ==> Input File <==
+
+--------------------------------------------------------------------------
+molecule { 
+0 3
+F           0.000000           0.000000           0.000000
+}
+
+set { 
+basis              cc-pvtz
+reference          uks
+maxiter            500
+DAMPING_PERCENTAGE 1
+E_CONVERGENCE      1.0E-8
+D_CONVERGENCE      1.0E-8
+DIIS_MAX_VECS      400
+MBIS_MAXITER       8000
+guess              SAP
+}
+
+energy('b3lyp')
+--------------------------------------------------------------------------
+
+Traceback (most recent call last):
+  File "/Users/joseantoniorodriguesromero/anaconda3/bin/psi4", line 387, in <module>
+    exec(content)
+  File "<string>", line 18, in <module>
+  File "/Users/joseantoniorodriguesromero/anaconda3/lib/python3.10/site-packages/psi4/driver/molutil.py", line 265, in geometry
+    molrec = qcel.molparse.from_string(
+  File "/Users/joseantoniorodriguesromero/anaconda3/lib/python3.10/site-packages/qcelemental/molparse/from_string.py", line 276, in from_string
+    molrec = from_input_arrays(
+  File "/Users/joseantoniorodriguesromero/anaconda3/lib/python3.10/site-packages/qcelemental/molparse/from_arrays.py", line 97, in from_input_arrays
+    processed = from_arrays(
+  File "/Users/joseantoniorodriguesromero/anaconda3/lib/python3.10/site-packages/qcelemental/molparse/from_arrays.py", line 380, in from_arrays
+    processed = validate_and_fill_chgmult(
+  File "/Users/joseantoniorodriguesromero/anaconda3/lib/python3.10/site-packages/qcelemental/molparse/chgmult.py", line 501, in validate_and_fill_chgmult
+    c_final, fc_final, m_final, fm_final = reconcile(cgmp_exact_c, cgmp_exact_fc, cgmp_exact_m, cgmp_exact_fm)
+  File "/Users/joseantoniorodriguesromero/anaconda3/lib/python3.10/site-packages/qcelemental/molparse/chgmult.py", line 491, in reconcile
+    raise ValidationError(err)
+
+qcelemental.exceptions.ValidationError: Inconsistent or unspecified chg/mult: sys chg: None, frag chg: [0.0], sys mult: None, frag mult: [3]
+
+
+Printing out the relevant lines from the Psithon --> Python processed input file:
+    geometry("""
+    0 1
+    H 0 0 0
+    H 0.74 0 0
+    ""","blank_molecule_psi4_yo")
+--> geometry(""" 
+    0 3
+    F           0.000000           0.000000           0.000000
+    """)
+    core.IO.set_default_namespace("")
+    core.set_global_option("BASIS", "cc-pvtz")
+
+!----------------------------------------------------------------------------------!
+!                                                                                  !
+!  Inconsistent or unspecified chg/mult: sys chg: None, frag chg: [0.0], sys mult: !
+!     None, frag mult: [3]                                                         !
+!                                                                                  !
+!----------------------------------------------------------------------------------!
+
+    Psi4 stopped on: Saturday, 25 January 2025 09:14PM
+    Psi4 wall time for execution: 0:00:00.00
+
+*** Psi4 encountered an error. Buy a developer more coffee!
+*** Resources and help at github.com/psi4/psi4.

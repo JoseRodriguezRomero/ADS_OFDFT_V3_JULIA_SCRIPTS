@@ -1,0 +1,793 @@
+
+    -----------------------------------------------------------------------
+          Psi4: An Open-Source Ab Initio Electronic Structure Package
+                               Psi4 1.9.1 release
+
+                         Git: Rev {} zzzzzzz 
+
+
+    D. G. A. Smith, L. A. Burns, A. C. Simmonett, R. M. Parrish,
+    M. C. Schieber, R. Galvelis, P. Kraus, H. Kruse, R. Di Remigio,
+    A. Alenaizan, A. M. James, S. Lehtola, J. P. Misiewicz, M. Scheurer,
+    R. A. Shaw, J. B. Schriber, Y. Xie, Z. L. Glick, D. A. Sirianni,
+    J. S. O'Brien, J. M. Waldrop, A. Kumar, E. G. Hohenstein,
+    B. P. Pritchard, B. R. Brooks, H. F. Schaefer III, A. Yu. Sokolov,
+    K. Patkowski, A. E. DePrince III, U. Bozkaya, R. A. King,
+    F. A. Evangelista, J. M. Turney, T. D. Crawford, C. D. Sherrill,
+    J. Chem. Phys. 152(18) 184108 (2020). https://doi.org/10.1063/5.0006002
+
+                            Additional Code Authors
+    E. T. Seidl, C. L. Janssen, E. F. Valeev, M. L. Leininger,
+    J. F. Gonthier, R. M. Richard, H. R. McAlexander, M. Saitow, X. Wang,
+    P. Verma, M. H. Lechner, A. Jiang, S. Behnle, A. G. Heide,
+    M. F. Herbst, and D. L. Poole
+
+             Previous Authors, Complete List of Code Contributors,
+                       and Citations for Specific Modules
+    https://github.com/psi4/psi4/blob/master/codemeta.json
+    https://github.com/psi4/psi4/graphs/contributors
+    http://psicode.org/psi4manual/master/introduction.html#citing-psifour
+
+    -----------------------------------------------------------------------
+
+
+    Psi4 started on: Sunday, 10 August 2025 06:32PM
+
+    Process ID: 50305
+    Host:       Mac.lan
+    PSIDATADIR: /Users/joseantoniorodriguesromero/anaconda3/share/psi4
+    Memory:     500.0 MiB
+    Threads:    1
+    
+  ==> Input File <==
+
+--------------------------------------------------------------------------
+molecule { 
+1 3
+N           0.000000           0.000000           0.000000
+C           0.000000           0.000000           1.033005
+}
+
+set { 
+basis              cc-pvtz
+reference          uks
+maxiter            500
+DAMPING_PERCENTAGE 1
+E_CONVERGENCE      1.0E-8
+D_CONVERGENCE      1.0E-8
+DIIS_MAX_VECS      400
+MBIS_MAXITER       8000
+guess              read
+}
+
+E, wfn = energy('b3lyp', restart_file='last_wfn', return_wfn=True)
+properties('b3lyp','MBIS_CHARGES', wfn=wfn)
+wfn.to_file('last_wfn')
+--------------------------------------------------------------------------
+
+Scratch directory: /tmp/
+ Found user provided orbital data. Setting orbital guess to READ 
+ Copying restart file <last_wfn.npy> to </tmp/scan_CN_14.default.50305.180.npy> for internal processing
+   => Libint2 <=
+
+    Primary   basis highest AM E, G, H:  6, 6, 3
+    Auxiliary basis highest AM E, G, H:  7, 7, 4
+    Onebody   basis highest AM E, G, H:  -, -, -
+    Solid Harmonics ordering:            Gaussian
+
+*** tstart() called on Mac.lan
+*** at Sun Aug 10 18:32:54 2025
+
+   => Loading Basis Set <=
+
+    Name: CC-PVTZ
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1 entry N          line   224 file /Users/joseantoniorodriguesromero/anaconda3/share/psi4/basis/cc-pvtz.gbs 
+    atoms 2 entry C          line   186 file /Users/joseantoniorodriguesromero/anaconda3/share/psi4/basis/cc-pvtz.gbs 
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              UKS Reference
+                        1 Threads,    500 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c2v
+    Full point group: C_inf_v
+
+    Geometry (in Angstrom), charge = 1, multiplicity = 3:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         N            0.000000000000     0.000000000000    -0.476715175978    14.003074004430
+         C            0.000000000000     0.000000000000     0.556289824022    12.000000000000
+
+  Running in c2v symmetry.
+
+  Rotational constants: A = ************  B =      2.44462  C =      2.44462 [cm^-1]
+  Rotational constants: A = ************  B =  73287.92303  C =  73287.92303 [MHz]
+  Nuclear repulsion =   21.515329401251687
+
+  Charge       = 1
+  Multiplicity = 3
+  Electrons    = 12
+  Nalpha       = 7
+  Nbeta        = 5
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is DF.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is READ.
+  Energy threshold   = 1.00e-08
+  Density threshold  = 1.00e-08
+  Integral threshold = 1.00e-12
+
+  ==> Primary Basis <==
+
+  Basis Set: CC-PVTZ
+    Blend: CC-PVTZ
+    Number of shells: 20
+    Number of basis functions: 60
+    Number of Cartesian functions: 70
+    Spherical Harmonics?: true
+    Max angular momentum: 3
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: B3LYP <= 
+
+    B3LYP Hyb-GGA Exchange-Correlation Functional
+
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch.,  J. Phys. Chem. 98, 11623 (1994) (10.1021/j100096a001)
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =          FALSE
+
+    Exchange Hybrid     =           TRUE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    0.0800   Slater exchange
+    0.7200         Becke 88
+
+   => Exact (HF) Exchange <=
+
+    0.2000               HF 
+
+   => Correlation Functionals <=
+
+    0.1900   Vosko, Wilk & Nusair (VWN5_RPA)
+    0.8100   Lee, Yang & Parr
+
+   => LibXC Density Thresholds  <==
+
+    XC_HYB_GGA_XC_B3LYP:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            302
+    Total Points           =          43214
+    Total Blocks           =            390
+    Max Points             =            255
+    Max Functions          =             60
+    Weights Tolerance      =       1.00E-15
+
+   => Loading Basis Set <=
+
+    Name: (CC-PVTZ AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1 entry N          line   177 file /Users/joseantoniorodriguesromero/anaconda3/share/psi4/basis/cc-pvtz-jkfit.gbs 
+    atoms 2 entry C          line   125 file /Users/joseantoniorodriguesromero/anaconda3/share/psi4/basis/cc-pvtz-jkfit.gbs 
+
+   => Loading Basis Set <=
+
+    Name: CC-PVTZ
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1 entry N          line   224 file /Users/joseantoniorodriguesromero/anaconda3/share/psi4/basis/cc-pvtz.gbs 
+    atoms 2 entry C          line   186 file /Users/joseantoniorodriguesromero/anaconda3/share/psi4/basis/cc-pvtz.gbs 
+
+  Reading orbitals from file /tmp/scan_CN_14.default.50305.180.npy, no projection.
+
+  ==> Integral Setup <==
+
+  DFHelper Memory: AOs need 0.005 GiB; user supplied 0.294 GiB. 
+  Using in-core AOs.
+
+  ==> MemDFJK: Density-Fitted J/K Matrices <==
+
+    J tasked:                   Yes
+    K tasked:                   Yes
+    wK tasked:                   No
+    OpenMP threads:               1
+    Memory [MiB]:               300
+    Algorithm:                 Core
+    Schwarz Cutoff:           1E-12
+    Mask sparsity (%):       0.0000
+    Fitting Condition:        1E-10
+
+   => Auxiliary Basis Set <=
+
+  Basis Set: (CC-PVTZ AUX)
+    Blend: CC-PVTZ-JKFIT
+    Number of shells: 50
+    Number of basis functions: 158
+    Number of Cartesian functions: 192
+    Spherical Harmonics?: true
+    Max angular momentum: 4
+
+  Cached 100.0% of DFT collocation blocks in 0.072 [GiB].
+
+  Minimum eigenvalue in the overlap matrix is 1.5611783045E-03.
+  Reciprocal condition number of the overlap matrix is 3.7115217386E-04.
+    Using symmetric orthogonalization.
+
+  ==> Pre-Iterations <==
+
+  SCF Guess: Orbitals guess was supplied from a previous computation.
+
+   -------------------------------------------------------
+    Irrep   Nso     Nmo     Nalpha   Nbeta   Ndocc  Nsocc
+   -------------------------------------------------------
+     A1        26      26       5       4       4       1
+     A2         6       6       0       0       0       0
+     B1        14      14       1       0       0       1
+     B2        14      14       1       1       1       0
+   -------------------------------------------------------
+    Total      60      60       7       5       5       2
+   -------------------------------------------------------
+
+  ==> Iterations <==
+
+                           Total Energy        Delta E     RMS |[F,P]|
+
+   @DF-UKS iter   0:   -92.16350314835539   -9.21635e+01   3.35887e-03 
+   @DF-UKS iter   1:   -92.14055272326084    2.29504e-02   2.26949e-04 ADIIS/DIIS
+   @DF-UKS iter   2:   -92.14058481389561   -3.20906e-05   1.17397e-04 ADIIS/DIIS/DAMP=1%
+   @DF-UKS iter   3:   -92.14068029548217   -9.54816e-05   5.00309e-05 DIIS/DAMP=1%
+   @DF-UKS iter   4:   -92.14056228906381    1.18006e-04   4.71647e-05 DIIS/DAMP=1%
+   @DF-UKS iter   5:   -92.14060032330177   -3.80342e-05   9.15710e-06 DIIS/DAMP=1%
+   @DF-UKS iter   6:   -92.14059447305749    5.85024e-06   1.72474e-06 DIIS/DAMP=1%
+   @DF-UKS iter   7:   -92.14059328153570    1.19152e-06   5.13174e-07 DIIS/DAMP=1%
+   @DF-UKS iter   8:   -92.14059387335688   -5.91821e-07   7.33860e-08 DIIS/DAMP=1%
+   @DF-UKS iter   9:   -92.14059377880025    9.45566e-08   6.43752e-09 DIIS/DAMP=1%
+   @DF-UKS iter  10:   -92.14059378723985   -8.43960e-09   3.39466e-09 DIIS/DAMP=1%
+  Energy and wave function converged.
+
+
+  ==> Post-Iterations <==
+
+   Electrons on quadrature grid:
+      Nalpha   =    6.9999998376 ; deviation = -1.624e-07
+      Nbeta    =    4.9999998769 ; deviation = -1.231e-07
+      Ntotal   =   11.9999997144 ; deviation = -2.856e-07 
+
+   @Spin Contamination Metric:   4.340531018E-03
+   @S^2 Expected:                2.000000000E+00
+   @S^2 Observed:                2.004340531E+00
+   @S   Expected:                1.000000000E+00
+   @S   Observed:                1.000000000E+00
+
+    Orbital Energies [Eh]
+    ---------------------
+
+    Alpha Occupied:                                                       
+
+       1A1   -14.812625     2A1   -10.740334     3A1    -1.490060  
+       1B1    -0.898752     4A1    -0.878662     1B2    -0.851380  
+       5A1    -0.803641  
+
+    Alpha Virtual:                                                        
+
+       2B1    -0.377641     2B2    -0.343907     6A1    -0.098769  
+       3B1    -0.027233     3B2    -0.015885     7A1    -0.014181  
+       8A1     0.151089     4B1     0.211622     4B2     0.228049  
+       1A2     0.247802     9A1     0.248240    10A1     0.360788  
+       5B1     0.507182     5B2     0.529315    11A1     0.586503  
+       2A2     0.823402    12A1     0.824319    13A1     1.063003  
+       6B1     1.198780     6B2     1.221305    14A1     1.461717  
+       7B1     1.493012     7B2     1.518527    15A1     1.885715  
+       8B1     2.185448     8B2     2.185695    16A1     2.315364  
+       3A2     2.321513    17A1     2.343988     9B1     2.402866  
+       9B2     2.429238     4A2     2.499319    18A1     2.499720  
+      10B1     2.575123    10B2     2.613861    19A1     2.768548  
+      11B1     3.061591    11B2     3.091950    12B1     3.541985  
+      12B2     3.542139    20A1     3.835818    21A1     4.045770  
+       5A2     4.045803     6A2     4.281346    22A1     4.282103  
+      13B1     4.454112    13B2     4.488002    23A1     4.779089  
+      24A1     5.052859    14B1     5.439182    14B2     5.475004  
+      25A1     6.352639    26A1    14.290373  
+
+    Beta Occupied:                                                        
+
+       1A1   -14.798608     2A1   -10.710771     3A1    -1.420672  
+       1B2    -0.825869     4A1    -0.793179  
+
+    Beta Virtual:                                                         
+
+       1B1    -0.703668     5A1    -0.609251     2B2    -0.303868  
+       2B1    -0.273610     6A1    -0.081834     3B2    -0.006605  
+       3B1     0.001270     7A1     0.028206     8A1     0.166012  
+       4B2     0.232847     4B1     0.241741     1A2     0.284179  
+       9A1     0.287583    10A1     0.428005     5B2     0.564146  
+       5B1     0.570143    11A1     0.605077     2A2     0.851962  
+      12A1     0.854853    13A1     1.125740     6B2     1.233669  
+       6B1     1.237463    14A1     1.504263     7B2     1.544780  
+       7B1     1.555532    15A1     1.947564     8B2     2.239509  
+       8B1     2.241652     3A2     2.369189    16A1     2.373161  
+      17A1     2.397778     9B2     2.505666     9B1     2.525899  
+       4A2     2.589865    18A1     2.598568    10B2     2.639535  
+      10B1     2.655564    19A1     2.880658    11B2     3.131197  
+      11B1     3.142310    12B2     3.581131    12B1     3.582462  
+      20A1     3.883048     5A2     4.095078    21A1     4.102194  
+       6A2     4.317828    22A1     4.321231    13B2     4.500919  
+      13B1     4.507972    23A1     4.821789    24A1     5.085971  
+      14B2     5.506360    14B1     5.519353    25A1     6.389268  
+      26A1    14.332188  
+
+    Final Occupation by Irrep:
+             A1    A2    B1    B2 
+    DOCC [     4,    0,    0,    1 ]
+    SOCC [     1,    0,    1,    0 ]
+    NA   [     5,    0,    1,    1 ]
+    NB   [     4,    0,    0,    1 ]
+
+  @DF-UKS Final Energy:   -92.14059378723985
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =             21.5153294012516874
+    One-Electron Energy =                -161.3053073270218647
+    Two-Electron Energy =                  57.3466344893653428
+    DFT Exchange-Correlation Energy =      -9.6972503508350005
+    Empirical Dispersion Energy =           0.0000000000000000
+    VV10 Nonlocal Energy =                  0.0000000000000000
+    Total Energy =                        -92.1405937872398511
+
+  UHF NO Occupations:
+  HONO-2 :    1 B2 1.9985046
+  HONO-1 :    1 B1 1.0000000
+  HONO-0 :    5 A1 1.0000000
+  LUNO+0 :    2 B2 0.0014954
+  LUNO+1 :    6 A1 0.0004173
+  LUNO+2 :    7 A1 0.0002578
+  LUNO+3 :    8 A1 0.0000006
+
+
+Computation Completed
+
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
+
+Properties computed using the SCF density matrix
+
+
+ Multipole Moments:
+
+ ------------------------------------------------------------------------------------
+     Multipole            Electronic (a.u.)      Nuclear  (a.u.)        Total (a.u.)
+ ------------------------------------------------------------------------------------
+
+ L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
+ Dipole X            :          0.0000000            0.0000000            0.0000000
+ Dipole Y            :          0.0000000            0.0000000            0.0000000
+ Dipole Z            :          0.8356604            0.0013846            0.8370451
+ Magnitude           :                                                    0.8370451
+
+ ------------------------------------------------------------------------------------
+
+*** tstop() called on Mac.lan at Sun Aug 10 18:32:56 2025
+Module time:
+	user time   =      15.24 seconds =       0.25 minutes
+	system time =       2.27 seconds =       0.04 minutes
+	total time  =          2 seconds =       0.03 minutes
+Total time:
+	user time   =      15.24 seconds =       0.25 minutes
+	system time =       2.27 seconds =       0.04 minutes
+	total time  =          2 seconds =       0.03 minutes
+
+*** tstart() called on Mac.lan
+*** at Sun Aug 10 18:32:56 2025
+
+   => Libint2 <=
+
+    Primary   basis highest AM E, G, H:  6, 6, 3
+    Auxiliary basis highest AM E, G, H:  7, 7, 4
+    Onebody   basis highest AM E, G, H:  -, -, -
+    Solid Harmonics ordering:            Gaussian
+   => Loading Basis Set <=
+
+    Name: CC-PVTZ
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1 entry N          line   224 file /Users/joseantoniorodriguesromero/anaconda3/share/psi4/basis/cc-pvtz.gbs 
+    atoms 2 entry C          line   186 file /Users/joseantoniorodriguesromero/anaconda3/share/psi4/basis/cc-pvtz.gbs 
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              UKS Reference
+                        1 Threads,    500 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c2v
+    Full point group: C_inf_v
+
+    Geometry (in Angstrom), charge = 1, multiplicity = 3:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         N            0.000000000000     0.000000000000    -0.476715175978    14.003074004430
+         C            0.000000000000     0.000000000000     0.556289824022    12.000000000000
+
+  Running in c2v symmetry.
+
+  Rotational constants: A = ************  B =      2.44462  C =      2.44462 [cm^-1]
+  Rotational constants: A = ************  B =  73287.92303  C =  73287.92303 [MHz]
+  Nuclear repulsion =   21.515329401251687
+
+  Charge       = 1
+  Multiplicity = 3
+  Electrons    = 12
+  Nalpha       = 7
+  Nbeta        = 5
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is DF.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is READ.
+  Energy threshold   = 1.00e-08
+  Density threshold  = 1.00e-08
+  Integral threshold = 1.00e-12
+
+  ==> Primary Basis <==
+
+  Basis Set: CC-PVTZ
+    Blend: CC-PVTZ
+    Number of shells: 20
+    Number of basis functions: 60
+    Number of Cartesian functions: 70
+    Spherical Harmonics?: true
+    Max angular momentum: 3
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: B3LYP <= 
+
+    B3LYP Hyb-GGA Exchange-Correlation Functional
+
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch.,  J. Phys. Chem. 98, 11623 (1994) (10.1021/j100096a001)
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =          FALSE
+
+    Exchange Hybrid     =           TRUE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    0.0800   Slater exchange
+    0.7200         Becke 88
+
+   => Exact (HF) Exchange <=
+
+    0.2000               HF 
+
+   => Correlation Functionals <=
+
+    0.1900   Vosko, Wilk & Nusair (VWN5_RPA)
+    0.8100   Lee, Yang & Parr
+
+   => LibXC Density Thresholds  <==
+
+    XC_HYB_GGA_XC_B3LYP:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            302
+    Total Points           =          43214
+    Total Blocks           =            390
+    Max Points             =            255
+    Max Functions          =             60
+    Weights Tolerance      =       1.00E-15
+
+   => Loading Basis Set <=
+
+    Name: (CC-PVTZ AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1 entry N          line   177 file /Users/joseantoniorodriguesromero/anaconda3/share/psi4/basis/cc-pvtz-jkfit.gbs 
+    atoms 2 entry C          line   125 file /Users/joseantoniorodriguesromero/anaconda3/share/psi4/basis/cc-pvtz-jkfit.gbs 
+
+   => Loading Basis Set <=
+
+    Name: CC-PVTZ
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1 entry N          line   224 file /Users/joseantoniorodriguesromero/anaconda3/share/psi4/basis/cc-pvtz.gbs 
+    atoms 2 entry C          line   186 file /Users/joseantoniorodriguesromero/anaconda3/share/psi4/basis/cc-pvtz.gbs 
+
+  Reading orbitals from file /tmp/scan_CN_14.default.50305.180.npy, no projection.
+
+  ==> Integral Setup <==
+
+  DFHelper Memory: AOs need 0.005 GiB; user supplied 0.294 GiB. 
+  Using in-core AOs.
+
+  ==> MemDFJK: Density-Fitted J/K Matrices <==
+
+    J tasked:                   Yes
+    K tasked:                   Yes
+    wK tasked:                   No
+    OpenMP threads:               1
+    Memory [MiB]:               300
+    Algorithm:                 Core
+    Schwarz Cutoff:           1E-12
+    Mask sparsity (%):       0.0000
+    Fitting Condition:        1E-10
+
+   => Auxiliary Basis Set <=
+
+  Basis Set: (CC-PVTZ AUX)
+    Blend: CC-PVTZ-JKFIT
+    Number of shells: 50
+    Number of basis functions: 158
+    Number of Cartesian functions: 192
+    Spherical Harmonics?: true
+    Max angular momentum: 4
+
+  Cached 100.0% of DFT collocation blocks in 0.072 [GiB].
+
+  Minimum eigenvalue in the overlap matrix is 1.5611783045E-03.
+  Reciprocal condition number of the overlap matrix is 3.7115217386E-04.
+    Using symmetric orthogonalization.
+
+  ==> Pre-Iterations <==
+
+  SCF Guess: Orbitals guess was supplied from a previous computation.
+
+   -------------------------------------------------------
+    Irrep   Nso     Nmo     Nalpha   Nbeta   Ndocc  Nsocc
+   -------------------------------------------------------
+     A1        26      26       5       4       4       1
+     A2         6       6       0       0       0       0
+     B1        14      14       1       0       0       1
+     B2        14      14       1       1       1       0
+   -------------------------------------------------------
+    Total      60      60       7       5       5       2
+   -------------------------------------------------------
+
+  ==> Iterations <==
+
+                           Total Energy        Delta E     RMS |[F,P]|
+
+   @DF-UKS iter   0:   -92.14059379067696   -9.21406e+01   1.44174e-10 
+   @DF-UKS iter   1:   -92.14059379067696    0.00000e+00   1.30124e-10 DIIS
+  Energy and wave function converged.
+
+
+  ==> Post-Iterations <==
+
+   Electrons on quadrature grid:
+      Nalpha   =    6.9999998376 ; deviation = -1.624e-07
+      Nbeta    =    4.9999998769 ; deviation = -1.231e-07
+      Ntotal   =   11.9999997144 ; deviation = -2.856e-07 
+
+   @Spin Contamination Metric:   4.340531288E-03
+   @S^2 Expected:                2.000000000E+00
+   @S^2 Observed:                2.004340531E+00
+   @S   Expected:                1.000000000E+00
+   @S   Observed:                1.000000000E+00
+
+    Orbital Energies [Eh]
+    ---------------------
+
+    Alpha Occupied:                                                       
+
+       1A1   -14.812625     2A1   -10.740334     3A1    -1.490060  
+       1B1    -0.898752     4A1    -0.878662     1B2    -0.851380  
+       5A1    -0.803641  
+
+    Alpha Virtual:                                                        
+
+       2B1    -0.377641     2B2    -0.343907     6A1    -0.098769  
+       3B1    -0.027233     3B2    -0.015885     7A1    -0.014181  
+       8A1     0.151089     4B1     0.211622     4B2     0.228049  
+       1A2     0.247802     9A1     0.248240    10A1     0.360788  
+       5B1     0.507182     5B2     0.529315    11A1     0.586503  
+       2A2     0.823402    12A1     0.824319    13A1     1.063003  
+       6B1     1.198780     6B2     1.221305    14A1     1.461717  
+       7B1     1.493012     7B2     1.518527    15A1     1.885715  
+       8B1     2.185448     8B2     2.185695    16A1     2.315364  
+       3A2     2.321513    17A1     2.343988     9B1     2.402866  
+       9B2     2.429238     4A2     2.499319    18A1     2.499720  
+      10B1     2.575123    10B2     2.613861    19A1     2.768548  
+      11B1     3.061591    11B2     3.091950    12B1     3.541985  
+      12B2     3.542139    20A1     3.835818    21A1     4.045770  
+       5A2     4.045803     6A2     4.281346    22A1     4.282103  
+      13B1     4.454112    13B2     4.488002    23A1     4.779089  
+      24A1     5.052859    14B1     5.439182    14B2     5.475004  
+      25A1     6.352639    26A1    14.290373  
+
+    Beta Occupied:                                                        
+
+       1A1   -14.798608     2A1   -10.710771     3A1    -1.420672  
+       1B2    -0.825869     4A1    -0.793179  
+
+    Beta Virtual:                                                         
+
+       1B1    -0.703668     5A1    -0.609251     2B2    -0.303868  
+       2B1    -0.273610     6A1    -0.081834     3B2    -0.006605  
+       3B1     0.001270     7A1     0.028206     8A1     0.166012  
+       4B2     0.232847     4B1     0.241741     1A2     0.284179  
+       9A1     0.287583    10A1     0.428005     5B2     0.564146  
+       5B1     0.570143    11A1     0.605077     2A2     0.851962  
+      12A1     0.854853    13A1     1.125740     6B2     1.233669  
+       6B1     1.237463    14A1     1.504263     7B2     1.544780  
+       7B1     1.555532    15A1     1.947564     8B2     2.239509  
+       8B1     2.241652     3A2     2.369189    16A1     2.373161  
+      17A1     2.397778     9B2     2.505666     9B1     2.525899  
+       4A2     2.589865    18A1     2.598568    10B2     2.639535  
+      10B1     2.655564    19A1     2.880658    11B2     3.131197  
+      11B1     3.142310    12B2     3.581131    12B1     3.582462  
+      20A1     3.883048     5A2     4.095078    21A1     4.102194  
+       6A2     4.317828    22A1     4.321231    13B2     4.500919  
+      13B1     4.507972    23A1     4.821789    24A1     5.085971  
+      14B2     5.506360    14B1     5.519353    25A1     6.389268  
+      26A1    14.332188  
+
+    Final Occupation by Irrep:
+             A1    A2    B1    B2 
+    DOCC [     4,    0,    0,    1 ]
+    SOCC [     1,    0,    1,    0 ]
+    NA   [     5,    0,    1,    1 ]
+    NB   [     4,    0,    0,    1 ]
+
+  @DF-UKS Final Energy:   -92.14059379067696
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =             21.5153294012516874
+    One-Electron Energy =                -161.3053072018588523
+    Two-Electron Energy =                  57.3466343506849157
+    DFT Exchange-Correlation Energy =      -9.6972503407546959
+    Empirical Dispersion Energy =           0.0000000000000000
+    VV10 Nonlocal Energy =                  0.0000000000000000
+    Total Energy =                        -92.1405937906769452
+
+  UHF NO Occupations:
+  HONO-2 :    1 B2 1.9985046
+  HONO-1 :    1 B1 1.0000000
+  HONO-0 :    5 A1 1.0000000
+  LUNO+0 :    2 B2 0.0014954
+  LUNO+1 :    6 A1 0.0004173
+  LUNO+2 :    7 A1 0.0002578
+  LUNO+3 :    8 A1 0.0000006
+
+
+Computation Completed
+
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
+
+Properties computed using the B3LYP density matrix
+
+
+ Multipole Moments:
+
+ ------------------------------------------------------------------------------------
+     Multipole            Electronic (a.u.)      Nuclear  (a.u.)        Total (a.u.)
+ ------------------------------------------------------------------------------------
+
+ L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
+ Dipole X            :          0.0000000            0.0000000            0.0000000
+ Dipole Y            :          0.0000000            0.0000000            0.0000000
+ Dipole Z            :          0.8356604            0.0013846            0.8370450
+ Magnitude           :                                                    0.8370450
+
+ L = 2.  Multiply by 1.3450342976 to convert [e a0^2] to [Debye ang]
+ Quadrupole XX       :         -5.3514907            0.0000000           -5.3514907
+ Quadrupole XY       :          0.0000000            0.0000000            0.0000000
+ Quadrupole XZ       :          0.0000000            0.0000000            0.0000000
+ Quadrupole YY       :         -6.2448469            0.0000000           -6.2448469
+ Quadrupole YZ       :          0.0000000            0.0000000            0.0000000
+ Quadrupole ZZ       :        -17.4419287           12.3114307           -5.1304980
+ Traceless XX        :          4.3279314           -4.1038102            0.2241211
+ Traceless YY        :          3.4345752           -4.1038102           -0.6692350
+ Traceless ZZ        :         -7.7625066            8.2076205            0.4451139
+
+ ------------------------------------------------------------------------------------
+  ==> Computing MBIS Charges <==
+
+  Electron Count from Grid (Expected Number): 12.00000 (12.00000)
+  Difference: -0.00000
+
+  MBIS Charges: (a.u.)
+   Center  Symbol  Z      Pop.       Charge
+      1       N    7    6.877673    0.122327
+      2       C    6    5.122327    0.877673
+
+  MBIS Dipoles: [e a0]
+   Center  Symbol  Z        X           Y           Z
+      1       N    7   -0.000000    0.000000   -0.081638
+      2       C    6    0.000000    0.000000    0.106241
+
+  MBIS Quadrupoles: [e a0^2]
+   Center  Symbol  Z      XX        XY        XZ        YY        YZ        ZZ
+      1       N    7   -3.0430   -0.0000   -0.0000   -3.5468   -0.0000   -3.8168
+      2       C    6   -2.3085    0.0000    0.0000   -2.6980    0.0000   -2.7533
+
+  MBIS Octupoles: [e a0^3]
+   Center  Symbol  Z      XXX       XXY       XXZ       XYY       XYZ       XZZ       YYY       YYZ       YZZ       ZZZ
+      1       N    7   -0.0000   -0.0000   -0.0018   -0.0000    0.0000    0.0000   -0.0000   -0.1524    0.0000   -0.0296
+      2       C    6   -0.0000   -0.0000   -0.0376   -0.0000    0.0000    0.0000    0.0000    0.0742    0.0000   -0.0166
+
+  MBIS Radial Moments:
+   Center  Symbol  Z      [a0^2]      [a0^3]      [a0^4]      
+      1       N    7   10.406602   20.132248   46.509902
+      2       C    6    7.759879   15.742098   38.226889
+
+  MBIS Valence Widths: [a0]
+   Center  Symbol  Z     Width
+      1       N    7    0.409283
+      2       C    6    0.432643
+
+*** tstop() called on Mac.lan at Sun Aug 10 18:32:57 2025
+Module time:
+	user time   =       6.09 seconds =       0.10 minutes
+	system time =       2.48 seconds =       0.04 minutes
+	total time  =          1 seconds =       0.02 minutes
+Total time:
+	user time   =      21.36 seconds =       0.36 minutes
+	system time =       4.92 seconds =       0.08 minutes
+	total time  =          3 seconds =       0.05 minutes
+
+    Psi4 stopped on: Sunday, 10 August 2025 06:32PM
+    Psi4 wall time for execution: 0:00:02.57
+
+*** Psi4 exiting successfully. Buy a developer a beer!
