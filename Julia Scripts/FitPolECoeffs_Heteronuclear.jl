@@ -1,4 +1,4 @@
-using Optim, Plots, Evolutionary, Distributed;
+using Optim, Plots;
 using Printf, LinearAlgebra;
 using LaTeXStrings, Latexify, Measures;
 using Base.Threads;
@@ -6,22 +6,18 @@ using Base.Threads;
 include("FitHomonuclearCoeffs_General.jl")
 
 which_atomic_numbers = [[1,6],[1,8],[6,8],[7,8]];
-function FitCoeffsFoo(Z1::Integer, Z2::Integer)
-    global pol_all_coeffs;
-    neutral_data, cation_data, anion_data = readAllSanitizedData(Z1,Z2);
+for atomic_numbers in which_atomic_numbers
+    Z1 = atomic_numbers[1];
+    Z2 = atomic_numbers[2];
+
+    neutral_data, cation_data, anion_data = read_all_sanitized_data(Z1,Z2);
     all_data = vcat(neutral_data, cation_data, anion_data);
 
+    num_2b_coeffs = 4;
     num_vars = 3*num_2b_coeffs;
     aux_X = zeros(Float64,num_vars);
 
-    all_molecs = Vector{Molecule}();
-    resize!(all_molecs,length(all_data));
-    for i in eachindex(all_data)
-        all_molecs[i] = MakeMoleculeFromParsedFile(all_data[i]);
-    end
-
     function CostFunc(aux_X::Vector)
-        global pol_all_coeffs;
         aux_type = typeof(aux_X[1]);
         aux_pol_all_coeffs = Vector{Matrix}();
         resize!(aux_pol_all_coeffs,2);
@@ -30,13 +26,14 @@ function FitCoeffsFoo(Z1::Integer, Z2::Integer)
         aux_pol_all_coeffs[2] = aux_type.(pol_all_coeffs[2]);
         SetFittedCoeffs!(aux_pol_all_coeffs,Z1,Z2,aux_X);
 
-        Z1_eff = all_molecs[1].atoms_data[1,4];
-        Z2_eff = all_molecs[1].atoms_data[2,4];
-
         n_threads = Threads.nthreads();
         ret_val = zeros(aux_type,n_threads);
         @threads for thread_id in 1:n_threads
-            for i in thread_id:n_threads:(length(all_molecs))
+            simulation = make_system_from_parsed_file(all_data[1]);
+            set_fitted_pol_e_coeffs!(simulation,atomic_number,aux_X);
+            cast_type = simulation.cast_types.cast_to_xc_coeff_type;
+
+            for i in thread_id:n_threads:(length(all_data))
                 _, _, aux_m, aux_y = 
                     MatPolarizeMolecules(all_molecs[i],aux_pol_all_coeffs);
 
@@ -62,16 +59,6 @@ function FitCoeffsFoo(Z1::Integer, Z2::Integer)
 
     # Save the newly fitted coefficients
     SavePolCoeffs();
-end
-
-for atomic_numbers in which_atomic_numbers
-    Z1 = atomic_numbers[1];
-    Z2 = atomic_numbers[2];
-
-    # Load the previously fitted coefficients
-    global pol_all_coeffs = LoadPolCoeffs();
-
-    FitCoeffsFoo(Z1,Z2);
 end
 
 function TestResultChemμ(Z1::Integer, Z2::Integer)
