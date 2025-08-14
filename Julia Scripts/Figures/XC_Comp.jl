@@ -1,7 +1,8 @@
 using Plots, LaTeXStrings, Measures;
 using Polynomials, SpecialPolynomials;
+using SpecialFunctions;
 
-function XC_Sph_Trunc(K::Integer, λ::Real, d::Real)
+function xc_sph_trunc(K::Integer, λ::Real, d::Real)
     # Old definition
     aux_ret = 0.0;
 
@@ -16,7 +17,7 @@ function XC_Sph_Trunc(K::Integer, λ::Real, d::Real)
     return aux_ret;
 end
 
-function XC_Cyl_Trunc(K::Integer, λ::Real, d::Real)
+function xc_cyl_trunc(K::Integer, λ::Real, d::Real)
     # Old definition
     aux_ret = 0.0;
 
@@ -41,13 +42,13 @@ function XC_Cyl_Trunc(K::Integer, λ::Real, d::Real)
     return aux_ret;
 end
 
-function XC_Sph(λ::Real, d::Real)
+function xc_sph(λ::Real, d::Real)
     # Old definition
     return real((erf(d*sqrt(λ)+(1im)*sqrt(λ))+erf(d*sqrt(λ)-
         (1im)*sqrt(λ)))/(2*d)-erf(d*sqrt(λ))/d);
 end
 
-function XC_Cyl(λ::Real, d::Real)
+function xc_cyl(λ::Real, d::Real)
     # Old definition
     return real(exp(-λ*d^2)/(d*sqrt(π))*((exp(λ)*sin(2*d*λ))/(d*sqrt(λ))-
         2*sqrt(λ))-(erf(sqrt(λ)*(d+1im))+erf(sqrt(λ)*(d-1im))-
@@ -55,13 +56,13 @@ function XC_Cyl(λ::Real, d::Real)
 end
 
 r = collect(0:0.001:3.0);
-e_sphe_t10_l8_λ8 = XC_Sph_Trunc.(10,8,r);
-e_sphe_t20_l8_λ8 = XC_Sph_Trunc.(20,8,r);
-e_sphe_exact_l8_λ8 = XC_Sph.(8,r);
+e_sphe_t10_l8_λ8 = xc_sph_trunc.(10,8,r);
+e_sphe_t20_l8_λ8 = xc_sph_trunc.(20,8,r);
+e_sphe_exact_l8_λ8 = xc_sph.(8,r);
 
-e_cyl_t10_l8_λ8 = XC_Cyl_Trunc.(10,8,r);
-e_cyl_t20_l8_λ8 = XC_Cyl_Trunc.(20,8,r);
-e_cyl_exact_l8_λ8 = XC_Cyl.(8,r);
+e_cyl_t10_l8_λ8 = xc_cyl_trunc.(10,8,r);
+e_cyl_t20_l8_λ8 = xc_cyl_trunc.(20,8,r);
+e_cyl_exact_l8_λ8 = xc_cyl.(8,r);
 
 p1 = plot(r, e_sphe_t10_l8_λ8, label="Truncated Sum (K = 10)", linewidth = 2);
 plot!(r, e_sphe_t20_l8_λ8, label="Truncated Sum (K = 20)", linewidth = 2);
@@ -95,7 +96,7 @@ l_y_pos = -2 + (4 - (-2)) * (1.0/6.0);
 annotate!(l_x_pos, l_y_pos, text(L"$\lambda = 8$", :center, 10));
 
 plot(p1,p2,layout=(2,1), size = (500, 400))
-savefig("XC_exp-poly_comp.pdf");
+savefig("Figures/XC_exp-poly_comp.pdf");
 
 function XC_Sph_Trunc(K::Integer, λ::Real, d::Real)
     # New definition
@@ -170,4 +171,4 @@ l_y_pos = -3 + (6 - (-3)) * (1.0/6.0);
 annotate!(l_x_pos, l_y_pos, text(L"$\lambda = 8$", :center, 10));
 
 plot(p1,p2,layout=(2,1), size = (500, 400))
-savefig("XC_exact_comp.pdf")
+savefig("Figures/XC_exact_comp.pdf")

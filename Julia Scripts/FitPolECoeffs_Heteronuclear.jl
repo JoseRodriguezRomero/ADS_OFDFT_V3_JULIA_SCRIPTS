@@ -17,30 +17,45 @@ for atomic_numbers in which_atomic_numbers
     num_vars = 3*num_2b_coeffs;
     aux_X = zeros(Float64,num_vars);
 
-    function CostFunc(aux_X::Vector)
+    n_threads = Threads.nthreads();
+    simulation = Vector{SimulationSystem}();
+    resize!(simulation,n_threads);
+
+    for thread_id in 1:n_threads
+        simulation[thread_id] = make_system_from_parsed_file(all_data[1]);
+    end
+    
+    needs_casting = true;
+    function cost_func(aux_X::Vector)
         aux_type = typeof(aux_X[1]);
-        aux_pol_all_coeffs = Vector{Matrix}();
-        resize!(aux_pol_all_coeffs,2);
 
-        aux_pol_all_coeffs[1] = aux_type.(pol_all_coeffs[1]);
-        aux_pol_all_coeffs[2] = aux_type.(pol_all_coeffs[2]);
-        SetFittedCoeffs!(aux_pol_all_coeffs,Z1,Z2,aux_X);
-
-        n_threads = Threads.nthreads();
+        if needs_casting
+            needs_casting = false;
+            for thread_id in 1:n_threads
+                cast_pol_e_coeffs_to_type!(simulation[thread_id],aux_type);
+            end
+        end
+        
         ret_val = zeros(aux_type,n_threads);
         @threads for thread_id in 1:n_threads
-            simulation = make_system_from_parsed_file(all_data[1]);
-            set_fitted_pol_e_coeffs!(simulation,atomic_number,aux_X);
-            cast_type = simulation.cast_types.cast_to_xc_coeff_type;
+            set_fitted_pol_e_coeffs!(simulation[thread_id],Z1,Z2,aux_X);
+            cast_type = simulation[thread_id].cast_types.cast_to_xc_coeff_type;
 
             for i in thread_id:n_threads:(length(all_data))
-                _, _, aux_m, aux_y = 
-                    MatPolarizeMolecules(all_molecs[i],aux_pol_all_coeffs);
+                set_diatomic_system_to_parsed_file!(
+                    simulation[thread_id],all_data[i]);
+
+                aux_m, aux_y = polarization_matrix_problem(
+                    simulation[thread_id],cast_type);
+
+                ζ1 = simulation[thread_id].system.molecules[1].cloud_data[1,6];
+                ζ2 = simulation[thread_id].system.molecules[1].cloud_data[4,6];
+                μ = simulation[thread_id].system.chemical_potential;
 
                 aux_x = zeros(aux_type,3);
-                aux_x[1] = all_molecs[i].cloud_data[1,6];
-                aux_x[2] = all_molecs[i].cloud_data[4,6];
-                aux_x[3] = all_molecs[i].chem_μ;
+                aux_x[1] = ζ1;
+                aux_x[2] = ζ2;
+                aux_x[3] = μ;
 
                 aux_diff = (aux_m * aux_x) - aux_y;
                 ret_val[thread_id] += dot(aux_diff,aux_diff);
@@ -50,49 +65,53 @@ for atomic_numbers in which_atomic_numbers
         return sum(ret_val);
     end
 
-    sol = Optim.optimize(CostFunc, aux_X[:], LBFGS(), autodiff=:forward,
+    sol = Optim.optimize(cost_func, aux_X, LBFGS(), autodiff=:forward,
         Optim.Options(show_trace=true,iterations=8000));
     aux_X = Optim.minimizer(sol);
 
-    # Save the currently fitted coefficients
-    SetFittedCoeffs!(pol_all_coeffs,Z2,Z1,aux_X);
+    simulation = make_system_from_parsed_file(all_data[1]);
+    set_fitted_pol_e_coeffs!(simulation,Z1,Z2,aux_X);
 
-    # Save the newly fitted coefficients
-    SavePolCoeffs();
+    save_fitted_coeffs(simulation);
 end
 
-function TestResultChemμ(Z1::Integer, Z2::Integer)
-    pol_all_coeffs = LoadPolCoeffs();
-    neutral_data, cation_data, anion_data = readAllSanitizedData(Z1,Z2);
+function test_tesult_chemical_potential(Z1::Integer, Z2::Integer)
+    neutral_data, cation_data, anion_data = read_all_sanitized_data(Z1,Z2);
     all_data = vcat(neutral_data, cation_data, anion_data);
 
     model_chem_μ = zeros(Float64,length(all_data));
     dft_chem_μ = zeros(Float64,length(all_data));
 
-    function GetData(data::Vector{ParsedFile})
+    function get_data(data::Vector{ParsedFile})
         model_chem_μ = zeros(Float64,length(data));
         dft_chem_μ = zeros(Float64,length(data));
 
         n_threads = Threads.nthreads();
         @threads for thread_id in 1:n_threads
+            simulation = make_system_from_parsed_file(data[1]);
             for i in thread_id:n_threads:length(data)
-                mol = MakeMoleculeFromParsedFile(data[i]);
-                dft_chem_μ[i] = mol.chem_μ;
-            
-                PolarizeMolecules!(mol,pol_all_coeffs);
-                model_chem_μ[i] = mol.chem_μ;
+                set_diatomic_system_to_parsed_file!(simulation,data[i]);
+                polarize_molecules!(simulation);
+                
+                model_μ = simulation.system.chemical_potential;
+                dft_μ = (data[i].HOMO_energy + data[i].LUMO_energy)/2;
+                
+                model_chem_μ[i] = model_μ;
+                dft_chem_μ[i] = dft_μ
             end
         end
 
         return model_chem_μ, dft_chem_μ;
     end
 
-    neutral_model_chem_μ, neutral_dft_chem_μ = GetData(neutral_data);
-    cation_model_chem_μ, cation_dft_chem_μ = GetData(cation_data);
-    anion_model_chem_μ, anion_dft_chem_μ = GetData(anion_data);
+    neutral_model_chem_μ, neutral_dft_chem_μ = get_data(neutral_data);
+    cation_model_chem_μ, cation_dft_chem_μ = get_data(cation_data);
+    anion_model_chem_μ, anion_dft_chem_μ = get_data(anion_data);
 
-    model_chem_μ = vcat(neutral_model_chem_μ,cation_model_chem_μ,anion_model_chem_μ);
-    dft_chem_μ = vcat(neutral_dft_chem_μ,cation_dft_chem_μ,anion_dft_chem_μ);
+    model_chem_μ = 
+        vcat(neutral_model_chem_μ,cation_model_chem_μ,anion_model_chem_μ);
+    dft_chem_μ = 
+        vcat(neutral_dft_chem_μ,cation_dft_chem_μ,anion_dft_chem_μ);
 
     mean_dft_chem_μ = sum(dft_chem_μ) / length(dft_chem_μ);
     SS_res = sum((model_chem_μ - dft_chem_μ).^2.0);
@@ -102,8 +121,8 @@ function TestResultChemμ(Z1::Integer, Z2::Integer)
     min_x = minimum([minimum(model_chem_μ), minimum(dft_chem_μ)]);
     max_x = maximum([maximum(model_chem_μ), maximum(dft_chem_μ)]);
 
-    elem_symbol_1 = getElementSymbol(Z1);
-    elem_symbol_2 = getElementSymbol(Z2);
+    elem_symbol_1 = get_element_symbol(Z1);
+    elem_symbol_2 = get_element_symbol(Z2);
 
     neutral_label = elem_symbol_1*" + "*elem_symbol_2;
     cation_label = "("*elem_symbol_1*" + "*elem_symbol_2*")⁺";
@@ -120,7 +139,7 @@ function TestResultChemμ(Z1::Integer, Z2::Integer)
     return p, R²;
 end
 
-function CompareChemμ()
+function compare_chemical_potential()
     y_label_all = L"$\tilde{\mu} \quad \mathrm{(This \ Work)}$";
     x_label_all = L"$\tilde{\mu} \quad (\mathrm{KS{-}DFT})$";
 
@@ -128,7 +147,7 @@ function CompareChemμ()
     R²_rel_pos_y = (1.0/8.0);
 
     # HC Plots
-    pHC, R² = TestResultChemμ(1,6);
+    pHC, R² = test_tesult_chemical_potential(1,6);
     aux_lims = [-1.0,0.6];
     aux_ticks = -1.0:0.4:0.6;
     plot!(xlims=aux_lims);
@@ -145,7 +164,7 @@ function CompareChemμ()
     annotate!(l_x_pos, l_y_pos, text("R² = "*string(R²), :center, 10));
 
     # HO Plots
-    pHO, R² = TestResultChemμ(1,8);
+    pHO, R² = test_tesult_chemical_potential(1,8);
     aux_lims = [-1.0,0.6];
     aux_ticks = -1.0:0.4:0.6;
     plot!(xlims=aux_lims);
@@ -160,7 +179,7 @@ function CompareChemμ()
     annotate!(l_x_pos, l_y_pos, text("R² = "*string(R²), :center, 10));
 
     # CO Plots
-    pCO, R² = TestResultChemμ(6,8);
+    pCO, R² = test_tesult_chemical_potential(6,8);
     aux_lims = [-1.0,0.6];
     aux_ticks = -1.0:0.4:0.6;
     plot!(xlims=aux_lims);
@@ -175,7 +194,7 @@ function CompareChemμ()
     annotate!(l_x_pos, l_y_pos, text("R² = "*string(R²), :center, 10));
 
     # NO Plots
-    pNO, R² = TestResultChemμ(7,8);
+    pNO, R² = test_tesult_chemical_potential(7,8);
     aux_lims = [-1.0,0.6];
     aux_ticks = -1.0:0.4:0.6;
     plot!(xlims=aux_lims);
@@ -190,71 +209,9 @@ function CompareChemμ()
     annotate!(l_x_pos, l_y_pos, text("R² = "*string(R²), :center, 10));
 
     p = plot(pHC,pHO, pCO, pNO, layout=(1,4), size = (1100,235));
-    savefig("HeteronuclearFitComps.pdf");
+    savefig("Figures/HeteronuclearFitComps.pdf");
 
     return p;
 end
 
-function Foo(Z1::Integer, Z2::Integer)
-    pol_all_coeffs = LoadPolCoeffs();
-    neutral_data, cation_data, anion_data = readAllSanitizedData(Z1,Z2);
-
-    function GetPlotData(data::Vector{ParsedFile})
-        atoms_dist = zeros(Float64,length(data));
-        charges_dft = zeros(Float64,length(data));
-        charges_model = zeros(Float64,length(data));
-
-        n_threads = Threads.nthreads();
-        @threads for thread_id in 1:n_threads
-            mol = MakeMoleculeFromParsedFile(data[1]);
-            Z1_eff = mol.atoms_data[1,4];
-
-            for i in thread_id:n_threads:length(data)
-                mol = MakeMoleculeFromParsedFile(data[i]);
-                # charges_dft[i] = Z1_eff * (1 - mol.cloud_data[1,6]);
-                charges_dft[i] = mol.chem_μ;
-
-                mol.cloud_data[:,6] .= 1.0;
-                mol.chem_μ = 0.0;
-
-                PolarizeMolecules!(mol,pol_all_coeffs);
-                # charges_model[i] = Z1_eff * (1 - mol.cloud_data[1,6]);
-                charges_model[i] = mol.chem_μ;
-
-                atoms_dist[i] = mol.atoms_data[2,3];
-            end
-        end
-
-        return atoms_dist, charges_dft, charges_model;
-    end
-    
-    neutral_atoms_dist, neutral_charges_dft, neutral_charges_model = 
-        GetPlotData(neutral_data);
-    cation_atoms_dist, cation_charges_dft, cation_charges_model = 
-        GetPlotData(cation_data);
-    anion_atoms_dist, anion_charges_dft, anion_charges_model = 
-        GetPlotData(anion_data);
-
-    p1 = plot(neutral_atoms_dist, neutral_charges_model, 
-        label="This Work");
-    plot!(neutral_atoms_dist, neutral_charges_dft,
-        label="B3LYP/aug-cc-pVTZ");
-    plot!(title="neutral");
-
-    p2 = plot(cation_atoms_dist, cation_charges_model, 
-        label="This Work");
-    plot!(cation_atoms_dist, cation_charges_dft,
-        label="B3LYP/aug-cc-pVTZ");
-    plot!(title="anion");
-
-    p3 = plot(anion_atoms_dist, anion_charges_model, 
-        label="This Work");
-    plot!(anion_atoms_dist, anion_charges_dft,
-        label="B3LYP/aug-cc-pVTZ");
-    plot!(title="anion");
-
-    p = plot(p1,p2,p3,layout=(3,1), size = (450,550));
-    return p;
-end
-
-CompareChemμ()
+compare_chemical_potential()

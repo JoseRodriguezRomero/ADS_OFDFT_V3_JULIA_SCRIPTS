@@ -284,7 +284,7 @@ function compare_data()
     # Join all plots
     p = plot(eH2,eC2,eN2,eO2,pH2,pC2,pN2,pO2,
         layout=(2,4), size = (1100,470));
-    savefig("HomonuclearFitComps.pdf");
+    savefig("Figures/HomonuclearFitComps.pdf");
 
     return p;
 end
@@ -406,7 +406,7 @@ function comp_homonuclear_scan(Z1::Int, Z2::Int)
     plot!(legend = :outertopright)
 
     p = plot(p1,p2, layout=(2,1), size = (500,380));
-    savefig("HomonuclearScanComp.pdf");
+    savefig("Figures/HomonuclearScanComp.pdf");
 
     return p;
 end
