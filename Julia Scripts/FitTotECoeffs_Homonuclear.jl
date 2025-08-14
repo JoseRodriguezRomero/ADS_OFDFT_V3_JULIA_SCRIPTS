@@ -57,8 +57,6 @@ for atomic_number in which_atomic_numbers
         model_cation_at_e = total_energy(cation_at);
         model_anion_at_e = total_energy(anion_at);
 
-        do_polarize_molecules = false;
-
         ret_val = zeros(aux_type,n_threads);
         @threads for thread_id in 1:n_threads
             set_fitted_tot_e_coeffs!(
@@ -106,8 +104,6 @@ for atomic_number in which_atomic_numbers
     sol = Optim.optimize(cost_func, aux_X[:], LBFGS(), autodiff=:forward,
         Optim.Options(show_trace=true));
     aux_X = Optim.minimizer(sol);
-
-    display(aux_X);
 
     simulation = make_system_from_parsed_file(all_data[1]);
     set_fitted_tot_e_coeffs!(simulation,atomic_number,aux_X);

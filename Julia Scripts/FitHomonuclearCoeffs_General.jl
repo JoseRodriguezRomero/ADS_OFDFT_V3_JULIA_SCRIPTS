@@ -166,7 +166,8 @@ function set_diatomic_system_to_parsed_file!(simulation::SimulationSystem,
     molecule.cloud_data[1:3,3] .= +d/2.0;
     molecule.cloud_data[4:6,3] .= -d/2.0;
 
-    chemical_potential = (parsed_file.HOMO_energy + parsed_file.LUMO_energy)/2;
+    chemical_potential = 
+        (parsed_file.HOMO_energy + parsed_file.LUMO_energy)/2.0;
 
     simulation.system.molecules = [molecule];
     simulation.system.chemical_potential = chemical_potential;

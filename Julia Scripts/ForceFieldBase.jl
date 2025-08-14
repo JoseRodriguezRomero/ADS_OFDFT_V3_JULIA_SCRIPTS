@@ -319,7 +319,7 @@ function ee_energy(mol1::Molecule, mol2::Molecule, i::Int, j::Int)
     ee_xc_cyl = c*xc_cyl(λ,d);
 
     if (d < 1.0E-6)
-        ee_xc_cyl = NaN;
+        ee_xc_cyl = Inf;
     end
 
     return ee_naive, ee_xc_sph, ee_xc_cyl;
@@ -344,7 +344,7 @@ function en_energy(mol1::Molecule, mol2::Molecule, i::Int, j::Int)
     en_xc_cyl = c*xc_cyl(λ,d);
 
     if (d < 1.0E-6)
-        en_xc_cyl = NaN;
+        en_xc_cyl = Inf;
     end
 
     return en_naive, en_xc_sph, en_xc_cyl;
@@ -500,7 +500,7 @@ function polarization_matrix_problem(simulation::SimulationSystem,
                     aux_Y[ii0] += en_naive;
                     
                     # XC contributions
-                    if isnan(en_ex_cyl)
+                    if isinf(en_ex_cyl)
                         xc_coeff_1 = comb_coeffs_1b(xc_c_1b,Z1,ζ1);
 
                         aux_Y[ii0] -= xc_coeff_1*en_xc_sph;
@@ -533,7 +533,7 @@ function polarization_matrix_problem(simulation::SimulationSystem,
                     aux_M[ii0,jj0] += ee_naive;
 
                     # XC contributions
-                    if isnan(ee_xc_cyl)
+                    if isinf(ee_xc_cyl)
                         xc_coeff_1 = comb_coeffs_1b(xc_a_1b,Z1,ζ1);
                         
                         aux_M[ii0,jj0] += xc_coeff_1*ee_xc_sph;
@@ -582,10 +582,9 @@ function scf_min_func(simulation::SimulationSystem)
 
     # x0 = zeros(Float64,0);
     # for molecule in molecules
-    #     abs_ζ = abs.(molecule.cloud_data[1:clouds_per_atom:end,6]);
-    #     x0 = vcat(x0, abs_ζ);
+    #     sqrt_ζ = sqrt.(molecule.cloud_data[1:clouds_per_atom:end,6]);
+    #     x0 = vcat(x0, sqrt_ζ);
     # end
-    # x0 = sqrt.(x0);
     # x0 = vcat(x0,simulation.system.chemical_potential);
 
     needs_casting = true;
@@ -797,25 +796,27 @@ function system_energies(simulation::SimulationSystem)
                 en_naive, en_xc_sph, en_xc_cyl = 
                     en_energy(molecule1,molecule1,j,i);
 
-                # polarization
-                en_naive *= ζ2;
-                en_xc_sph *= ζ2;
-                en_xc_cyl *= ζ2;
-
-                naive_energy -= en_naive;
-
                 # XC contributions
-                if isnan(en_xc_cyl)
+                if isinf(en_xc_cyl)
+                    # polarization
+                    en_naive *= ζ2;
+                    en_xc_sph *= ζ2;
                     xc_coeff_1 = comb_coeffs_1b(xc_c_1b,Z1,ζ1);
 
                     xc_energy += xc_coeff_1*en_xc_sph;
                 else
+                    # polarization
+                    en_naive *= ζ2;
+                    en_xc_sph *= ζ2;
+                    en_xc_cyl *= ζ2;
                     xc_coeff_1 = comb_coeffs_2b(xc_c_2b,Z1,Z2,ζ1,ζ2);
                     xc_coeff_2 = comb_coeffs_2b(xc_d_2b,Z1,Z2,ζ1,ζ2);
                     
                     xc_energy += xc_coeff_1*en_xc_sph;
                     xc_energy += xc_coeff_2*en_xc_cyl;
                 end
+
+                naive_energy -= en_naive;
             end
         end
 
@@ -836,27 +837,29 @@ function system_energies(simulation::SimulationSystem)
 
                 if (ii0 == jj0) && (i == j)
                     ee_naive *= 0.5;
-                end
-
-                # polarization
-                ee_naive *= ζ1*ζ2;
-                ee_xc_sph *= ζ1*ζ2;
-                ee_xc_cyl *= ζ1*ζ2;
-
-                naive_energy += ee_naive;
+                end                
 
                 # XC contributions
-                if isnan(ee_xc_cyl)
+                if isinf(ee_xc_cyl)
+                    # polarization
+                    ee_naive *= ζ1*ζ2;
+                    ee_xc_sph *= ζ1*ζ2;
                     xc_coeff_1 = comb_coeffs_1b(xc_a_1b,Z1,ζ1);
 
                     xc_energy += xc_coeff_1*ee_xc_sph;
                 else
+                    # polarization
+                    ee_naive *= ζ1*ζ2;
+                    ee_xc_sph *= ζ1*ζ2;
+                    ee_xc_cyl *= ζ1*ζ2;
                     xc_coeff_1 = comb_coeffs_2b(xc_a_2b,Z1,Z2,ζ1,ζ2);
                     xc_coeff_2 = comb_coeffs_2b(xc_b_2b,Z1,Z2,ζ1,ζ2);
                     
                     xc_energy += xc_coeff_1*ee_xc_sph;
                     xc_energy += xc_coeff_2*ee_xc_cyl;
                 end
+
+                naive_energy += ee_naive;
             end
         end
 
