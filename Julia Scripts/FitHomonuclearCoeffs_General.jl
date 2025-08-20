@@ -175,8 +175,8 @@ end
 
 function set_fitted_coeffs!(coeffs::EmpiricalCoefficients,
     mappings::EmpiricalCoefficientMappings, Z::Int, fitted_coeffs::Vector)
-    num_1b_coeffs = 4;
-    num_2b_coeffs = 4;
+    num_1b_coeffs = 5;
+    num_2b_coeffs = 5;
 
     # Separate aux_X between 1B and 2B coefficient components.
     i0_1B = 1;
@@ -197,6 +197,8 @@ function set_fitted_coeffs!(coeffs::EmpiricalCoefficients,
     xc_e_1b_m_index = 6;
     xc_f_1b_b_index = 7;
     xc_f_1b_m_index = 8;
+    xc_g_1b_b_index = 9;
+    xc_g_1b_m_index = 10;
 
     coeff_1b_map = mappings.coeff_1b_map[Z];
     coeffs.xc_a_1b[coeff_1b_map,1] = aux_X_1B[xc_a_1b_b_index];
@@ -207,6 +209,8 @@ function set_fitted_coeffs!(coeffs::EmpiricalCoefficients,
     coeffs.xc_e_1b[coeff_1b_map,2] = aux_X_1B[xc_e_1b_m_index];
     coeffs.xc_f_1b[coeff_1b_map,1] = aux_X_1B[xc_f_1b_b_index];
     coeffs.xc_f_1b[coeff_1b_map,2] = aux_X_1B[xc_f_1b_m_index];
+    coeffs.xc_g_1b[coeff_1b_map,1] = aux_X_1B[xc_g_1b_b_index];
+    coeffs.xc_g_1b[coeff_1b_map,2] = aux_X_1B[xc_g_1b_m_index];
 
     # Store the 2B fitted coefficients
     xc_a_2b_b_index = 1;
@@ -217,20 +221,21 @@ function set_fitted_coeffs!(coeffs::EmpiricalCoefficients,
     xc_c_2b_m_index = 6;
     xc_d_2b_b_index = 7;
     xc_d_2b_m_index = 8;
+    xc_g_2b_b_index = 9;
+    xc_g_2b_m_index = 10;
 
     coeff_2b_map = mappings.coeff_2b_map[(Z,Z)];
+
     coeffs.xc_a_2b[coeff_2b_map,1] = aux_X_2B[xc_a_2b_b_index];
     coeffs.xc_a_2b[coeff_2b_map,2] = aux_X_2B[xc_a_2b_m_index];
-    coeffs.xc_a_2b[coeff_2b_map,3] = aux_X_2B[xc_a_2b_m_index];
     coeffs.xc_b_2b[coeff_2b_map,1] = aux_X_2B[xc_b_2b_b_index];
     coeffs.xc_b_2b[coeff_2b_map,2] = aux_X_2B[xc_b_2b_m_index];
-    coeffs.xc_b_2b[coeff_2b_map,3] = aux_X_2B[xc_b_2b_m_index];
     coeffs.xc_c_2b[coeff_2b_map,1] = aux_X_2B[xc_c_2b_b_index];
     coeffs.xc_c_2b[coeff_2b_map,2] = aux_X_2B[xc_c_2b_m_index];
-    coeffs.xc_c_2b[coeff_2b_map,3] = aux_X_2B[xc_c_2b_m_index];
     coeffs.xc_d_2b[coeff_2b_map,1] = aux_X_2B[xc_d_2b_b_index];
     coeffs.xc_d_2b[coeff_2b_map,2] = aux_X_2B[xc_d_2b_m_index];
-    coeffs.xc_d_2b[coeff_2b_map,3] = aux_X_2B[xc_d_2b_m_index];
+    coeffs.xc_g_2b[coeff_2b_map,1] = aux_X_2B[xc_g_2b_b_index];
+    coeffs.xc_g_2b[coeff_2b_map,2] = aux_X_2B[xc_g_2b_m_index];
 end
 
 function set_fitted_pol_e_coeffs!(simulation::SimulationSystem,
@@ -249,32 +254,28 @@ function set_fitted_coeffs!(coeffs::EmpiricalCoefficients,
     mappings::EmpiricalCoefficientMappings, Z1::Int, Z2::Int, 
     fitted_coeffs::Vector)
     # Store the 2B fitted coefficients
-    xc_a_2b_b_index  = 1;
-    xc_a_2b_m1_index = 2;
-    xc_a_2b_m2_index = 3;
-    xc_b_2b_b_index  = 4;
-    xc_b_2b_m1_index = 5;
-    xc_b_2b_m2_index = 6;
-    xc_c_2b_b_index  = 7;
-    xc_c_2b_m1_index = 8;
-    xc_c_2b_m2_index = 9;
-    xc_d_2b_b_index  = 10;
-    xc_d_2b_m1_index = 11;
-    xc_d_2b_m2_index = 12;
+    xc_a_2b_b_index = 1;
+    xc_a_2b_m_index = 2;
+    xc_b_2b_b_index = 3;
+    xc_b_2b_m_index = 4;
+    xc_c_2b_b_index = 6;
+    xc_c_2b_m_index = 7;
+    xc_d_2b_b_index = 7;
+    xc_d_2b_m_index = 8;
+    xc_g_2b_b_index = 9;
+    xc_g_2b_m_index = 10;
 
     coeff_2b_map = mappings.coeff_2b_map[(Z1,Z2)];
     coeffs.xc_a_2b[coeff_2b_map,1] = fitted_coeffs[xc_a_2b_b_index];
-    coeffs.xc_a_2b[coeff_2b_map,2] = fitted_coeffs[xc_a_2b_m1_index];
-    coeffs.xc_a_2b[coeff_2b_map,3] = fitted_coeffs[xc_a_2b_m2_index];
+    coeffs.xc_a_2b[coeff_2b_map,2] = fitted_coeffs[xc_a_2b_m_index];
     coeffs.xc_b_2b[coeff_2b_map,1] = fitted_coeffs[xc_b_2b_b_index];
-    coeffs.xc_b_2b[coeff_2b_map,2] = fitted_coeffs[xc_b_2b_m1_index];
-    coeffs.xc_b_2b[coeff_2b_map,3] = fitted_coeffs[xc_b_2b_m2_index];
+    coeffs.xc_b_2b[coeff_2b_map,2] = fitted_coeffs[xc_b_2b_m_index];
     coeffs.xc_c_2b[coeff_2b_map,1] = fitted_coeffs[xc_c_2b_b_index];
-    coeffs.xc_c_2b[coeff_2b_map,2] = fitted_coeffs[xc_c_2b_m1_index];
-    coeffs.xc_c_2b[coeff_2b_map,3] = fitted_coeffs[xc_c_2b_m2_index];
+    coeffs.xc_c_2b[coeff_2b_map,2] = fitted_coeffs[xc_c_2b_m_index];
     coeffs.xc_d_2b[coeff_2b_map,1] = fitted_coeffs[xc_d_2b_b_index];
-    coeffs.xc_d_2b[coeff_2b_map,2] = fitted_coeffs[xc_d_2b_m1_index];
-    coeffs.xc_d_2b[coeff_2b_map,3] = fitted_coeffs[xc_d_2b_m2_index];
+    coeffs.xc_d_2b[coeff_2b_map,2] = fitted_coeffs[xc_d_2b_m_index];
+    coeffs.xc_g_2b[coeff_2b_map,1] = fitted_coeffs[xc_g_2b_b_index];
+    coeffs.xc_g_2b[coeff_2b_map,2] = fitted_coeffs[xc_g_2b_m_index];
 end
 
 function set_fitted_pol_e_coeffs!(simulation::SimulationSystem,
@@ -417,11 +418,13 @@ function cast_coeffs_to_type!(coeffs::EmpiricalCoefficients, which_type)
     coeffs.xc_c_1b = which_type.(coeffs.xc_c_1b);
     coeffs.xc_e_1b = which_type.(coeffs.xc_e_1b);
     coeffs.xc_f_1b = which_type.(coeffs.xc_f_1b);
+    coeffs.xc_g_1b = which_type.(coeffs.xc_g_1b);
 
     coeffs.xc_a_2b = which_type.(coeffs.xc_a_2b);
     coeffs.xc_b_2b = which_type.(coeffs.xc_b_2b);
     coeffs.xc_c_2b = which_type.(coeffs.xc_c_2b);
     coeffs.xc_d_2b = which_type.(coeffs.xc_d_2b);
+    coeffs.xc_g_2b = which_type.(coeffs.xc_g_2b);
 end
 
 function cast_pol_e_coeffs_to_type!(simulation::SimulationSystem, which_type)

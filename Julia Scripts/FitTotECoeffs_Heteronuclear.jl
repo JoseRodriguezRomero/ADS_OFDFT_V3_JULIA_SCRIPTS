@@ -13,8 +13,8 @@ for atomic_numbers in which_atomic_numbers
     neutral_data, cation_data, anion_data = read_all_sanitized_data(Z1,Z2);
     all_data = vcat(neutral_data, cation_data, anion_data);
 
-    num_2b_coeffs = 4;
-    num_vars = 3*num_2b_coeffs;
+    num_2b_coeffs = 5;
+    num_vars = 2*num_2b_coeffs;
     aux_X = zeros(Float64,num_vars);
     
     neutral_at1 = make_atom_system(Z1,0);

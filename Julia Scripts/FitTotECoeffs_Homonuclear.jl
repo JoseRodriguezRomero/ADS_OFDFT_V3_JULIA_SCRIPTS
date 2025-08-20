@@ -11,8 +11,8 @@ for atomic_number in which_atomic_numbers
         read_all_sanitized_data(atomic_number);
     all_data = vcat(neutral_data, cation_data, anion_data);
 
-    num_1b_coeffs = 4;
-    num_2b_coeffs = 4;
+    num_1b_coeffs = 5;
+    num_2b_coeffs = 5;
     num_vars = 2*num_1b_coeffs + 2*num_2b_coeffs;
     
     neutral_at = make_atom_system(atomic_number,0);
@@ -104,6 +104,8 @@ for atomic_number in which_atomic_numbers
     sol = Optim.optimize(cost_func, aux_X[:], LBFGS(), autodiff=:forward,
         Optim.Options(show_trace=true));
     aux_X = Optim.minimizer(sol);
+
+    display(aux_X);
 
     simulation = make_system_from_parsed_file(all_data[1]);
     set_fitted_tot_e_coeffs!(simulation,atomic_number,aux_X);

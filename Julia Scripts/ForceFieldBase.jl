@@ -25,11 +25,13 @@ mutable struct EmpiricalCoefficients
     xc_c_1b::Matrix{Number};
     xc_e_1b::Matrix{Number};
     xc_f_1b::Matrix{Number};
+    xc_g_1b::Matrix{Number};
 
     xc_a_2b::Matrix{Number};
     xc_b_2b::Matrix{Number};
     xc_c_2b::Matrix{Number};
     xc_d_2b::Matrix{Number};
+    xc_g_2b::Matrix{Number};
 end
 
 struct EmpiricalCoefficientMappings
@@ -50,11 +52,7 @@ struct BasisSetSettings
     von_weizsacker_kes::Vector{Float64};
 end
 
-struct SimulationCastTypes
-    no_cast::Int;
-    cast_to_xc_coeff_type::Int;
-    cast_to_pol_coeff_type::Int;
-end
+@enum SimulationCastType no_cast cast_to_xc_coeff_type cast_to_pol_coeff_type;
 
 mutable struct SimulationSystem
     system::MolecularSystem;
@@ -62,7 +60,6 @@ mutable struct SimulationSystem
     tot_e_xc_coeffs::EmpiricalCoefficients;
     coeff_mappings::EmpiricalCoefficientMappings;
     basis_set_settings::BasisSetSettings;
-    cast_types::SimulationCastTypes;
 end
 
 function Base.copy(mol::Molecule)
@@ -299,6 +296,70 @@ function xc_cyl(λ::Real, d::Real)
         ((2*(exp(-λ)-1))/(exp(λ*d^2))));
 end
 
+function overlap_atoms(molecule1::Molecule,molecule2::Molecule,i::Int,j::Int)
+    # Calculates the overlap between the electron cloud of the iᵗʰ atom 
+    # of molecule1 and the electron cloud of the jᵗʰ atom of molecule2.
+    clouds_per_atom_1 = clouds_per_atom(molecule1);
+    clouds_per_atom_2 = clouds_per_atom(molecule2);
+
+    z1_eff = atom_eff_atomic_number(molecule1,i);
+    z2_eff = atom_eff_atomic_number(molecule2,j);
+    
+    λ1_i0 = (i-1)*clouds_per_atom_1+1;
+    λ2_j0 = (j-1)*clouds_per_atom_2+1;
+
+    λ1_i1 = i*clouds_per_atom_1;
+    λ2_j1 = j*clouds_per_atom_2;
+
+    λ1s = molecule1.cloud_data[λ1_i0:λ1_i1,5];
+    λ2s = molecule1.cloud_data[λ2_j0:λ2_j1,5];
+
+    c1s = molecule1.cloud_data[λ1_i0:λ1_i1,4];
+    c2s = molecule1.cloud_data[λ2_j0:λ2_j1,4];
+
+    r1 = atom_position(molecule1,i);
+    r2 = atom_position(molecule2,j);
+    d = norm(r1-r2);
+
+    function single_overlap(λ::Real,d::Real)
+        return ((λ/π)^(3.0/2.0))*exp(-λ*d);
+    end
+
+    overlap = 0.0;
+    for ii in eachindex(λ1s)
+        for jj in eachindex(λ2s)
+            c1 = c1s[ii];
+            c2 = c2s[jj];
+
+            λ1 = λ1s[ii];
+            λ2 = λ2s[jj];
+
+            λ = (λ1*λ2)/(λ1+λ2);
+            overlap += c1*c2*single_overlap(λ,d);
+        end
+    end
+
+    return overlap/(z1_eff*z2_eff);
+end
+
+function overlap_matrix_atoms(molecule1::Molecule,molecule2::Molecule)
+    # Returns a matrix between the overlap of the different electron clouds of 
+    # the atoms of the molecules.
+    num_atoms1 = number_of_atoms(molecule1);
+    num_atoms2 = number_of_atoms(molecule2);
+    aux_type = typeof(molecule1.cloud_data[1,1]);
+    overlap_matrix = zeros(aux_type,num_atoms1,num_atoms2);
+
+    for i in 1:num_atoms1
+        for j in i:num_atoms2
+            overlap_matrix[i,j] = overlap_atoms(molecule1,molecule2,i,j);
+            overlap_matrix[j,i] = overlap_matrix[i,j];
+        end
+    end
+
+    return overlap_matrix;
+end
+
 function ee_energy(mol1::Molecule, mol2::Molecule, i::Int, j::Int)
     # Returns the naive and xc electron-electron energy functionals between  
     # the iᵗʰ cloud of mol1 and the jᵗʰ cloud of mol2.
@@ -363,18 +424,20 @@ function rotate_molecule!(molecule::Molecule, Δθ::Matrix{Number})
 end
 
 function polarization_matrix_problem(simulation::SimulationSystem, 
-        cast_type::Int = simulation.cast_types.no_cast)
+        cast_type::SimulationCastType = no_cast)
     # Calculates the matrix problem that needs to be solved for the 
     # polarization lagrangian to be stationary.
     xc_a_1b = simulation.pol_e_xc_coeffs.xc_a_1b;
     xc_c_1b = simulation.pol_e_xc_coeffs.xc_c_1b;
     xc_e_1b = simulation.pol_e_xc_coeffs.xc_e_1b;
     xc_f_1b = simulation.pol_e_xc_coeffs.xc_f_1b;
+    xc_g_1b = simulation.pol_e_xc_coeffs.xc_g_1b;
 
     xc_a_2b = simulation.pol_e_xc_coeffs.xc_a_2b;
     xc_b_2b = simulation.pol_e_xc_coeffs.xc_b_2b;
     xc_c_2b = simulation.pol_e_xc_coeffs.xc_c_2b;
     xc_d_2b = simulation.pol_e_xc_coeffs.xc_d_2b;
+    xc_g_2b = simulation.pol_e_xc_coeffs.xc_g_2b;
 
     coeff_1b_map = simulation.coeff_mappings.coeff_1b_map;
     coeff_2b_map = simulation.coeff_mappings.coeff_2b_map;
@@ -387,34 +450,31 @@ function polarization_matrix_problem(simulation::SimulationSystem,
 
     aux_type = Float64;
 
-    if cast_type == simulation.cast_types.cast_to_xc_coeff_type
+    if cast_type == cast_to_xc_coeff_type
         aux_type = typeof(xc_a_1b[1]);
-    elseif cast_type == simulation.cast_types.cast_to_pol_coeff_type
+    elseif cast_type == cast_to_pol_coeff_type
         aux_type = typeof(simulation.system.chemical_potential);
     end
 
     function comb_coeffs_1b(coeffs::AbstractMatrix, Z::Int, ζ::Number)
         # Calculates the XC coefficient based on the polarization coefficients
         # (One body cases).
-        b = coeffs[coeff_1b_map[Z],1];
-        m = coeffs[coeff_1b_map[Z],2];
+        coeff_i_map = coeff_1b_map[Z];
+        b = coeffs[coeff_i_map,1];
+        m = coeffs[coeff_i_map,2];
 
         return 2*m*ζ + b;
     end
 
     function comb_coeffs_2b(coeffs::AbstractMatrix, Z1::Int, Z2::Int,
-        ζ1::Number, ζ2::Number)
+        ζ1::Number, ζ2::Number, overlap::Number)
         # Calculates the XC coefficient based on the polarization coefficients.
         # (One body cases)
-        b = coeffs[coeff_2b_map[(Z1,Z2)],1];
-        m1 = coeffs[coeff_2b_map[(Z1,Z2)],2];
-        m2 = coeffs[coeff_2b_map[(Z1,Z2)],3];
+        coeff_i_map = coeff_2b_map[(Z1,Z2)];
+        b = coeffs[coeff_i_map,1];
+        m = coeffs[coeff_i_map,2];
 
-        if (Z1 < Z2)
-            return 2*m1*ζ1 + m2*ζ2 + b;
-        else
-            return m1*ζ2 + 2*m2*ζ1 + b;
-        end
+        return 2*m*ζ1*ζ2*overlap + b;
     end
 
     tot_num_atoms = 0;
@@ -482,6 +542,30 @@ function polarization_matrix_problem(simulation::SimulationSystem,
             num_atoms2 = number_of_atoms(molecule2);
             num_clouds2 = number_of_clouds(molecule2);
 
+            overlap_matrix = overlap_matrix_atoms(molecule1,molecule2);
+
+            # atom-atom Δμ_pol
+            for i in 1:num_atoms1
+                for j in 1:num_atoms2
+                    Z1 = atom_atomic_number(molecule1,i);
+                    Z2 = atom_atomic_number(molecule2,j);
+
+                    ζ1 = atom_polarization_coeff(molecule1,i);
+                    ζ2 = atom_polarization_coeff(molecule2,j);
+
+                    ii0 = atom_ind_base[ii] + i - 1;
+                
+                    if (ii == jj) && (i == j)
+                        Δμ_ij = comb_coeffs_1b(xc_g_1b,Z1,ζ1);
+                        aux_M[ii0,ii0] -= Δμ_ij*ζ1;
+                    else
+                        overlap = overlap_matrix[i,j];
+                        Δμ_ij = comb_coeffs_2b(xc_g_2b,Z1,Z2,ζ1,ζ2,overlap);
+                        aux_M[ii0,ii0] -= Δμ_ij*ζ1;
+                    end
+                end
+            end
+
             # cloud-nuclei
             for i in 1:num_clouds1
                 for j in 1:num_atoms2
@@ -493,8 +577,12 @@ function polarization_matrix_problem(simulation::SimulationSystem,
 
                     en_naive, en_xc_sph, en_ex_cyl = 
                         en_energy(molecule1,molecule2,i,j);
+
+                    i0 = ceil(Int,i/clouds_per_atom);
+                    j0 = j;
+                    overlap = overlap_matrix[i0,j0];
                     
-                    ii0 = atom_ind_base[ii] + ceil(Int,i/clouds_per_atom) - 1;
+                    ii0 = atom_ind_base[ii] + i0 - 1;
 
                     # Naive contribution
                     aux_Y[ii0] += en_naive;
@@ -505,8 +593,10 @@ function polarization_matrix_problem(simulation::SimulationSystem,
 
                         aux_Y[ii0] -= xc_coeff_1*en_xc_sph;
                     else
-                        xc_coeff_1 = comb_coeffs_2b(xc_c_2b,Z1,Z2,ζ1,ζ2);
-                        xc_coeff_2 = comb_coeffs_2b(xc_d_2b,Z1,Z2,ζ1,ζ2);
+                        xc_coeff_1 = 
+                            comb_coeffs_2b(xc_c_2b,Z1,Z2,ζ1,ζ2,overlap);
+                        xc_coeff_2 = 
+                            comb_coeffs_2b(xc_d_2b,Z1,Z2,ζ1,ζ2,overlap);
                         
                         aux_Y[ii0] -= xc_coeff_1*en_xc_sph;
                         aux_Y[ii0] -= xc_coeff_2*en_ex_cyl;
@@ -526,6 +616,10 @@ function polarization_matrix_problem(simulation::SimulationSystem,
                     ee_naive, ee_xc_sph, ee_xc_cyl = 
                         ee_energy(molecule1,molecule2,i,j);
 
+                    i0 = ceil(Int,i/clouds_per_atom);
+                    j0 = ceil(Int,j/clouds_per_atom);
+                    overlap = overlap_matrix[i0,j0];
+
                     ii0 = atom_ind_base[ii] + ceil(Int,i/clouds_per_atom) - 1;
                     jj0 = atom_ind_base[jj] + ceil(Int,j/clouds_per_atom) - 1;
 
@@ -538,8 +632,10 @@ function polarization_matrix_problem(simulation::SimulationSystem,
                         
                         aux_M[ii0,jj0] += xc_coeff_1*ee_xc_sph;
                     else
-                        xc_coeff_1 = comb_coeffs_2b(xc_a_2b,Z1,Z2,ζ1,ζ2);
-                        xc_coeff_2 = comb_coeffs_2b(xc_b_2b,Z1,Z2,ζ1,ζ2);
+                        xc_coeff_1 = 
+                            comb_coeffs_2b(xc_a_2b,Z1,Z2,ζ1,ζ2,overlap);
+                        xc_coeff_2 = 
+                            comb_coeffs_2b(xc_b_2b,Z1,Z2,ζ1,ζ2,overlap);
 
                         aux_M[ii0,jj0] += xc_coeff_1*ee_xc_sph;
                         aux_M[ii0,jj0] += xc_coeff_2*ee_xc_cyl;
@@ -559,11 +655,15 @@ function scf_min_func(simulation::SimulationSystem)
     tot_num_atoms = 0;
     tot_num_clouds = 0;
     atom_ind_base = [];
+    atoms_z_eff = [];
     for molecule in molecules
+        atoms_z_eff = vcat(atoms_z_eff,molecule.atoms_data[:,4]);
+
         if isempty(atom_ind_base)
             push!(atom_ind_base,1);
             tot_num_atoms += number_of_atoms(molecule);
             tot_num_clouds += number_of_clouds(molecule);
+
         else
             aux_num_atoms = number_of_atoms(molecule);
             aux_num_clouds = number_of_clouds(molecule);
@@ -580,12 +680,7 @@ function scf_min_func(simulation::SimulationSystem)
     x0 = ones(Float64,num_vars);
     x0[end] = 0.0;
 
-    # x0 = zeros(Float64,0);
-    # for molecule in molecules
-    #     sqrt_ζ = sqrt.(molecule.cloud_data[1:clouds_per_atom:end,6]);
-    #     x0 = vcat(x0, sqrt_ζ);
-    # end
-    # x0 = vcat(x0,simulation.system.chemical_potential);
+    num_electrons = round(Int,sum(atoms_z_eff) + 1);
 
     needs_casting = true;
     old_system = deepcopy(simulation.system);
@@ -628,10 +723,9 @@ function scf_min_func(simulation::SimulationSystem)
 
         # Get the system of equations associated with making the  
         # polarization Lagrangian stationary.
-        aux_M, aux_Y = polarization_matrix_problem(simulation,
-            simulation.cast_types.cast_to_pol_coeff_type);
+        aux_M, aux_Y = 
+            polarization_matrix_problem(simulation,cast_to_pol_coeff_type);
         ret_vec = aux_M * aux_X - aux_Y;
-
         return dot(ret_vec,ret_vec);
     end
 
@@ -728,18 +822,13 @@ function system_energies(simulation::SimulationSystem)
     end
 
     function comb_coeffs_2b(coeffs::AbstractMatrix, Z1::Int, Z2::Int,
-        ζ1::Number, ζ2::Number)
+        ζ1::Number, ζ2::Number, overlap::Number)
         # Calculates the XC coefficient based on the polarization coefficients.
         # (One body cases)
         b = coeffs[coeff_2b_map[(Z1,Z2)],1];
-        m1 = coeffs[coeff_2b_map[(Z1,Z2)],2];
-        m2 = coeffs[coeff_2b_map[(Z1,Z2)],3];
+        m = coeffs[coeff_2b_map[(Z1,Z2)],2];
 
-        if (Z1 < Z2)
-            return m1*ζ1 + m2*ζ2 + b;
-        else
-            return m1*ζ2 + m2*ζ1 + b;
-        end
+        return m*ζ1*ζ2*overlap + b;
     end
     
     aux_type = typeof(xc_a_1b[1]);
@@ -751,6 +840,8 @@ function system_energies(simulation::SimulationSystem)
         molecule1 = molecules[ii];
         num_atoms1 = number_of_atoms(molecule1);
         num_clouds1 = number_of_clouds(molecule1);
+
+        overlap_matrix = overlap_matrix_atoms(molecule1,molecule1);
 
         # Kinetic Energy
         for i in 1:num_atoms1
@@ -796,6 +887,10 @@ function system_energies(simulation::SimulationSystem)
                 en_naive, en_xc_sph, en_xc_cyl = 
                     en_energy(molecule1,molecule1,j,i);
 
+                i0 = i;
+                j0 = ceil(Int,j/clouds_per_atom);
+                overlap = overlap_matrix[i0,j0];
+
                 # XC contributions
                 if isinf(en_xc_cyl)
                     # polarization
@@ -809,8 +904,10 @@ function system_energies(simulation::SimulationSystem)
                     en_naive *= ζ2;
                     en_xc_sph *= ζ2;
                     en_xc_cyl *= ζ2;
-                    xc_coeff_1 = comb_coeffs_2b(xc_c_2b,Z1,Z2,ζ1,ζ2);
-                    xc_coeff_2 = comb_coeffs_2b(xc_d_2b,Z1,Z2,ζ1,ζ2);
+                    xc_coeff_1 = 
+                        comb_coeffs_2b(xc_c_2b,Z1,Z2,ζ1,ζ2,overlap);
+                    xc_coeff_2 = 
+                        comb_coeffs_2b(xc_d_2b,Z1,Z2,ζ1,ζ2,overlap);
                     
                     xc_energy += xc_coeff_1*en_xc_sph;
                     xc_energy += xc_coeff_2*en_xc_cyl;
@@ -832,10 +929,11 @@ function system_energies(simulation::SimulationSystem)
                 ee_naive, ee_xc_sph, ee_xc_cyl = 
                     ee_energy(molecule1,molecule1,i,j);
 
-                ii0 = ceil(Int,i/clouds_per_atom);
-                jj0 = ceil(Int,j/clouds_per_atom);
+                i0 = ceil(Int,i/clouds_per_atom);
+                j0 = ceil(Int,j/clouds_per_atom);
+                overlap = overlap_matrix[i0,j0];
 
-                if (ii0 == jj0) && (i == j)
+                if (i0 == j0) && (i == j)
                     ee_naive *= 0.5;
                 end                
 
@@ -852,8 +950,10 @@ function system_energies(simulation::SimulationSystem)
                     ee_naive *= ζ1*ζ2;
                     ee_xc_sph *= ζ1*ζ2;
                     ee_xc_cyl *= ζ1*ζ2;
-                    xc_coeff_1 = comb_coeffs_2b(xc_a_2b,Z1,Z2,ζ1,ζ2);
-                    xc_coeff_2 = comb_coeffs_2b(xc_b_2b,Z1,Z2,ζ1,ζ2);
+                    xc_coeff_1 = 
+                        comb_coeffs_2b(xc_a_2b,Z1,Z2,ζ1,ζ2,overlap);
+                    xc_coeff_2 = 
+                        comb_coeffs_2b(xc_b_2b,Z1,Z2,ζ1,ζ2,overlap);
                     
                     xc_energy += xc_coeff_1*ee_xc_sph;
                     xc_energy += xc_coeff_2*ee_xc_cyl;
@@ -868,6 +968,8 @@ function system_energies(simulation::SimulationSystem)
             molecule2 = molecules[jj];
             num_atoms2 = number_of_atoms(molecule2);
             num_clouds2 = number_of_clouds(molecule2);
+
+            overlap_matrix = overlap_matrix_atoms(molecule1,molecule2);
 
             # nuclei-nuclei
             for i in 1:num_atoms1
@@ -895,6 +997,10 @@ function system_energies(simulation::SimulationSystem)
                     en_naive, en_xc_sph, en_xc_cyl = 
                         en_energy(molecule2,molecule1,j,i);
 
+                    i0 = i;
+                    j0 = ceil(Int,j/clouds_per_atom);
+                    overlap = overlap_matrix[i0,j0];
+
                     # polarization
                     en_naive *= ζ2;
                     en_xc_sph *= ζ2;
@@ -903,8 +1009,10 @@ function system_energies(simulation::SimulationSystem)
                     naive_energy -= en_naive;
 
                     # XC contributions
-                    xc_coeff_1 = comb_coeffs_2b(xc_c_2b,Z1,Z2,ζ1,ζ2);
-                    xc_coeff_2 = comb_coeffs_2b(xc_d_2b,Z1,Z2,ζ1,ζ2);
+                    xc_coeff_1 = 
+                        comb_coeffs_2b(xc_c_2b,Z1,Z2,ζ1,ζ2,overlap);
+                    xc_coeff_2 = 
+                        comb_coeffs_2b(xc_d_2b,Z1,Z2,ζ1,ζ2,overlap);
                     
                     xc_energy += xc_coeff_1*en_xc_sph;
                     xc_energy += xc_coeff_2*en_xc_cyl;
@@ -922,6 +1030,10 @@ function system_energies(simulation::SimulationSystem)
                     en_naive, en_xc_sph, en_xc_cyl = 
                         en_energy(molecule1,molecule2,i,j);
 
+                    i0 = ceil(Int,i/clouds_per_atom);
+                    j0 = j;
+                    overlap = overlap_matrix[i0,j0];
+
                     # polarization
                     en_naive *= ζ1;
                     en_xc_sph *= ζ1;
@@ -930,8 +1042,10 @@ function system_energies(simulation::SimulationSystem)
                     naive_energy -= en_naive;
 
                     # XC contributions
-                    xc_coeff_1 = comb_coeffs_2b(xc_c_2b,Z1,Z2,ζ1,ζ2);
-                    xc_coeff_2 = comb_coeffs_2b(xc_d_2b,Z1,Z2,ζ1,ζ2);
+                    xc_coeff_1 = 
+                        comb_coeffs_2b(xc_c_2b,Z1,Z2,ζ1,ζ2,overlap);
+                    xc_coeff_2 = 
+                        comb_coeffs_2b(xc_d_2b,Z1,Z2,ζ1,ζ2,overlap);
                     
                     xc_energy += xc_coeff_1*en_xc_sph;
                     xc_energy += xc_coeff_2*en_xc_cyl;
@@ -950,6 +1064,10 @@ function system_energies(simulation::SimulationSystem)
                     ee_naive, ee_xc_sph, ee_xc_cyl = 
                         ee_energy(molecule1,molecule2,i,j);
 
+                    i0 = ceil(Int,i/clouds_per_atom);
+                    j0 = ceil(Int,j/clouds_per_atom);
+                    overlap = overlap_matrix[i0,j0];
+
                     # polarization
                     ee_naive *= ζ1*ζ2;
                     ee_xc_sph *= ζ1*ζ2;
@@ -958,8 +1076,10 @@ function system_energies(simulation::SimulationSystem)
                     naive_energy += ee_naive;
 
                     # XC contributions
-                    xc_coeff_1 = comb_coeffs_2b(xc_a_2b,Z1,Z2,ζ1,ζ2);
-                    xc_coeff_2 = comb_coeffs_2b(xc_b_2b,Z1,Z2,ζ1,ζ2);
+                    xc_coeff_1 = 
+                        comb_coeffs_2b(xc_a_2b,Z1,Z2,ζ1,ζ2,overlap);
+                    xc_coeff_2 = 
+                        comb_coeffs_2b(xc_b_2b,Z1,Z2,ζ1,ζ2,overlap);
 
                     xc_energy += xc_coeff_1*ee_xc_sph;
                     xc_energy += xc_coeff_2*ee_xc_cyl;
@@ -972,6 +1092,7 @@ function system_energies(simulation::SimulationSystem)
 end
 
 function total_energy(simulation::SimulationSystem)
+    # Returns the sum of all three energy contributions.
     xc_energy, naive_energy, kinetic_energy = system_energies(simulation);
     return xc_energy + naive_energy + kinetic_energy;
 end

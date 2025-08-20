@@ -37,11 +37,13 @@ function save_1b_coeffs(coeffs::EmpiricalCoefficients,
     xc_coeffs_c_id = base_dir*"xc_coeffs_C.txt";
     xc_coeffs_e_id = base_dir*"xc_coeffs_E.txt";
     xc_coeffs_f_id = base_dir*"xc_coeffs_F.txt";
+    xc_coeffs_g_id = base_dir*"xc_coeffs_G.txt";
 
     xc_a_1b = coeffs.xc_a_1b;
     xc_c_1b = coeffs.xc_c_1b;
     xc_e_1b = coeffs.xc_e_1b;
     xc_f_1b = coeffs.xc_f_1b;
+    xc_g_1b = coeffs.xc_g_1b;
 
     mappings_1b = mappings.coeff_1b_map;
     max_atomic_number = coeffs.max_atomic_number;
@@ -62,6 +64,7 @@ function save_1b_coeffs(coeffs::EmpiricalCoefficients,
     save_to_file(xc_coeffs_c_id,xc_c_1b);
     save_to_file(xc_coeffs_e_id,xc_e_1b);
     save_to_file(xc_coeffs_f_id,xc_f_1b);
+    save_to_file(xc_coeffs_g_id,xc_g_1b);
 end
 
 function save_1b_pol_e_coeffs(simulation::SimulationSystem)
@@ -81,11 +84,13 @@ function save_2b_coeffs(coeffs::EmpiricalCoefficients,
     xc_coeffs_b_id = base_dir*"xc_coeffs_B.txt";
     xc_coeffs_c_id = base_dir*"xc_coeffs_C.txt";
     xc_coeffs_d_id = base_dir*"xc_coeffs_D.txt";
+    xc_coeffs_g_id = base_dir*"xc_coeffs_G.txt";
 
     xc_a_2b = coeffs.xc_a_2b;
     xc_b_2b = coeffs.xc_b_2b;
     xc_c_2b = coeffs.xc_c_2b;
     xc_d_2b = coeffs.xc_d_2b;
+    xc_g_2b = coeffs.xc_g_2b;
 
     mappings_2b = mappings.coeff_2b_map;
     max_atomic_number = coeffs.max_atomic_number;
@@ -97,7 +102,6 @@ function save_2b_coeffs(coeffs::EmpiricalCoefficients,
                 ij = mappings_2b[(i,j)];
                 write(file_id, @sprintf "%18.8E " coeffs[ij,1]);
                 write(file_id, @sprintf "%18.8E " coeffs[ij,2]);
-                write(file_id, @sprintf "%18.8E " coeffs[ij,3]);
                 write(file_id, @sprintf "%5s " get_element_symbol(i));
                 write(file_id, @sprintf "%5s " get_element_symbol(j));
                 write(file_id, @sprintf "\n");
@@ -111,6 +115,7 @@ function save_2b_coeffs(coeffs::EmpiricalCoefficients,
     save_to_file(xc_coeffs_b_id,xc_b_2b);
     save_to_file(xc_coeffs_c_id,xc_c_2b);
     save_to_file(xc_coeffs_d_id,xc_d_2b);
+    save_to_file(xc_coeffs_g_id,xc_g_2b);
 end
 
 function save_2b_pol_e_coeffs(simulation::SimulationSystem)
@@ -137,6 +142,7 @@ function load_1b_coeffs(type::String)
     xc_coeffs_c_id = base_dir*"xc_coeffs_C.txt";
     xc_coeffs_e_id = base_dir*"xc_coeffs_E.txt";
     xc_coeffs_f_id = base_dir*"xc_coeffs_F.txt";
+    xc_coeffs_g_id = base_dir*"xc_coeffs_G.txt";
 
     function read_file_data(file_name::String)
         lines = readlines(file_name);
@@ -154,26 +160,31 @@ function load_1b_coeffs(type::String)
     xc_c_1b = read_file_data(xc_coeffs_c_id);
     xc_e_1b = read_file_data(xc_coeffs_e_id);
     xc_f_1b = read_file_data(xc_coeffs_f_id);
+    xc_g_1b = read_file_data(xc_coeffs_g_id);
 
-    return xc_a_1b, xc_c_1b, xc_e_1b, xc_f_1b;
+    return xc_a_1b, xc_c_1b, xc_e_1b, xc_f_1b, xc_g_1b;
 end
 
 function load_1b_pol_e_coeffs!(simulation::SimulationSystem)
-    xc_a_1b, xc_c_1b, xc_e_1b, xc_f_1b = load_1b_coeffs("Polarization");
+    xc_a_1b, xc_c_1b, xc_e_1b, xc_f_1b, xc_g_1b = 
+        load_1b_coeffs("Polarization");
     
     simulation.pol_e_xc_coeffs.xc_a_1b = xc_a_1b;
     simulation.pol_e_xc_coeffs.xc_c_1b = xc_c_1b;
     simulation.pol_e_xc_coeffs.xc_e_1b = xc_e_1b;
     simulation.pol_e_xc_coeffs.xc_f_1b = xc_f_1b;
+    simulation.pol_e_xc_coeffs.xc_g_1b = xc_g_1b;
 end
 
 function load_1b_tot_e_coeffs!(simulation::SimulationSystem)
-    xc_a_1b, xc_c_1b, xc_e_1b, xc_f_1b = load_1b_coeffs("Energy");
+    xc_a_1b, xc_c_1b, xc_e_1b, xc_f_1b, xc_g_1b = 
+        load_1b_coeffs("Energy");
 
     simulation.tot_e_xc_coeffs.xc_a_1b = xc_a_1b;
     simulation.tot_e_xc_coeffs.xc_c_1b = xc_c_1b;
     simulation.tot_e_xc_coeffs.xc_e_1b = xc_e_1b;
     simulation.tot_e_xc_coeffs.xc_f_1b = xc_f_1b;
+    simulation.tot_e_xc_coeffs.xc_g_1b = xc_g_1b;
 end
 
 function load_2b_coeffs(type::String)
@@ -182,15 +193,15 @@ function load_2b_coeffs(type::String)
     xc_coeffs_b_id = base_dir*"xc_coeffs_B.txt";
     xc_coeffs_c_id = base_dir*"xc_coeffs_C.txt";
     xc_coeffs_d_id = base_dir*"xc_coeffs_D.txt";
+    xc_coeffs_g_id = base_dir*"xc_coeffs_G.txt";
 
     function read_file_data(file_name::String)
         lines = readlines(file_name);
-        coeffs = zeros(Float64,length(lines),3);
+        coeffs = zeros(Float64,length(lines),2);
         for i in eachindex(lines)
             line_splitted = split(lines[i]);
             coeffs[i,1] = parse(Float64,line_splitted[1]);
             coeffs[i,2] = parse(Float64,line_splitted[2]);
-            coeffs[i,3] = parse(Float64,line_splitted[3]);
         end
 
         return coeffs;
@@ -200,26 +211,31 @@ function load_2b_coeffs(type::String)
     xc_b_2b = read_file_data(xc_coeffs_b_id);
     xc_c_2b = read_file_data(xc_coeffs_c_id);
     xc_d_2b = read_file_data(xc_coeffs_d_id);
+    xc_g_2b = read_file_data(xc_coeffs_g_id);
 
-    return xc_a_2b, xc_b_2b, xc_c_2b, xc_d_2b;
+    return xc_a_2b, xc_b_2b, xc_c_2b, xc_d_2b, xc_g_2b;
 end
 
 function load_2b_pol_e_coeffs!(simulation::SimulationSystem)
-    xc_a_2b, xc_b_2b, xc_c_2b, xc_d_2b = load_2b_coeffs("Polarization");
+    xc_a_2b, xc_b_2b, xc_c_2b, xc_d_2b, xc_g_2b = 
+        load_2b_coeffs("Polarization");
 
     simulation.pol_e_xc_coeffs.xc_a_2b = xc_a_2b;
     simulation.pol_e_xc_coeffs.xc_b_2b = xc_b_2b;
     simulation.pol_e_xc_coeffs.xc_c_2b = xc_c_2b;
     simulation.pol_e_xc_coeffs.xc_d_2b = xc_d_2b;
+    simulation.pol_e_xc_coeffs.xc_g_2b = xc_g_2b;
 end
 
 function load_2b_tot_e_coeffs!(simulation::SimulationSystem)
-    xc_a_2b, xc_b_2b, xc_c_2b, xc_d_2b = load_2b_coeffs("Energy");
+    xc_a_2b, xc_b_2b, xc_c_2b, xc_d_2b, xc_g_2b = 
+        load_2b_coeffs("Energy");
 
     simulation.tot_e_xc_coeffs.xc_a_2b = xc_a_2b;
     simulation.tot_e_xc_coeffs.xc_b_2b = xc_b_2b;
     simulation.tot_e_xc_coeffs.xc_c_2b = xc_c_2b;
     simulation.tot_e_xc_coeffs.xc_d_2b = xc_d_2b;
+    simulation.tot_e_xc_coeffs.xc_g_2b = xc_g_2b;
 end
 
 function load_fitted_coeffs!(simulation::SimulationSystem)
@@ -358,28 +374,28 @@ function initialize_ecp_simulation_environment()
 
     coeff_mappings = EmpiricalCoefficientMappings(max_atomic_number,
         coeff_1b_combinations,coeff_2b_combinations,coeff_1b_map,
-        inv_coeff_1b_map,coeff_2b_map,inv_coeff_2b_map)
+        inv_coeff_1b_map,coeff_2b_map,inv_coeff_2b_map);
 
     xc_a_1b = zeros(Float64,coeff_1b_combinations,2);
     xc_c_1b = zeros(Float64,coeff_1b_combinations,2);
     xc_e_1b = zeros(Float64,coeff_1b_combinations,2);
     xc_f_1b = zeros(Float64,coeff_1b_combinations,2);
+    xc_g_1b = zeros(Float64,coeff_1b_combinations,2);
 
-    xc_a_2b = zeros(Float64,coeff_2b_combinations,3);
-    xc_b_2b = zeros(Float64,coeff_2b_combinations,3);
-    xc_c_2b = zeros(Float64,coeff_2b_combinations,3);
-    xc_d_2b = zeros(Float64,coeff_2b_combinations,3);
+    xc_a_2b = zeros(Float64,coeff_2b_combinations,2);
+    xc_b_2b = zeros(Float64,coeff_2b_combinations,2);
+    xc_c_2b = zeros(Float64,coeff_2b_combinations,2);
+    xc_d_2b = zeros(Float64,coeff_2b_combinations,2);
+    xc_g_2b = zeros(Float64,coeff_2b_combinations,2);
 
     tot_e_xc_coeffs = EmpiricalCoefficients(max_atomic_number,xc_a_1b,xc_c_1b,
-        xc_e_1b,xc_f_1b,xc_a_2b,xc_b_2b,xc_c_2b,xc_d_2b);
+        xc_e_1b,xc_f_1b,xc_g_1b,xc_a_2b,xc_b_2b,xc_c_2b,xc_d_2b,xc_g_2b);
     pol_e_xc_coeffs = EmpiricalCoefficients(max_atomic_number,xc_a_1b,xc_c_1b,
-        xc_e_1b,xc_f_1b,xc_a_2b,xc_b_2b,xc_c_2b,xc_d_2b);
-
-    cast_types = SimulationCastTypes(0,1,2);
+        xc_e_1b,xc_f_1b,xc_g_1b,xc_a_2b,xc_b_2b,xc_c_2b,xc_d_2b,xc_g_2b);
 
     system = MolecularSystem();
     simulation = SimulationSystem(system,pol_e_xc_coeffs,tot_e_xc_coeffs,
-        coeff_mappings,basis_set_settings,cast_types);
+        coeff_mappings,basis_set_settings);
     load_fitted_coeffs!(simulation);
 
     return simulation;
@@ -395,11 +411,13 @@ function reset_xc_coeffs()
         coeffs.xc_c_1b .= 0;
         coeffs.xc_e_1b .= 0;
         coeffs.xc_f_1b .= 0;
+        coeffs.xc_g_1b .= 0;
 
         coeffs.xc_a_2b .= 0;
         coeffs.xc_b_2b .= 0;
         coeffs.xc_c_2b .= 0;
         coeffs.xc_d_2b .= 0;
+        coeffs.xc_g_2b .= 0;
     end
 
     set_coeffs_to_zero!(simulation.pol_e_xc_coeffs);

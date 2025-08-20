@@ -35,11 +35,14 @@ for atomic_number in which_atomic_numbers
         simulation[i] = make_system_from_parsed_file(all_data[1]);
     end
 
-    num_1b_coeffs = 4;
-    num_2b_coeffs = 4;
+    num_1b_coeffs = 5;
+    num_2b_coeffs = 5;
 
     num_vars = 2*num_1b_coeffs + 2*num_2b_coeffs;
     aux_X = zeros(Float64,num_vars);
+
+    z1_eff = atom_eff_atomic_number(simulation[1].system.molecules[1],1);
+    z2_eff = atom_eff_atomic_number(simulation[1].system.molecules[1],2);
 
     needs_casting = true;
     function cost_func(aux_X::Vector)
@@ -60,20 +63,19 @@ for atomic_number in which_atomic_numbers
         @threads for thread_id in 1:n_threads
             # Set the trial coefficients in the simulation structure.
             set_fitted_pol_e_coeffs!(simulation[thread_id],atomic_number,aux_X);
-            cast_type = simulation[thread_id].cast_types.cast_to_xc_coeff_type;
 
             # Calculate the error when using these trial coefficients.
             for i in thread_id:n_threads:length(all_data)
                 set_diatomic_system_to_parsed_file!(
                     simulation[thread_id],all_data[i]);
-                
+
+                ζ1 = copy(simulation[thread_id].system.molecules[1].cloud_data[1,6]);
+                ζ2 = copy(simulation[thread_id].system.molecules[1].cloud_data[4,6]);
+                μ = copy(simulation[thread_id].system.chemical_potential);
+
                 aux_m, aux_y = polarization_matrix_problem(
-                    simulation[thread_id],cast_type);
-
-                ζ1 = simulation[thread_id].system.molecules[1].cloud_data[1,6];
-                ζ2 = simulation[thread_id].system.molecules[1].cloud_data[4,6];
-                μ = simulation[thread_id].system.chemical_potential;
-
+                    simulation[thread_id],cast_to_xc_coeff_type);
+                    
                 aux_x = zeros(aux_type,3);
                 aux_x[1] = ζ1;
                 aux_x[2] = ζ2;
@@ -87,8 +89,8 @@ for atomic_number in which_atomic_numbers
         ret_val = sum(ret_val);
         for atom in all_atoms
             set_fitted_pol_e_coeffs!(atom,atomic_number,aux_X);
-            cast_type = atom.cast_types.cast_to_xc_coeff_type;
-            aux_m, aux_y = polarization_matrix_problem(atom,cast_type);
+            aux_m, aux_y = 
+                polarization_matrix_problem(atom,cast_to_xc_coeff_type);
 
             ζ = atom.system.molecules[1].cloud_data[1,6];
 
@@ -104,8 +106,10 @@ for atomic_number in which_atomic_numbers
     end
 
     sol = Optim.optimize(cost_func, aux_X, LBFGS(), autodiff=:forward,
-        Optim.Options(show_trace=true,iterations=8000));
+        Optim.Options(show_trace=true,iterations=2000));
     aux_X = Optim.minimizer(sol);
+
+    display(aux_X);
 
     simulation = make_system_from_parsed_file(all_data[1]);
     set_fitted_pol_e_coeffs!(simulation,atomic_number,aux_X);
