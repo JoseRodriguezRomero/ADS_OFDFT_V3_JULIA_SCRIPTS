@@ -96,8 +96,8 @@ print(sys.argv[1] + " + " + sys.argv[2] + " (2S + 1 = " + str(multiplicity) + ")
 print("bond length is " + str(bond_length) + " angstrom")
 
 num_samples = 50
-r0 = 0.35 * bond_length
-r1 = 1.5 * bond_length
+r0 = 0.3 * bond_length
+r1 = 2.0 * bond_length
 
 for i in range(num_samples):
     scan_distance = r0 + i * (r1 - r0) / (num_samples - 1.0)

@@ -3,19 +3,16 @@ using Printf, LinearAlgebra;
 using LaTeXStrings, Latexify, Measures;
 using Base.Threads;
 
-include("FitHomonuclearCoeffs_General.jl")
+include("FitCoeffs_General.jl")
 
 which_atomic_numbers = [[1,6],[1,8],[6,8],[7,8]];
 for atomic_numbers in which_atomic_numbers
     Z1 = atomic_numbers[1];
     Z2 = atomic_numbers[2];
 
-    neutral_data, cation_data, anion_data = read_all_sanitized_data(Z1,Z2);
+    neutral_data, cation_data, anion_data = 
+        read_all_sanitized_data(Z1,Z2,true);
     all_data = vcat(neutral_data, cation_data, anion_data);
-
-    num_2b_coeffs = 5;
-    num_vars = 2*num_2b_coeffs;
-    aux_X = zeros(Float64,num_vars);
 
     n_threads = Threads.nthreads();
     simulation = Vector{SimulationSystem}();
@@ -24,6 +21,10 @@ for atomic_numbers in which_atomic_numbers
     for thread_id in 1:n_threads
         simulation[thread_id] = make_system_from_parsed_file(all_data[1]);
     end
+
+    num_2b_xc_coeffs = 4;
+    xc_2b_order = size(simulation[1].pol_e_xc_coeffs.xc_a_2b)[2] - 1;
+    aux_X = zeros(Float64,(xc_2b_order+1)*num_2b_xc_coeffs);
     
     z1_eff = atom_eff_atomic_number(simulation[1].system.molecules[1],1);
     z2_eff = atom_eff_atomic_number(simulation[1].system.molecules[1],2);
@@ -47,29 +48,42 @@ for atomic_numbers in which_atomic_numbers
                 set_diatomic_system_to_parsed_file!(
                     simulation[thread_id],all_data[i]);
 
-                ζ1 = simulation[thread_id].system.molecules[1].cloud_data[1,6];
-                ζ2 = simulation[thread_id].system.molecules[1].cloud_data[4,6];
+                ζ1 = atom_polarization_coeff(
+                    simulation[thread_id].system.molecules[1],1);
+                ζ2 = atom_polarization_coeff(
+                    simulation[thread_id].system.molecules[1],2);
                 μ = simulation[thread_id].system.chemical_potential;
+                μ0_1 = simulation[thread_id].atoms_μ0[Z1];
+                μ0_2 = simulation[thread_id].atoms_μ0[Z2];
 
-                aux_m, aux_y = polarization_matrix_problem(
-                    simulation[thread_id],cast_to_xc_coeff_type);
+                aux_m, aux_y = 
+                    polarization_matrix_problem(simulation[thread_id]);
                     
-                aux_x = zeros(aux_type,3);
+                aux_x = zeros(aux_type,5);
                 aux_x[1] = ζ1;
                 aux_x[2] = ζ2;
-                aux_x[3] = μ;
+                aux_x[3] = μ - μ0_1;
+                aux_x[4] = μ - μ0_2;
+                aux_x[5] = μ;
 
-                aux_diff = (aux_m * aux_x) - aux_y;
-                ret_val[thread_id] += dot(aux_diff,aux_diff);
+                ret_val[thread_id] += norm((aux_m \ aux_y) - aux_x)^2;
             end
         end
 
         return sum(ret_val);
     end
 
+    # needs_casting = false;
+    # sol = Optim.optimize(cost_func, aux_X, NelderMead(),
+    #     Optim.Options(show_trace=true,iterations=8000));
+    # aux_X = Optim.minimizer(sol);
+
+    needs_casting = true;
     sol = Optim.optimize(cost_func, aux_X, LBFGS(), autodiff=:forward,
-        Optim.Options(show_trace=true,iterations=8000));
+        Optim.Options(show_trace=true,iterations=2000));
     aux_X = Optim.minimizer(sol);
+
+    display(aux_X);
 
     simulation = make_system_from_parsed_file(all_data[1]);
     set_fitted_pol_e_coeffs!(simulation,Z1,Z2,aux_X);

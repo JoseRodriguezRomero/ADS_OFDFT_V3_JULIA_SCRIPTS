@@ -2,10 +2,11 @@ using LaTeXStrings, Latexify, Measures;
 using Base.Threads;
 using Plots;
 
-include("../FitHomonuclearCoeffs_General.jl")
+include("../FitCoeffs_General.jl")
 
 function test_result_ΔE(Z1::Int, Z2::Int)
-    neutral_data, cation_data, anion_data = read_all_sanitized_data(Z1,Z2);
+    neutral_data, cation_data, anion_data = 
+        read_all_sanitized_data(Z1,Z2,true);
 
     function get_data(data::Vector{ParsedFile})
         at1 = make_atom_system(Z1,0);
@@ -30,9 +31,10 @@ function test_result_ΔE(Z1::Int, Z2::Int)
                 set_diatomic_system_to_parsed_file!(simulation,data[i]);
 
                 dft_ΔE[i] = data[i].total_energy;
-                model_ΔE[i] = total_energy(simulation);
-
                 dft_ΔE[i] -= dft_ref_energy;
+
+                polarize_molecules!(simulation);
+                model_ΔE[i] = total_energy(simulation);
                 model_ΔE[i] -= model_ref_energy;
             end
         end
@@ -74,7 +76,8 @@ function test_result_ΔE(Z1::Int, Z2::Int)
 end
 
 function test_result_chemical_potential(Z1::Int, Z2::Int)
-    neutral_data, cation_data, anion_data = read_all_sanitized_data(Z1,Z2);
+    neutral_data, cation_data, anion_data = 
+        read_all_sanitized_data(Z1,Z2,true);
 
     function get_data(data::Vector{ParsedFile})
         model_chem_μ = zeros(Float64,length(data));
@@ -89,7 +92,8 @@ function test_result_chemical_potential(Z1::Int, Z2::Int)
 
         @threads for thread_id in 1:n_threads
             for i in thread_id:n_threads:length(data)
-                dft_μ = (data[i].HOMO_energy + data[i].LUMO_energy)/2.0;
+                # dft_μ = (data[i].HOMO_energy + data[i].LUMO_energy)/2.0;
+                dft_μ = data[i].chemical_potential;
 
                 set_diatomic_system_to_parsed_file!(
                     simulation[thread_id],data[i]);
@@ -125,7 +129,7 @@ function test_result_chemical_potential(Z1::Int, Z2::Int)
     cation_label = "("*elem_symbol1*" + "*elem_symbol2*")⁺";
     anion_label = "("*elem_symbol1*" + "*elem_symbol2*")⁻";
 
-    Pts = [-100,100];
+    Pts = [-2,2];
     p = plot(Pts,Pts,label=false);
     scatter!(neutral_dft_chem_μ, neutral_model_chem_μ, label=neutral_label);
     scatter!(cation_dft_chem_μ, cation_model_chem_μ, label=cation_label);
@@ -178,8 +182,8 @@ function compare_data()
 
     # CO Plots
     eCO, R² = test_result_ΔE(6,8);  
-    aux_lims = [-0.6,2.2];
-    aux_ticks = -0.6:0.7:2.2;
+    aux_lims = [-0.7,0.9];
+    aux_ticks = -0.7:0.4:0.9;
     plot!(xlims=aux_lims);
     plot!(ylims=aux_lims);
     plot!(xticks=aux_ticks);
@@ -193,8 +197,8 @@ function compare_data()
 
     # NO Plots
     eNO, R² = test_result_ΔE(7,8);
-    aux_lims = [-0.6,2.6];
-    aux_ticks = -0.6:0.8:2.6;
+    aux_lims = [-0.6,1.0];
+    aux_ticks = -0.6:0.4:1.0;
     plot!(xlims=aux_lims);
     plot!(ylims=aux_lims);
     plot!(xticks=aux_ticks);
@@ -229,8 +233,8 @@ function compare_data()
 
     # HO Plots
     pHO, R² = test_result_chemical_potential(1,8);
-    aux_lims = [-1.0,0.6];
-    aux_ticks = -1.0:0.4:0.6;
+    aux_lims = [-1.2,0.4];
+    aux_ticks = -1.2:0.4:0.4;
     plot!(xlims=aux_lims);
     plot!(ylims=aux_lims);
     plot!(xticks=aux_ticks);
@@ -280,7 +284,8 @@ function compare_data()
 end
 
 function test_result_ΔE2(Z1::Int, Z2::Int)
-    neutral_data, cation_data, anion_data = read_all_sanitized_data(Z1,Z2);
+    neutral_data, cation_data, anion_data = 
+        read_all_sanitized_data(Z1,Z2,true);
 
     function get_data(data::Vector{ParsedFile})
         dft_r = zeros(Float64,length(data));
@@ -379,19 +384,19 @@ function test_result_ΔE2(Z1::Int, Z2::Int)
     return p;
 end
 
-function comp_homonuclear_scan(pair1::Tuple{Int,Int}, pair2::Tuple{Int,Int})
+function comp_heteronuclear_scan(pair1::Tuple{Int,Int}, pair2::Tuple{Int,Int})
     x_max = 6;
 
     p1 = test_result_ΔE2(pair1[1],pair1[2]);
     plot!(ylabel=L"$\Delta E \quad \mathrm{[eV]}$");
-    plot!(ylims=[-5,25],yticks=-5:10:25);
+    plot!(ylims=[-5,35],yticks=-5:10:35);
     plot!(xlims=[0.0,x_max],xticks=(0:2:6,[]));
     plot!(legend = :outertopright)
 
     p2 = test_result_ΔE2(pair2[1],pair2[2]);
     plot!(xlabel=L"$d \quad \mathrm{[\AA ngstrom]}$");
     plot!(ylabel=L"$\Delta E \quad \mathrm{[eV]}$");
-    plot!(ylims=[-5,25],yticks=-5:10:25);
+    plot!(ylims=[-5,35],yticks=-5:10:35);
     plot!(xlims=[0.0,x_max],xticks=0:2:6);
     plot!(legend = :outertopright)
 
@@ -401,5 +406,5 @@ function comp_homonuclear_scan(pair1::Tuple{Int,Int}, pair2::Tuple{Int,Int})
     return p;
 end
 
-comp_homonuclear_scan((1,8),(6,8));
+comp_heteronuclear_scan((7,8),(6,8));
 compare_data()

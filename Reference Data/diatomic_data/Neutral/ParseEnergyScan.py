@@ -73,8 +73,8 @@ def ReadOutputFile(file_name):
             q2 = float(at2_line[-1])
             
         if "MBIS Charges: (a.u.)" in lines[i]:
-            at1_line = lines[i+2].split()
-            at2_line = lines[i+3].split()
+            at1_line = lines[i+3].split()
+            at2_line = lines[i+2].split()
             q1 = float(at1_line[-1])
             q2 = float(at2_line[-1])
                 
