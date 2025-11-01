@@ -21,25 +21,36 @@ mutable struct Molecule
     atoms::Vector{Atom};
 end
 
-mutable struct XCCoefficient
+mutable struct MorsePotentialCoefficients
+    depth::Number;
+    exponential_decay::Number;
+    equilibrium_distance::Number;
+end
+
+mutable struct XCCoeff2B
     m::Number;
     b::Number;
 end
 
 mutable struct EmpiricalXCCoefficients
-    max_atomic_number::Int;
+    xc_a_1b::Dict{Int,Number};
+    xc_b_1b::Dict{Int,Number};
+    xc_c_1b::Dict{Int,Number};
+    xc_d_1b::Dict{Int,Number};
 
-    xc_a_1b::Dict{Int,XCCoefficient};
-    xc_b_1b::Dict{Int,XCCoefficient};
-    xc_c_1b::Dict{Int,XCCoefficient};
-    xc_d_1b::Dict{Int,XCCoefficient};
-    xc_e_1b::Dict{Int,Number};
-    xc_f_1b::Dict{Int,Number};
+    xc_a_2b::Dict{Tuple{Int,Int},XCCoeff2B};
+    xc_b_2b::Dict{Tuple{Int,Int},XCCoeff2B};
+    xc_c_2b::Dict{Tuple{Int,Int},XCCoeff2B};
+    xc_d_2b::Dict{Tuple{Int,Int},XCCoeff2B};
+end
 
-    xc_a_2b::Dict{Tuple{Int,Int},XCCoefficient};
-    xc_b_2b::Dict{Tuple{Int,Int},XCCoefficient};
-    xc_c_2b::Dict{Tuple{Int,Int},XCCoefficient};
-    xc_d_2b::Dict{Tuple{Int,Int},XCCoefficient};
+mutable struct EmpiricalKECoefficients
+    ke_e_1b::Dict{Int,Number};
+    ke_f_1b::Dict{Int,Number};
+end
+
+mutable struct EmpiricalStaticCoefficients
+    morse_2b::Dict{Tuple{Int,Int},MorsePotentialCoefficients};
 end
 
 mutable struct BasisSetSettings
@@ -56,10 +67,23 @@ mutable struct MolecularSystem
     chemical_potential::Number;
 end
 
+mutable struct TotalEnergyCoefficients
+    max_atomic_number::Int;
+    tot_e_xc_coeffs::EmpiricalXCCoefficients;
+    tot_e_ke_coeffs::EmpiricalKECoefficients;
+    tot_e_static_coeffs::EmpiricalStaticCoefficients;
+end
+
+mutable struct PolarizationEnergyCoefficients
+    max_atomic_number::Int;
+    pol_e_xc_coeffs::EmpiricalXCCoefficients;
+    pol_e_ke_coeffs::EmpiricalKECoefficients;
+end
+
 mutable struct SimulationSystem
     system::MolecularSystem;
-    pol_e_xc_coeffs::EmpiricalXCCoefficients;
-    tot_e_xc_coeffs::EmpiricalXCCoefficients;
+    tot_e_coeffs::TotalEnergyCoefficients;
+    pol_e_coeffs::PolarizationEnergyCoefficients;
     basis_set_settings::BasisSetSettings;
 end
 

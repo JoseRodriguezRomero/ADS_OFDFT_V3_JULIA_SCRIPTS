@@ -157,61 +157,106 @@ function set_diatomic_system_to_parsed_file!(
     simulation.system.charge = parsed_file.charge;
     simulation.system.energy = parsed_file.total_energy;
     simulation.system.chemical_potential = parsed_file.chemical_potential;
+
+    return;
 end
 
-function set_fitted_coeffs!(coeffs::EmpiricalXCCoefficients, 
+function set_fitted_coeffs!(coeffs::TotalEnergyCoefficients,
     Z::Int, fitted_coeffs::Vector)
     # Store the 1B fitted coefficients
-    xc_a_1b_m = 1;
-    xc_a_1b_b = 2;
-    xc_b_1b_m = 3;
-    xc_b_1b_b = 4;
-    xc_c_1b_m = 5;
-    xc_c_1b_b = 6;
-    xc_d_1b_m = 7;
-    xc_d_1b_b = 8;
-    xc_e_1b =   9;
-    xc_f_1b =  10;
+    xc_a_1b_ind = 1;
+    xc_b_1b_ind = 2;
+    xc_c_1b_ind = 3;
+    xc_d_1b_ind = 4;
+    ke_e_1b_ind = 5;
+    ke_f_1b_ind = 6;
 
-    coeffs.xc_a_1b[Z].m = fitted_coeffs[xc_a_1b_m];
-    coeffs.xc_a_1b[Z].b = fitted_coeffs[xc_a_1b_b];
-    coeffs.xc_b_1b[Z].m = fitted_coeffs[xc_b_1b_m];
-    coeffs.xc_b_1b[Z].b = fitted_coeffs[xc_b_1b_b];
-    coeffs.xc_c_1b[Z].m = fitted_coeffs[xc_c_1b_m];
-    coeffs.xc_c_1b[Z].b = fitted_coeffs[xc_c_1b_b];
-    coeffs.xc_d_1b[Z].m = fitted_coeffs[xc_d_1b_m];
-    coeffs.xc_d_1b[Z].b = fitted_coeffs[xc_d_1b_b];
-    coeffs.xc_e_1b[Z] = fitted_coeffs[xc_e_1b];
-    coeffs.xc_e_1b[Z] = fitted_coeffs[xc_f_1b];
+    coeffs.tot_e_xc_coeffs.xc_a_1b[Z] = fitted_coeffs[xc_a_1b_ind];
+    coeffs.tot_e_xc_coeffs.xc_b_1b[Z] = fitted_coeffs[xc_b_1b_ind];
+    coeffs.tot_e_xc_coeffs.xc_c_1b[Z] = fitted_coeffs[xc_c_1b_ind];
+    coeffs.tot_e_xc_coeffs.xc_d_1b[Z] = fitted_coeffs[xc_d_1b_ind];
+    coeffs.tot_e_ke_coeffs.ke_e_1b[Z] = fitted_coeffs[ke_e_1b_ind];
+    coeffs.tot_e_ke_coeffs.ke_f_1b[Z] = fitted_coeffs[ke_f_1b_ind];
 
     # Store the 2B fitted coefficients
-    xc_a_2b_m = 11;
-    xc_a_2b_b = 12;
-    xc_b_2b_m = 13;
-    xc_b_2b_b = 14;
-    xc_c_2b_m = 15;
-    xc_c_2b_b = 16;
-    xc_d_2b_m = 17;
-    xc_d_2b_b = 18;
+    xc_a_2b_m_ind =  7;
+    xc_a_2b_b_ind =  8;
+    xc_b_2b_m_ind =  9;
+    xc_b_2b_b_ind = 10;
+    xc_c_2b_m_ind = 11;
+    xc_c_2b_b_ind = 12;
+    xc_d_2b_m_ind = 13;
+    xc_d_2b_b_ind = 14;
+    morse_st1_ind = 15;
+    morse_st2_ind = 16;
+    morse_st3_ind = 17;
 
-    coeffs.xc_a_2b[(Z,Z)].m = fitted_coeffs[xc_a_2b_m];
-    coeffs.xc_a_2b[(Z,Z)].b = fitted_coeffs[xc_a_2b_b];
-    coeffs.xc_b_2b[(Z,Z)].m = fitted_coeffs[xc_b_2b_m];
-    coeffs.xc_b_2b[(Z,Z)].b = fitted_coeffs[xc_b_2b_b];
-    coeffs.xc_c_2b[(Z,Z)].m = fitted_coeffs[xc_c_2b_m];
-    coeffs.xc_c_2b[(Z,Z)].b = fitted_coeffs[xc_c_2b_b];
-    coeffs.xc_d_2b[(Z,Z)].m = fitted_coeffs[xc_d_2b_m];
-    coeffs.xc_d_2b[(Z,Z)].b = fitted_coeffs[xc_d_2b_b];
+    coeffs.tot_e_xc_coeffs.xc_a_2b[(Z,Z)].m = fitted_coeffs[xc_a_2b_m_ind];
+    coeffs.tot_e_xc_coeffs.xc_a_2b[(Z,Z)].b = fitted_coeffs[xc_a_2b_b_ind];
+    coeffs.tot_e_xc_coeffs.xc_b_2b[(Z,Z)].m = fitted_coeffs[xc_b_2b_m_ind];
+    coeffs.tot_e_xc_coeffs.xc_b_2b[(Z,Z)].b = fitted_coeffs[xc_b_2b_b_ind];
+    coeffs.tot_e_xc_coeffs.xc_c_2b[(Z,Z)].m = fitted_coeffs[xc_c_2b_m_ind];
+    coeffs.tot_e_xc_coeffs.xc_c_2b[(Z,Z)].b = fitted_coeffs[xc_c_2b_b_ind];
+    coeffs.tot_e_xc_coeffs.xc_d_2b[(Z,Z)].m = fitted_coeffs[xc_d_2b_m_ind];
+    coeffs.tot_e_xc_coeffs.xc_d_2b[(Z,Z)].b = fitted_coeffs[xc_d_2b_b_ind];
+    coeffs.tot_e_static_coeffs.morse_2b[(Z,Z)] = MorsePotentialCoefficients(
+        fitted_coeffs[morse_st1_ind]^2,
+        fitted_coeffs[morse_st2_ind]^2,
+        fitted_coeffs[morse_st3_ind]^2
+    );
+
+    return;
 end
 
-function set_fitted_pol_e_coeffs!(simulation::SimulationSystem,
+function set_fitted_coeffs!(coeffs::PolarizationEnergyCoefficients,
     Z::Int, fitted_coeffs::Vector)
-    set_fitted_coeffs!(simulation.pol_e_xc_coeffs,Z,fitted_coeffs);
+    # Store the 1B fitted coefficients
+    xc_a_1b_ind = 1;
+    xc_b_1b_ind = 2;
+    xc_c_1b_ind = 3;
+    xc_d_1b_ind = 4;
+    ke_e_1b_ind = 5;
+    ke_f_1b_ind = 6;
+
+    coeffs.pol_e_xc_coeffs.xc_a_1b[Z] = fitted_coeffs[xc_a_1b_ind];
+    coeffs.pol_e_xc_coeffs.xc_b_1b[Z] = fitted_coeffs[xc_b_1b_ind];
+    coeffs.pol_e_xc_coeffs.xc_c_1b[Z] = fitted_coeffs[xc_c_1b_ind];
+    coeffs.pol_e_xc_coeffs.xc_d_1b[Z] = fitted_coeffs[xc_d_1b_ind];
+    coeffs.pol_e_ke_coeffs.ke_e_1b[Z] = fitted_coeffs[ke_e_1b_ind];
+    coeffs.pol_e_ke_coeffs.ke_f_1b[Z] = fitted_coeffs[ke_f_1b_ind];
+
+    # Store the 2B fitted coefficients
+    xc_a_2b_m_ind =  7;
+    xc_a_2b_b_ind =  8;
+    xc_b_2b_m_ind =  9;
+    xc_b_2b_b_ind = 10;
+    xc_c_2b_m_ind = 11;
+    xc_c_2b_b_ind = 12;
+    xc_d_2b_m_ind = 13;
+    xc_d_2b_b_ind = 14;
+
+    coeffs.pol_e_xc_coeffs.xc_a_2b[(Z,Z)].m = fitted_coeffs[xc_a_2b_m_ind];
+    coeffs.pol_e_xc_coeffs.xc_a_2b[(Z,Z)].b = fitted_coeffs[xc_a_2b_b_ind];
+    coeffs.pol_e_xc_coeffs.xc_b_2b[(Z,Z)].m = fitted_coeffs[xc_b_2b_m_ind];
+    coeffs.pol_e_xc_coeffs.xc_b_2b[(Z,Z)].b = fitted_coeffs[xc_b_2b_b_ind];
+    coeffs.pol_e_xc_coeffs.xc_c_2b[(Z,Z)].m = fitted_coeffs[xc_c_2b_m_ind];
+    coeffs.pol_e_xc_coeffs.xc_c_2b[(Z,Z)].b = fitted_coeffs[xc_c_2b_b_ind];
+    coeffs.pol_e_xc_coeffs.xc_d_2b[(Z,Z)].m = fitted_coeffs[xc_d_2b_m_ind];
+    coeffs.pol_e_xc_coeffs.xc_d_2b[(Z,Z)].b = fitted_coeffs[xc_d_2b_b_ind];
+
+    return;
 end
 
 function set_fitted_tot_e_coeffs!(simulation::SimulationSystem,
     Z::Int, fitted_coeffs::Vector)
-    set_fitted_coeffs!(simulation.tot_e_xc_coeffs,Z,fitted_coeffs);
+    set_fitted_coeffs!(simulation.tot_e_coeffs,Z,fitted_coeffs);
+    return;
+end
+
+function set_fitted_pol_e_coeffs!(simulation::SimulationSystem,
+    Z::Int, fitted_coeffs::Vector)
+    set_fitted_coeffs!(simulation.pol_e_coeffs,Z,fitted_coeffs);
+    return;
 end
 
 function set_fitted_coeffs!(coeffs::EmpiricalXCCoefficients, 
@@ -625,50 +670,94 @@ function plot_reference_total_energy(Z1::Int, Z2::Int)
     return p;
 end
 
-function cast_coeffs_to_type!(coeffs::EmpiricalXCCoefficients, which_type)
-    function convert_to_type(coeffs::Dict{Int,XCCoefficient})
+function cast_coeffs_to_type!(coeffs::TotalEnergyCoefficients, which_type)
+    function convert_to_type!(coeffs::Dict{Int,Number})
         for key in keys(coeffs)
-            coeffs[key].m = which_type(coeffs[key].m);
-            coeffs[key].b = which_type(coeffs[key].b);
+            coeffs[key] = convert(which_type,coeffs[key]);
         end
 
-        return coeffs;
+        return;
     end
 
-    function convert_to_type(coeffs::Dict{Int,Number})
+    function convert_to_type!(coeffs::Dict{Tuple{Int,Int},XCCoeff2B})
         for key in keys(coeffs)
-            coeffs[key] = which_type(coeffs[key]);
+            coeffs[key].m = convert(which_type,coeffs[key].m);
+            coeffs[key].b = convert(which_type,coeffs[key].b);
         end
 
-        return coeffs;
+        return;
     end
 
-    function convert_to_type(coeffs::Dict{Tuple{Int,Int},XCCoefficient})
+    function convert_to_type!(
+        coeffs::Dict{Tuple{Int,Int},MorsePotentialCoefficients})
         for key in keys(coeffs)
-            coeffs[key].m = which_type(coeffs[key].m);
-            coeffs[key].b = which_type(coeffs[key].b);
+            coeffs[key].depth = 
+                convert(which_type,coeffs[key].depth);
+            coeffs[key].exponential_decay = 
+                convert(which_type,coeffs[key].exponential_decay);
+            coeffs[key].equilibrium_distance = 
+                convert(which_type,coeffs[key].equilibrium_distance);
         end
 
-        return coeffs;
+        return;
     end
 
-    coeffs.xc_a_1b = convert_to_type(coeffs.xc_a_1b);
-    coeffs.xc_b_1b = convert_to_type(coeffs.xc_b_1b);
-    coeffs.xc_c_1b = convert_to_type(coeffs.xc_c_1b);
-    coeffs.xc_d_1b = convert_to_type(coeffs.xc_d_1b);
-    coeffs.xc_e_1b = convert_to_type(coeffs.xc_e_1b);
-    coeffs.xc_f_1b = convert_to_type(coeffs.xc_f_1b);
+    convert_to_type!(coeffs.tot_e_xc_coeffs.xc_a_1b);
+    convert_to_type!(coeffs.tot_e_xc_coeffs.xc_b_1b);
+    convert_to_type!(coeffs.tot_e_xc_coeffs.xc_c_1b);
+    convert_to_type!(coeffs.tot_e_xc_coeffs.xc_d_1b);
+    convert_to_type!(coeffs.tot_e_ke_coeffs.ke_e_1b);
+    convert_to_type!(coeffs.tot_e_ke_coeffs.ke_f_1b);
 
-    coeffs.xc_a_2b = convert_to_type(coeffs.xc_a_2b);
-    coeffs.xc_b_2b = convert_to_type(coeffs.xc_b_2b);
-    coeffs.xc_c_2b = convert_to_type(coeffs.xc_c_2b);
-    coeffs.xc_d_2b = convert_to_type(coeffs.xc_d_2b);
+    convert_to_type!(coeffs.tot_e_xc_coeffs.xc_a_2b);
+    convert_to_type!(coeffs.tot_e_xc_coeffs.xc_b_2b);
+    convert_to_type!(coeffs.tot_e_xc_coeffs.xc_c_2b);
+    convert_to_type!(coeffs.tot_e_xc_coeffs.xc_d_2b);
+
+    convert_to_type!(coeffs.tot_e_static_coeffs.morse_2b);
+
+    return;
+end
+
+function cast_coeffs_to_type!(coeffs::PolarizationEnergyCoefficients, which_type)
+    function convert_to_type!(coeffs::Dict{Int,Number})
+        for key in keys(coeffs)
+            coeffs[key] = convert(which_type,coeffs[key]);
+        end
+
+        return;
+    end
+
+    function convert_to_type!(coeffs::Dict{Tuple{Int,Int},XCCoeff2B})
+        for key in keys(coeffs)
+            coeffs[key].m = convert(which_type,coeffs[key].m);
+            coeffs[key].b = convert(which_type,coeffs[key].b);
+        end
+
+        return;
+    end
+
+    convert_to_type!(coeffs.pol_e_xc_coeffs.xc_a_1b);
+    convert_to_type!(coeffs.pol_e_xc_coeffs.xc_b_1b);
+    convert_to_type!(coeffs.pol_e_xc_coeffs.xc_c_1b);
+    convert_to_type!(coeffs.pol_e_xc_coeffs.xc_d_1b);
+    convert_to_type!(coeffs.pol_e_ke_coeffs.ke_e_1b);
+    convert_to_type!(coeffs.pol_e_ke_coeffs.ke_f_1b);
+
+    convert_to_type!(coeffs.pol_e_xc_coeffs.xc_a_2b);
+    convert_to_type!(coeffs.pol_e_xc_coeffs.xc_b_2b);
+    convert_to_type!(coeffs.pol_e_xc_coeffs.xc_c_2b);
+    convert_to_type!(coeffs.pol_e_xc_coeffs.xc_d_2b);
+
+    return;
 end
 
 function cast_tot_e_coeffs_to_type!(simulation::SimulationSystem, which_type)
-    return cast_coeffs_to_type!(simulation.tot_e_xc_coeffs,which_type);
+    cast_coeffs_to_type!(simulation.tot_e_coeffs,which_type);
+    return;
 end
 
 function cast_pol_e_coeffs_to_type!(simulation::SimulationSystem, which_type)
-    return cast_coeffs_to_type!(simulation.pol_e_xc_coeffs,which_type);
+    cast_coeffs_to_type!(simulation.pol_e_coeffs,which_type);
+    return;
 end

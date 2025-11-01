@@ -38,7 +38,7 @@ for atomic_number in which_atomic_numbers
     atoms_μ0 = simulation[1].basis_set_settings.atoms_μ0;
     μ0 = atoms_μ0[atomic_number];
 
-    num_vars = 18;
+    num_vars = 14;
     aux_X = zeros(Float64,num_vars);
 
     # z1_eff = simulation[1].system.molecules[1].atoms[1].valence_electrons;
@@ -54,14 +54,13 @@ for atomic_number in which_atomic_numbers
 
         if needs_casting == true
             needs_casting = false;
+
             for thread_id in 1:n_threads
                 cast_pol_e_coeffs_to_type!(simulation[thread_id],aux_type);
-                cast_tot_e_coeffs_to_type!(simulation[thread_id],aux_type);
             end
 
             for i in eachindex(all_atoms)
                 cast_pol_e_coeffs_to_type!(all_atoms[i],aux_type);
-                cast_tot_e_coeffs_to_type!(all_atoms[i],aux_type);
             end
         end
 

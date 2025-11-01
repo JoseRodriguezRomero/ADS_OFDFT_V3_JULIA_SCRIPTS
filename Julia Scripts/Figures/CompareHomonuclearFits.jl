@@ -211,8 +211,8 @@ function compare_data()
 
     # H₂ Plots
     pH2, R² = test_result_chemical_potential(1);
-    aux_lims = [-1.6,1.6];
-    aux_ticks = -1.6:0.8:1.6;
+    aux_lims = [-1.6,0.8];
+    aux_ticks = -1.6:0.6:0.8;
     plot!(xlims=aux_lims);
     plot!(ylims=aux_lims);
     plot!(xticks=aux_ticks);
@@ -228,8 +228,8 @@ function compare_data()
 
     # C₂ Plots
     pC2, R² = test_result_chemical_potential(6);
-    # aux_lims = [-1.2,1.2];
-    # aux_ticks = -1.2:0.6:1.2;
+    aux_lims = [-1.0,0.2];
+    aux_ticks = -1.0:0.3:0.2;
     plot!(xlims=aux_lims);
     plot!(ylims=aux_lims);
     plot!(xticks=aux_ticks);
@@ -243,8 +243,8 @@ function compare_data()
 
     # N₂ Plots
     pN2, R² = test_result_chemical_potential(7);
-    # aux_lims = [-1.2,1.2];
-    # aux_ticks = -1.2:0.6:1.2;
+    aux_lims = [-1.2,0.8];
+    aux_ticks = -1.2:0.5:0.8;
     plot!(xlims=aux_lims);
     plot!(ylims=aux_lims);
     plot!(xticks=aux_ticks);
@@ -258,8 +258,8 @@ function compare_data()
 
     # O₂ Plots
     pO2, R² = test_result_chemical_potential(8);
-    # aux_lims = [-1.2,1.2];
-    # aux_ticks = -1.2:0.6:1.2;
+    aux_lims = [-1.2,0.8];
+    aux_ticks = -1.2:0.5:0.8;
     plot!(xlims=aux_lims);
     plot!(ylims=aux_lims);
     plot!(xticks=aux_ticks);
@@ -295,7 +295,7 @@ function test_result_ΔE2(atomic_number::Int)
             dft_r[i] = bohr_to_angstrom*data[i].atomic_separation;
         end
 
-        r0 = 0.0;
+        r0 = 0.01;
         r1 = angstrom_to_bohr*6.5;
 
         model_r = collect(r0:0.01:r1);
@@ -485,14 +485,14 @@ function comp_homonuclear_scan(Z1::Int, Z2::Int)
 
     p1 = test_result_ΔE2(Z1);
     plot!(ylabel=L"$\Delta E \quad \mathrm{[eV]}$");
-    plot!(ylims=[-5,35],yticks=-5:10:35);
+    plot!(ylims=[-5,55],yticks=-5:15:55);
     plot!(xlims=[0.0,x_max],xticks=(0:2:6,[]));
     plot!(legend = :outertopright)
 
     p2 = test_result_ΔE2(Z2);
     plot!(xlabel=L"$d \quad \mathrm{[\AA ngstrom]}$");
     plot!(ylabel=L"$\Delta E \quad \mathrm{[eV]}$");
-    plot!(ylims=[-5,35],yticks=-5:10:35);
+    plot!(ylims=[-5,55],yticks=-5:15:55);
     plot!(xlims=[0.0,x_max],xticks=0:2:6);
     plot!(legend = :outertopright)
 
@@ -558,3 +558,4 @@ end
 
 comp_homonuclear_scan(1,8);
 compare_data()
+

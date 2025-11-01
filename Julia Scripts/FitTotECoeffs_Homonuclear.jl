@@ -22,8 +22,9 @@ for atomic_number in which_atomic_numbers
         simulation[i] = make_system_from_parsed_file(all_data[1]);
     end
 
-    num_vars = 18;
+    num_vars = 17;
     aux_X = zeros(Float64,num_vars);
+    aux_X[(end-3):end] .= 1.0;
 
     dft_at_neutral_e, dft_at_cation_e, dft_at_anion_e =
         get_reference_atom_total_energy();
@@ -74,29 +75,36 @@ for atomic_number in which_atomic_numbers
 
                 dft_tot_e = all_data[i].total_energy;
                 model_tot_e = total_energy(simulation[thread_id]);
+
                 # e_diff = model_tot_e - dft_tot_e;
                 # ret_val[thread_id] += e_diff^2;
-                
+                            
                 # e_diff -= 2*model_at_neutral_e;
                 # e_diff += 2*dft_at_neutral_e;
                 # ret_val[thread_id] += e_diff^2;
 
-                if i < length(all_data)
+                if i > 1
+                    if all_data[i].charge != all_data[i-1].charge
+                        continue;
+                    end
+
                     d1 = all_data[i].atomic_separation;
-                    d2 = all_data[i+1].atomic_separation;
+                    d2 = all_data[i-1].atomic_separation;
                     Δd = d2 - d1;
 
                     set_diatomic_system_to_parsed_file!(
-                        simulation[thread_id],all_data[i+1]);
+                        simulation[thread_id],all_data[i-1]);
 
-                    dft_tot_e_nxt = all_data[i+1].total_energy;
+                    dft_tot_e_nxt = all_data[i-1].total_energy;
                     model_tot_e_nxt = total_energy(simulation[thread_id]);
 
-                    dft_dev = (dft_tot_e_nxt - dft_tot_e)/Δd;
-                    model_dev = (model_tot_e_nxt - model_tot_e)/Δd;
-                    dev_diff = model_dev - dft_dev;
+                    dft_ΔE = dft_tot_e_nxt - dft_tot_e;
+                    model_ΔE = model_tot_e_nxt - model_tot_e;
 
-                    ret_val[thread_id] += dev_diff^2;
+                    dft_dev = dft_ΔE/Δd;
+                    model_dev = model_ΔE/Δd;
+
+                    ret_val[thread_id] += (model_dev - dft_dev)^2;
                 end
             end
         end
