@@ -295,7 +295,7 @@ function test_result_ΔE2(atomic_number::Int)
             dft_r[i] = bohr_to_angstrom*data[i].atomic_separation;
         end
 
-        r0 = 0.01;
+        r0 = 0.05;
         r1 = angstrom_to_bohr*6.5;
 
         model_r = collect(r0:0.01:r1);

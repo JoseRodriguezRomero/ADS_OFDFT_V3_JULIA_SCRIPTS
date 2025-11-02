@@ -24,7 +24,7 @@ for atomic_number in which_atomic_numbers
 
     num_vars = 17;
     aux_X = zeros(Float64,num_vars);
-    aux_X[(end-3):end] .= 1.0;
+    aux_X[(end-2):end] .= 1.0;
 
     dft_at_neutral_e, dft_at_cation_e, dft_at_anion_e =
         get_reference_atom_total_energy();
@@ -32,6 +32,22 @@ for atomic_number in which_atomic_numbers
     dft_at_neutral_e = dft_at_neutral_e[atomic_number];
     dft_at_cation_e = dft_at_cation_e[atomic_number];
     dft_at_anion_e = dft_at_anion_e[atomic_number];
+
+    function minimum_index(data::Vector{ParsedFile})
+        i0 = 1;
+
+        for i in eachindex(data)
+            if data[i0].total_energy > data[i].total_energy
+                i0 = i;
+            end
+        end
+
+        return i0;
+    end
+
+    i0_neutral = minimum_index(neutral_data);
+    i0_cation = minimum_index(cation_data);
+    i0_anion = minimum_index(anion_data);
 
     needs_casting = true;
     function cost_func(aux_X::Vector)
@@ -76,13 +92,6 @@ for atomic_number in which_atomic_numbers
                 dft_tot_e = all_data[i].total_energy;
                 model_tot_e = total_energy(simulation[thread_id]);
 
-                # e_diff = model_tot_e - dft_tot_e;
-                # ret_val[thread_id] += e_diff^2;
-                            
-                # e_diff -= 2*model_at_neutral_e;
-                # e_diff += 2*dft_at_neutral_e;
-                # ret_val[thread_id] += e_diff^2;
-
                 if i > 1
                     if all_data[i].charge != all_data[i-1].charge
                         continue;
@@ -115,10 +124,26 @@ for atomic_number in which_atomic_numbers
         diff2 = model_at_cation_e - dft_at_cation_e;
         diff3 = model_at_anion_e - dft_at_anion_e;
         
-        # ret_val += diff1^2 + diff2^2 + diff3^2;
         ret_val += (diff1 - diff2)^2;
         ret_val += (diff1 - diff3)^2;
         ret_val += (diff2 - diff3)^2;
+
+        function get_error_at_minimum(parsed_file::ParsedFile)
+            set_diatomic_system_to_parsed_file!(simulation[1],parsed_file);
+
+            dft_tot_e = parsed_file.total_energy;
+            model_tot_e = total_energy(simulation[1]);
+
+            e_diff = model_tot_e - dft_tot_e;                    
+            e_diff -= 2*model_at_neutral_e;
+            e_diff += 2*dft_at_neutral_e;
+
+            return e_diff^2;
+        end
+
+        # ret_val += get_error_at_minimum(neutral_data[i0_neutral]);
+        # ret_val += get_error_at_minimum(cation_data[i0_cation]);
+        # ret_val += get_error_at_minimum(anion_data[i0_anion]);
 
         return ret_val;
     end

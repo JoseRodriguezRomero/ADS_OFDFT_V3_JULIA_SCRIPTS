@@ -6,11 +6,11 @@ include("../FitCoeffs_General.jl")
 
 function test_result_ΔE(Z1::Int, Z2::Int)
     neutral_data, cation_data, anion_data = 
-        read_all_sanitized_data(Z1,Z2,true);
+        read_all_sanitized_data(Z1,Z2);
 
     function get_data(data::Vector{ParsedFile})
-        at1 = make_atom_system(Z1,0);
-        at2 = make_atom_system(Z2,0);
+        at1 = make_monoatomic_system(Z1,0);
+        at2 = make_monoatomic_system(Z2,0);
 
         dft_atom_energies, _, _ = get_reference_atom_total_energy();
 
@@ -150,8 +150,8 @@ function compare_data()
     # Energy Differences
     # HC Plots
     eHC, R² = test_result_ΔE(1,6);
-    aux_lims = [-0.4,2.0];
-    aux_ticks = -0.4:0.6:2.0;
+    aux_lims = [-0.5,1.5];
+    aux_ticks = -0.5:0.5:1.5;
     plot!(xlims=aux_lims);
     plot!(ylims=aux_lims);
     plot!(xticks=aux_ticks);
@@ -167,8 +167,8 @@ function compare_data()
 
     # HO Plots
     eHO, R² = test_result_ΔE(1,8);
-    aux_lims = [-0.4,2.0];
-    aux_ticks = -0.4:0.6:2.0;
+    aux_lims = [-0.5,1.5];
+    aux_ticks = -0.5:0.5:1.5;
     plot!(xlims=aux_lims);
     plot!(ylims=aux_lims);
     plot!(xticks=aux_ticks);
@@ -182,8 +182,8 @@ function compare_data()
 
     # CO Plots
     eCO, R² = test_result_ΔE(6,8);  
-    aux_lims = [-0.7,0.9];
-    aux_ticks = -0.7:0.4:0.9;
+    aux_lims = [-0.6,2.2];
+    aux_ticks = -0.6:0.7:2.2;
     plot!(xlims=aux_lims);
     plot!(ylims=aux_lims);
     plot!(xticks=aux_ticks);
@@ -197,8 +197,8 @@ function compare_data()
 
     # NO Plots
     eNO, R² = test_result_ΔE(7,8);
-    aux_lims = [-0.6,1.0];
-    aux_ticks = -0.6:0.4:1.0;
+    aux_lims = [-0.5,0.7];
+    aux_ticks = -0.5:0.3:0.7;
     plot!(xlims=aux_lims);
     plot!(ylims=aux_lims);
     plot!(xticks=aux_ticks);
@@ -285,7 +285,7 @@ end
 
 function test_result_ΔE2(Z1::Int, Z2::Int)
     neutral_data, cation_data, anion_data = 
-        read_all_sanitized_data(Z1,Z2,true);
+        read_all_sanitized_data(Z1,Z2);
 
     function get_data(data::Vector{ParsedFile})
         dft_r = zeros(Float64,length(data));
@@ -310,15 +310,15 @@ function test_result_ΔE2(Z1::Int, Z2::Int)
             simulation = make_system_from_parsed_file(data[end]);
             r1 = zeros(Float64,3);
             r2 = zeros(Float64,3);
-            set_atom_position!(simulation.system.molecules[1],r1,1);
-            set_atom_position!(simulation.system.molecules[1],r2,2);
+            set_atom_coordinates!(simulation.system.molecules[1],r1,1);
+            set_atom_coordinates!(simulation.system.molecules[1],r2,2);
 
             for i in thread_id:n_threads:length(model_r)
                 d = angstrom_to_bohr * model_r[i];
                 r2[3] = d;
 
-                set_atom_position!(simulation.system.molecules[1],r1,1);
-                set_atom_position!(simulation.system.molecules[1],r2,2);
+                set_atom_coordinates!(simulation.system.molecules[1],r1,1);
+                set_atom_coordinates!(simulation.system.molecules[1],r2,2);
                 polarize_molecules!(simulation);
 
                 model_ΔE[i] = total_energy(simulation);

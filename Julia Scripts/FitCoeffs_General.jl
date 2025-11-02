@@ -130,7 +130,16 @@ function make_system_from_parsed_file(parsed_file::ParsedFile)
 
     simulation = make_diatomic_system(Z1,Z2,d,charge);
 
+    z1_eff = simulation.system.molecules[1].atoms[1].valence_electrons;
+    z2_eff = simulation.system.molecules[1].atoms[2].valence_electrons;
+
+    ζ1 = (z1_eff - parsed_file.partial_charge_1)/z1_eff;
+    ζ2 = (z2_eff - parsed_file.partial_charge_2)/z2_eff;
+    
     simulation.system.chemical_potential = chemical_potential;
+    simulation.system.molecules[1].atoms[1].polarization_coefficient = ζ1;
+    simulation.system.molecules[1].atoms[2].polarization_coefficient = ζ2;
+
     return simulation;
 end
 
@@ -259,33 +268,75 @@ function set_fitted_pol_e_coeffs!(simulation::SimulationSystem,
     return;
 end
 
-function set_fitted_coeffs!(coeffs::EmpiricalXCCoefficients, 
+function set_fitted_coeffs!(coeffs::PolarizationEnergyCoefficients,
     Z1::Int, Z2::Int, fitted_coeffs::Vector)
     # Store the 2B fitted coefficients
-    xc_a_2b_index = 1;
-    xc_b_2b_index = 2;
-    xc_c_2b_index = 3;
-    xc_d_2b_index = 4;
+    xc_a_2b_m_ind = 1;
+    xc_a_2b_b_ind = 2;
+    xc_b_2b_m_ind = 3;
+    xc_b_2b_b_ind = 4;
+    xc_c_2b_m_ind = 5;
+    xc_c_2b_b_ind = 6;
+    xc_d_2b_m_ind = 7;
+    xc_d_2b_b_ind = 8;
 
-    coeffs.xc_a_2b[(Z1,Z2)] = fitted_coeffs[xc_a_2b_index];
-    coeffs.xc_b_2b[(Z1,Z2)] = fitted_coeffs[xc_b_2b_index];
-    coeffs.xc_c_2b[(Z1,Z2)] = fitted_coeffs[xc_c_2b_index];
-    coeffs.xc_d_2b[(Z1,Z2)] = fitted_coeffs[xc_d_2b_index];
+    coeffs.pol_e_xc_coeffs.xc_a_2b[(Z1,Z2)].m = fitted_coeffs[xc_a_2b_m_ind];
+    coeffs.pol_e_xc_coeffs.xc_a_2b[(Z1,Z2)].b = fitted_coeffs[xc_a_2b_b_ind];
+    coeffs.pol_e_xc_coeffs.xc_b_2b[(Z1,Z2)].m = fitted_coeffs[xc_b_2b_m_ind];
+    coeffs.pol_e_xc_coeffs.xc_b_2b[(Z1,Z2)].b = fitted_coeffs[xc_b_2b_b_ind];
+    coeffs.pol_e_xc_coeffs.xc_c_2b[(Z1,Z2)].m = fitted_coeffs[xc_c_2b_m_ind];
+    coeffs.pol_e_xc_coeffs.xc_c_2b[(Z1,Z2)].b = fitted_coeffs[xc_c_2b_b_ind];
+    coeffs.pol_e_xc_coeffs.xc_d_2b[(Z1,Z2)].m = fitted_coeffs[xc_d_2b_m_ind];
+    coeffs.pol_e_xc_coeffs.xc_d_2b[(Z1,Z2)].b = fitted_coeffs[xc_d_2b_b_ind];
 
-    coeffs.xc_a_2b[(Z2,Z1)] = fitted_coeffs[xc_a_2b_index];
-    coeffs.xc_b_2b[(Z2,Z1)] = fitted_coeffs[xc_b_2b_index];
-    coeffs.xc_c_2b[(Z2,Z1)] = fitted_coeffs[xc_c_2b_index];
-    coeffs.xc_d_2b[(Z2,Z1)] = fitted_coeffs[xc_d_2b_index];
+    return;
+end
+
+function set_fitted_coeffs!(coeffs::TotalEnergyCoefficients,
+    Z1::Int, Z2::Int, fitted_coeffs::Vector)
+    # Store the 2B fitted coefficients
+    xc_a_2b_m_ind =  1;
+    xc_a_2b_b_ind =  2;
+    xc_b_2b_m_ind =  3;
+    xc_b_2b_b_ind =  4;
+    xc_c_2b_m_ind =  5;
+    xc_c_2b_b_ind =  6;
+    xc_d_2b_m_ind =  7;
+    xc_d_2b_b_ind =  8;
+    morse_st1_ind =  9;
+    morse_st2_ind = 10;
+    morse_st3_ind = 11;
+
+    coeffs.tot_e_xc_coeffs.xc_a_2b[(Z1,Z2)].m = fitted_coeffs[xc_a_2b_m_ind];
+    coeffs.tot_e_xc_coeffs.xc_a_2b[(Z1,Z2)].b = fitted_coeffs[xc_a_2b_b_ind];
+    coeffs.tot_e_xc_coeffs.xc_b_2b[(Z1,Z2)].m = fitted_coeffs[xc_b_2b_m_ind];
+    coeffs.tot_e_xc_coeffs.xc_b_2b[(Z1,Z2)].b = fitted_coeffs[xc_b_2b_b_ind];
+    coeffs.tot_e_xc_coeffs.xc_c_2b[(Z1,Z2)].m = fitted_coeffs[xc_c_2b_m_ind];
+    coeffs.tot_e_xc_coeffs.xc_c_2b[(Z1,Z2)].b = fitted_coeffs[xc_c_2b_b_ind];
+    coeffs.tot_e_xc_coeffs.xc_d_2b[(Z1,Z2)].m = fitted_coeffs[xc_d_2b_m_ind];
+    coeffs.tot_e_xc_coeffs.xc_d_2b[(Z1,Z2)].b = fitted_coeffs[xc_d_2b_b_ind];
+
+    coeffs.tot_e_static_coeffs.morse_2b[(Z1,Z2)] = MorsePotentialCoefficients(
+        fitted_coeffs[morse_st1_ind]^2,
+        fitted_coeffs[morse_st2_ind]^2,
+        fitted_coeffs[morse_st3_ind]^2
+    );
+
+    return;
 end
 
 function set_fitted_pol_e_coeffs!(simulation::SimulationSystem,
     Z1::Int, Z2::Int, fitted_coeffs::Vector)
-    set_fitted_coeffs!(simulation.pol_e_xc_coeffs,Z1,Z2,fitted_coeffs);
+    set_fitted_coeffs!(simulation.pol_e_coeffs,Z1,Z2,fitted_coeffs);
+    set_fitted_coeffs!(simulation.pol_e_coeffs,Z2,Z1,fitted_coeffs);
+    return;
 end
 
 function set_fitted_tot_e_coeffs!(simulation::SimulationSystem,
     Z1::Int, Z2::Int, fitted_coeffs::Vector)
-    set_fitted_coeffs!(simulation.tot_e_xc_coeffs,Z1,Z2,fitted_coeffs);
+    set_fitted_coeffs!(simulation.tot_e_coeffs,Z1,Z2,fitted_coeffs);
+    set_fitted_coeffs!(simulation.tot_e_coeffs,Z2,Z1,fitted_coeffs);
+    return;
 end
 
 function get_reference_atom_total_energy()
@@ -594,7 +645,6 @@ function plot_reference_chemical_potential(Z1::Int, Z2::Int)
 
         for file_data in data
             r_i = file_data.atomic_separation;
-            # μ_i = (file_data.HOMO_energy + file_data.LUMO_energy) / 2.0;
             μ_i = file_data.chemical_potential;
 
             r = vcat(r,r_i);
@@ -618,26 +668,28 @@ function plot_reference_chemical_potential(Z1::Int, Z2::Int)
 end
 
 function polarize_to_model!(data::Vector{ParsedFile})
-        n_threads = Threads.nthreads();
-        @threads for thread_id in 1:n_threads
-            simulation = make_system_from_parsed_file(data[1]);
-            for i in thread_id:n_threads:length(data)
-                set_diatomic_system_to_parsed_file!(simulation,data[i]);
-                polarize_molecules!(simulation);
+    n_threads = Threads.nthreads();
+    @threads for thread_id in 1:n_threads
+        simulation = make_system_from_parsed_file(data[1]);
+        for i in thread_id:n_threads:length(data)
+            set_diatomic_system_to_parsed_file!(simulation,data[i]);
+            polarize_molecules!(simulation);
 
-                mol = simulation.system.molecules[1];
-                z1_eff = atom_eff_atomic_number(mol,1);
-                z2_eff = atom_eff_atomic_number(mol,2);
-                ζ1 = atom_polarization_coeff(mol,1);
-                ζ2 = atom_polarization_coeff(mol,2);
-                μ = simulation.system.chemical_potential;
+            mol = simulation.system.molecules[1];
+            z1_eff = mol.atoms[1].valence_electrons;
+            z2_eff = mol.atoms[2].valence_electrons;
+            ζ1 = mol.atoms[1].polarization_coefficient;
+            ζ2 = mol.atoms[2].polarization_coefficient;
+            μ = simulation.system.chemical_potential;
 
-                data[i].partial_charge_1 = z1_eff * (1.0 - ζ1);
-                data[i].partial_charge_2 = z2_eff * (1.0 - ζ2);
-                data[i].chemical_potential = μ;
-            end
+            data[i].partial_charge_1 = z1_eff * (1.0 - ζ1);
+            data[i].partial_charge_2 = z2_eff * (1.0 - ζ2);
+            data[i].chemical_potential = μ;
         end
     end
+
+    return;
+end
 
 function plot_reference_total_energy(Z1::Int, Z2::Int)
     neutral_data, cation_data, anion_data = read_all_sanitized_data(Z1,Z2,true);
@@ -719,7 +771,8 @@ function cast_coeffs_to_type!(coeffs::TotalEnergyCoefficients, which_type)
     return;
 end
 
-function cast_coeffs_to_type!(coeffs::PolarizationEnergyCoefficients, which_type)
+function cast_coeffs_to_type!(
+    coeffs::PolarizationEnergyCoefficients, which_type)
     function convert_to_type!(coeffs::Dict{Int,Number})
         for key in keys(coeffs)
             coeffs[key] = convert(which_type,coeffs[key]);

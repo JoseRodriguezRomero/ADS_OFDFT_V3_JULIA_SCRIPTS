@@ -10,8 +10,7 @@ for atomic_numbers in which_atomic_numbers
     Z1 = atomic_numbers[1];
     Z2 = atomic_numbers[2];
 
-    neutral_data, cation_data, anion_data = 
-        read_all_sanitized_data(Z1,Z2,true);
+    neutral_data, cation_data, anion_data = read_all_sanitized_data(Z1,Z2,true);
     all_data = vcat(neutral_data, cation_data, anion_data);
 
     n_threads = Threads.nthreads();
@@ -22,12 +21,12 @@ for atomic_numbers in which_atomic_numbers
         simulation[thread_id] = make_system_from_parsed_file(all_data[1]);
     end
 
-    num_2b_xc_coeffs = 4;
-    xc_2b_order = size(simulation[1].pol_e_xc_coeffs.xc_a_2b)[2] - 1;
-    aux_X = zeros(Float64,(xc_2b_order+1)*num_2b_xc_coeffs);
-    
-    z1_eff = atom_eff_atomic_number(simulation[1].system.molecules[1],1);
-    z2_eff = atom_eff_atomic_number(simulation[1].system.molecules[1],2);
+    num_vars = 8;
+    aux_X = zeros(Float64,num_vars);
+
+    atoms_μ0 = simulation[1].basis_set_settings.atoms_μ0;
+    μ0_1 = atoms_μ0[Z1];
+    μ0_2 = atoms_μ0[Z2];
 
     needs_casting = true;
     function cost_func(aux_X::Vector)
@@ -53,8 +52,6 @@ for atomic_numbers in which_atomic_numbers
                 ζ2 = atom_polarization_coeff(
                     simulation[thread_id].system.molecules[1],2);
                 μ = simulation[thread_id].system.chemical_potential;
-                μ0_1 = simulation[thread_id].atoms_μ0[Z1];
-                μ0_2 = simulation[thread_id].atoms_μ0[Z2];
 
                 aux_m, aux_y = 
                     polarization_matrix_problem(simulation[thread_id]);

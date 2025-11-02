@@ -412,6 +412,10 @@ function save_fitted_coeffs(simulation::SimulationSystem)
     return;
 end
 
+function get_xc_2b_coeff(xc_coeffs::XCCoeff2B, d::Number)
+    return xc_coeffs.b + d * xc_coeffs.m;
+end
+
 function reset_fitted_coeffs()
     max_atomic_number = 18;
 

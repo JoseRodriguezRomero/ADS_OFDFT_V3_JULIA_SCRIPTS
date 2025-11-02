@@ -115,10 +115,6 @@ for atomic_number in which_atomic_numbers
             aux_x[2] = μ - μ0;
             aux_x[3] = μ;
             ret_val += norm((aux_m \ aux_y) - aux_x)^2;
-
-            if atom.system.charge == 0
-                ret_val += aux_x[2]^2;
-            end
         end
 
         return ret_val;

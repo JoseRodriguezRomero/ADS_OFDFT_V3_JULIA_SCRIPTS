@@ -287,12 +287,9 @@ function polarization_matrix_problem(simulation::SimulationSystem)
                         aux_Y[ii0] -= en_xc_sph*xc_c_1b[z1];
                         aux_Y[ii0] -= en_xc_cyl*xc_d_1b[z1];
                     else
-                        sph_coeff = xc_c_2b[(z1,z2)].b + d * xc_c_2b[(z1,z2)].m;
-                        cyl_coeff = xc_d_2b[(z1,z2)].b + d * xc_d_2b[(z1,z2)].m;
-
                         aux_Y[ii0] -= en_naive;
-                        aux_Y[ii0] -= en_xc_sph*sph_coeff;
-                        aux_Y[ii0] -= en_xc_cyl*cyl_coeff;
+                        aux_Y[ii0] -= en_xc_sph*get_xc_2b_coeff(xc_c_2b[(z1,z2)],d);;
+                        aux_Y[ii0] -= en_xc_cyl*get_xc_2b_coeff(xc_d_2b[(z1,z2)],d);;
                     end
 
                     # cloud-cloud
@@ -303,12 +300,9 @@ function polarization_matrix_problem(simulation::SimulationSystem)
                         aux_M[ii0,jj0] += ee_xc_sph*xc_a_1b[z1];
                         aux_M[ii0,jj0] += ee_xc_cyl*xc_b_1b[z1];
                     else
-                        sph_coeff = xc_a_2b[(z1,z2)].b + d * xc_a_2b[(z1,z2)].m;
-                        cyl_coeff = xc_b_2b[(z1,z2)].b + d * xc_b_2b[(z1,z2)].m;
-
                         aux_M[ii0,jj0] += ee_naive;
-                        aux_M[ii0,jj0] += ee_xc_sph*sph_coeff;
-                        aux_M[ii0,jj0] += ee_xc_cyl*cyl_coeff;
+                        aux_M[ii0,jj0] += ee_xc_sph*get_xc_2b_coeff(xc_a_2b[(z1,z2)],d);
+                        aux_M[ii0,jj0] += ee_xc_cyl*get_xc_2b_coeff(xc_b_2b[(z1,z2)],d);
                     end
                 end
             end
@@ -392,15 +386,12 @@ function system_energies(simulation::SimulationSystem)
         z1 = at1.atomic_number;
         z2 = at2.atomic_number;
 
+        d = norm(at1.coordinates - at2.coordinates);
         en_naive, en_xc_sph, en_xc_cyl = en_energy(at1,at2);
 
-        d = norm(at1.coordinates - at2.coordinates);
-        sph_coeff = xc_c_2b[(z1,z2)].b + d * xc_c_2b[(z1,z2)].m;
-        cyl_coeff = xc_d_2b[(z1,z2)].b + d * xc_d_2b[(z1,z2)].m;
-
         naive_energy += en_naive;
-        xc_energy += en_xc_sph*sph_coeff;
-        xc_energy += en_xc_cyl*cyl_coeff;
+        xc_energy += en_xc_sph*get_xc_2b_coeff(xc_c_2b[(z1,z2)],d);
+        xc_energy += en_xc_cyl*get_xc_2b_coeff(xc_d_2b[(z1,z2)],d);
 
         return;
     end
@@ -419,15 +410,12 @@ function system_energies(simulation::SimulationSystem)
         z1 = at1.atomic_number;
         z2 = at2.atomic_number;
         
-        ee_naive, ee_xc_sph, ee_xc_cyl = ee_energy(at1,at2);
-
         d = norm(at1.coordinates - at2.coordinates);
-        sph_coeff = xc_a_2b[(z1,z2)].b + d * xc_a_2b[(z1,z2)].m;
-        cyl_coeff = xc_b_2b[(z1,z2)].b + d * xc_b_2b[(z1,z2)].m;
-
+        ee_naive, ee_xc_sph, ee_xc_cyl = ee_energy(at1,at2);
+        
         naive_energy += ee_naive;
-        xc_energy += ee_xc_sph*sph_coeff;
-        xc_energy += ee_xc_cyl*cyl_coeff;
+        xc_energy += ee_xc_sph*get_xc_2b_coeff(xc_a_2b[(z1,z2)],d);
+        xc_energy += ee_xc_cyl*get_xc_2b_coeff(xc_b_2b[(z1,z2)],d);
 
         return;
     end
