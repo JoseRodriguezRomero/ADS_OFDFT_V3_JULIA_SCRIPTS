@@ -33,22 +33,6 @@ for atomic_number in which_atomic_numbers
     dft_at_cation_e = dft_at_cation_e[atomic_number];
     dft_at_anion_e = dft_at_anion_e[atomic_number];
 
-    function minimum_index(data::Vector{ParsedFile})
-        i0 = 1;
-
-        for i in eachindex(data)
-            if data[i0].total_energy > data[i].total_energy
-                i0 = i;
-            end
-        end
-
-        return i0;
-    end
-
-    i0_neutral = minimum_index(neutral_data);
-    i0_cation = minimum_index(cation_data);
-    i0_anion = minimum_index(anion_data);
-
     needs_casting = true;
     function cost_func(aux_X::Vector)
         aux_type = typeof(aux_X[1]);
@@ -127,23 +111,6 @@ for atomic_number in which_atomic_numbers
         ret_val += (diff1 - diff2)^2;
         ret_val += (diff1 - diff3)^2;
         ret_val += (diff2 - diff3)^2;
-
-        function get_error_at_minimum(parsed_file::ParsedFile)
-            set_diatomic_system_to_parsed_file!(simulation[1],parsed_file);
-
-            dft_tot_e = parsed_file.total_energy;
-            model_tot_e = total_energy(simulation[1]);
-
-            e_diff = model_tot_e - dft_tot_e;                    
-            e_diff -= 2*model_at_neutral_e;
-            e_diff += 2*dft_at_neutral_e;
-
-            return e_diff^2;
-        end
-
-        # ret_val += get_error_at_minimum(neutral_data[i0_neutral]);
-        # ret_val += get_error_at_minimum(cation_data[i0_cation]);
-        # ret_val += get_error_at_minimum(anion_data[i0_anion]);
 
         return ret_val;
     end

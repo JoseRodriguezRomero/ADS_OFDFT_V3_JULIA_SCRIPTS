@@ -46,6 +46,16 @@ function test_result_ΔE(Z1::Int, Z2::Int)
     cation_dft_ΔE, cation_model_ΔE = get_data(cation_data);
     anion_dft_ΔE, anion_model_ΔE = get_data(anion_data);
 
+    model_ref_E = minimum(neutral_model_ΔE);
+    neutral_model_ΔE .-= model_ref_E;
+    cation_model_ΔE .-= model_ref_E;
+    anion_model_ΔE .-= model_ref_E;
+
+    dft_ref_E = minimum(neutral_dft_ΔE);
+    neutral_dft_ΔE .-= dft_ref_E;
+    cation_dft_ΔE .-= dft_ref_E;
+    anion_dft_ΔE .-= dft_ref_E;
+
     model_ΔE = vcat(neutral_model_ΔE,cation_model_ΔE,anion_model_ΔE);
     dft_ΔE = vcat(neutral_dft_ΔE,cation_dft_ΔE,anion_dft_ΔE);
 
@@ -65,10 +75,13 @@ function test_result_ΔE(Z1::Int, Z2::Int)
     anion_label = "("*elem_symbol1*" + "*elem_symbol2*")⁻";
 
     Pts = [-100,100];
-    p = plot(Pts,Pts,label=false);
-    scatter!(neutral_dft_ΔE, neutral_model_ΔE, label=neutral_label);
-    scatter!(cation_dft_ΔE, cation_model_ΔE, label=cation_label);
-    scatter!(anion_dft_ΔE, anion_model_ΔE, label=anion_label);
+    p = plot(Pts,Pts,label=false, color=palette(:default)[4]);
+    scatter!(neutral_dft_ΔE, neutral_model_ΔE, 
+        label=neutral_label, color=palette(:default)[1]);
+    scatter!(cation_dft_ΔE, cation_model_ΔE, 
+        label=cation_label, color=palette(:default)[2]);
+    scatter!(anion_dft_ΔE, anion_model_ΔE, 
+        label=anion_label, color=palette(:default)[3]);
     plot!(framestyle = :box);
     plot!(legend=:topleft);
 
@@ -130,10 +143,13 @@ function test_result_chemical_potential(Z1::Int, Z2::Int)
     anion_label = "("*elem_symbol1*" + "*elem_symbol2*")⁻";
 
     Pts = [-2,2];
-    p = plot(Pts,Pts,label=false);
-    scatter!(neutral_dft_chem_μ, neutral_model_chem_μ, label=neutral_label);
-    scatter!(cation_dft_chem_μ, cation_model_chem_μ, label=cation_label);
-    scatter!(anion_dft_chem_μ, anion_model_chem_μ, label=anion_label);
+    p = plot(Pts,Pts,label=false, color=palette(:default)[4]);
+    scatter!(neutral_dft_chem_μ, neutral_model_chem_μ, 
+        label=neutral_label, color=palette(:default)[1]);
+    scatter!(cation_dft_chem_μ, cation_model_chem_μ, 
+        label=cation_label, color=palette(:default)[2]);
+    scatter!(anion_dft_chem_μ, anion_model_chem_μ, 
+        label=anion_label, color=palette(:default)[3]);
     plot!(framestyle = :box);
     plot!(legend=:topleft);
 
@@ -150,8 +166,8 @@ function compare_data()
     # Energy Differences
     # HC Plots
     eHC, R² = test_result_ΔE(1,6);
-    aux_lims = [-0.5,1.5];
-    aux_ticks = -0.5:0.5:1.5;
+    aux_lims = [-0.3,1.7];
+    aux_ticks = -0.3:0.5:1.7;
     plot!(xlims=aux_lims);
     plot!(ylims=aux_lims);
     plot!(xticks=aux_ticks);
@@ -167,8 +183,8 @@ function compare_data()
 
     # HO Plots
     eHO, R² = test_result_ΔE(1,8);
-    aux_lims = [-0.5,1.5];
-    aux_ticks = -0.5:0.5:1.5;
+    aux_lims = [-0.3,1.7];
+    aux_ticks = -0.3:0.5:1.7;
     plot!(xlims=aux_lims);
     plot!(ylims=aux_lims);
     plot!(xticks=aux_ticks);
@@ -182,8 +198,8 @@ function compare_data()
 
     # CO Plots
     eCO, R² = test_result_ΔE(6,8);  
-    aux_lims = [-0.6,2.2];
-    aux_ticks = -0.6:0.7:2.2;
+    aux_lims = [-0.4,2.4];
+    aux_ticks = -0.4:0.7:2.4;
     plot!(xlims=aux_lims);
     plot!(ylims=aux_lims);
     plot!(xticks=aux_ticks);
@@ -197,8 +213,8 @@ function compare_data()
 
     # NO Plots
     eNO, R² = test_result_ΔE(7,8);
-    aux_lims = [-0.5,0.7];
-    aux_ticks = -0.5:0.3:0.7;
+    aux_lims = [-0.2,1.0];
+    aux_ticks = -0.2:0.3:1.0;
     plot!(xlims=aux_lims);
     plot!(ylims=aux_lims);
     plot!(xticks=aux_ticks);

@@ -288,8 +288,8 @@ function polarization_matrix_problem(simulation::SimulationSystem)
                         aux_Y[ii0] -= en_xc_cyl*xc_d_1b[z1];
                     else
                         aux_Y[ii0] -= en_naive;
-                        aux_Y[ii0] -= en_xc_sph*get_xc_2b_coeff(xc_c_2b[(z1,z2)],d);;
-                        aux_Y[ii0] -= en_xc_cyl*get_xc_2b_coeff(xc_d_2b[(z1,z2)],d);;
+                        aux_Y[ii0] -= en_xc_sph*get_xc_2b_coeff(xc_c_2b[(z1,z2)],d);
+                        aux_Y[ii0] -= en_xc_cyl*get_xc_2b_coeff(xc_d_2b[(z1,z2)],d);
                     end
 
                     # cloud-cloud
@@ -508,7 +508,7 @@ function system_energies(simulation::SimulationSystem)
                     compute_ee_naive_xc_energies(at1,at2);
                     compute_nonpolarizable_energy(at1,at2);
                 end
-            end            
+            end          
         end
     end
 

@@ -61,10 +61,13 @@ function test_result_ΔE(atomic_number::Int)
     anion_label = "("*elem_symbol*" + "*elem_symbol*")⁻";
 
     Pts = [-100,100];
-    p = plot(Pts,Pts,label=false);
-    scatter!(neutral_dft_ΔE, neutral_model_ΔE, label=neutral_label);
-    scatter!(cation_dft_ΔE, cation_model_ΔE, label=cation_label);
-    scatter!(anion_dft_ΔE, anion_model_ΔE, label=anion_label);
+    p = plot(Pts,Pts,label=false, color=palette(:default)[4]);
+    scatter!(neutral_dft_ΔE, neutral_model_ΔE, 
+        label=neutral_label, color=palette(:default)[1]);
+    scatter!(cation_dft_ΔE, cation_model_ΔE, 
+        label=cation_label, color=palette(:default)[2]);
+    scatter!(anion_dft_ΔE, anion_model_ΔE, 
+        label=anion_label, color=palette(:default)[3]);
     plot!(framestyle = :box);
     plot!(legend=:topleft);
 
@@ -125,10 +128,13 @@ function test_result_chemical_potential(atomic_number::Int)
     anion_label = "("*elem_symbol*" + "*elem_symbol*")⁻";
 
     Pts = [-100,100];
-    p = plot(Pts,Pts,label=false);
-    scatter!(neutral_dft_chem_μ, neutral_model_chem_μ, label=neutral_label);
-    scatter!(cation_dft_chem_μ, cation_model_chem_μ, label=cation_label);
-    scatter!(anion_dft_chem_μ, anion_model_chem_μ, label=anion_label);
+    p = plot(Pts,Pts,label=false, color=palette(:default)[4]);
+    scatter!(neutral_dft_chem_μ, neutral_model_chem_μ, 
+        label=neutral_label, color=palette(:default)[1]);
+    scatter!(cation_dft_chem_μ, cation_model_chem_μ, 
+        label=cation_label, color=palette(:default)[2]);
+    scatter!(anion_dft_chem_μ, anion_model_chem_μ, 
+        label=anion_label, color=palette(:default)[3]);
     plot!(framestyle = :box);
     plot!(legend=:topleft);
 

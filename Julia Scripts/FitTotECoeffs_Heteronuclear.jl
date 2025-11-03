@@ -36,22 +36,6 @@ for atomic_numbers in which_atomic_numbers
     polarize_to_model!(cation_data);
     polarize_to_model!(anion_data);
 
-    function minimum_index(data::Vector{ParsedFile})
-        i0 = 1;
-
-        for i in eachindex(data)
-            if data[i0].total_energy > data[i].total_energy
-                i0 = i;
-            end
-        end
-
-        return i0;
-    end
-
-    i0_neutral = minimum_index(neutral_data);
-    i0_cation = minimum_index(cation_data);
-    i0_anion = minimum_index(anion_data);
-
     needs_casting = true;
     function cost_func(aux_X::Vector)
         aux_type = typeof(aux_X[1]);
@@ -76,9 +60,6 @@ for atomic_numbers in which_atomic_numbers
 
         set_fitted_coeffs!(neutral_at1);
         set_fitted_coeffs!(neutral_at2);
-
-        model_neutral_at1_e = total_energy(neutral_at1);
-        model_neutral_at2_e = total_energy(neutral_at2);
 
         ret_val = zeros(aux_type,n_threads);
         @threads for thread_id in 1:n_threads
@@ -117,26 +98,7 @@ for atomic_numbers in which_atomic_numbers
             end
         end
 
-        function get_error_at_minimum(parsed_file::ParsedFile)
-            set_diatomic_system_to_parsed_file!(simulation[1],parsed_file);
-
-            dft_tot_e = parsed_file.total_energy;
-            model_tot_e = total_energy(simulation[1]);
-
-            e_diff = model_tot_e - dft_tot_e;                    
-            e_diff -= model_neutral_at1_e + model_neutral_at2_e;
-            e_diff += dft_neutral_at1_e + dft_neutral_at2_e;
-
-            return e_diff^2;
-        end
-
-        ret_val = sum(ret_val);
-
-        # ret_val += get_error_at_minimum(neutral_data[i0_neutral]);
-        # ret_val += get_error_at_minimum(cation_data[i0_cation]);
-        # ret_val += get_error_at_minimum(anion_data[i0_anion]);
-
-        return ret_val;
+        return sum(ret_val);
     end
 
     # needs_casting = false;
