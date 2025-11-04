@@ -208,6 +208,7 @@ function set_fitted_coeffs!(coeffs::TotalEnergyCoefficients,
     coeffs.tot_e_xc_coeffs.xc_c_2b[(Z,Z)].b = fitted_coeffs[xc_c_2b_b_ind];
     coeffs.tot_e_xc_coeffs.xc_d_2b[(Z,Z)].m = fitted_coeffs[xc_d_2b_m_ind];
     coeffs.tot_e_xc_coeffs.xc_d_2b[(Z,Z)].b = fitted_coeffs[xc_d_2b_b_ind];
+
     coeffs.tot_e_static_coeffs.morse_2b[(Z,Z)] = MorsePotentialCoefficients(
         fitted_coeffs[morse_st1_ind]^2,
         fitted_coeffs[morse_st2_ind]^2,
@@ -271,6 +272,7 @@ end
 function set_fitted_coeffs!(coeffs::PolarizationEnergyCoefficients,
     Z1::Int, Z2::Int, fitted_coeffs::Vector)
     # Store the 2B fitted coefficients
+    # Store the 2B fitted coefficients
     xc_a_2b_m_ind = 1;
     xc_a_2b_b_ind = 2;
     xc_b_2b_m_ind = 3;
@@ -303,7 +305,7 @@ function set_fitted_coeffs!(coeffs::TotalEnergyCoefficients,
     xc_c_2b_b_ind =  6;
     xc_d_2b_m_ind =  7;
     xc_d_2b_b_ind =  8;
-    morse_st1_ind =  9;
+    morse_st1_ind =  8;
     morse_st2_ind = 10;
     morse_st3_ind = 11;
 
@@ -390,10 +392,10 @@ function get_reference_atom_chemical_potential()
         m[3,2] = (-1.0)^1;
         m[3,3] = 1.0;
 
-        m_coeffs = -(m \ y);
+        m_coeffs = (m \ y);
 
         function fitted_chemical_potential(charge::Number)
-            return 2*m_coeffs[1]*charge + m_coeffs[2]
+            return -(2*m_coeffs[1]*charge + m_coeffs[2]);
         end
 
         neutral_μ[i] = fitted_chemical_potential(0);

@@ -21,10 +21,9 @@ mutable struct Molecule
     atoms::Vector{Atom};
 end
 
-mutable struct MorsePotentialCoefficients
-    depth::Number;
-    exponential_decay::Number;
-    equilibrium_distance::Number;
+mutable struct ExponentialCoefficients
+    amplitude::Number;
+    decay::Number;
 end
 
 mutable struct XCCoeff2B
@@ -49,8 +48,13 @@ mutable struct EmpiricalKECoefficients
     ke_f_1b::Dict{Int,Number};
 end
 
-mutable struct EmpiricalStaticCoefficients
-    morse_2b::Dict{Tuple{Int,Int},MorsePotentialCoefficients};
+mutable struct TotalEnergyEmpiricalStaticCoefficients
+    core_core::Dict{Tuple{Int,Int},ExponentialCoefficients};
+    core_valence::Dict{Tuple{Int,Int},ExponentialCoefficients};
+end
+
+mutable struct PolarizationEnergyEmpiricalStaticCoefficients
+    core_valence::Dict{Tuple{Int,Int},ExponentialCoefficients};
 end
 
 mutable struct BasisSetSettings
@@ -62,7 +66,7 @@ end
 mutable struct MolecularSystem
     name::String;
     molecules::Vector{Molecule};
-    charge::Int;
+    charge::Number;
     energy::Number;
     chemical_potential::Number;
 end
@@ -71,13 +75,14 @@ mutable struct TotalEnergyCoefficients
     max_atomic_number::Int;
     tot_e_xc_coeffs::EmpiricalXCCoefficients;
     tot_e_ke_coeffs::EmpiricalKECoefficients;
-    tot_e_static_coeffs::EmpiricalStaticCoefficients;
+    tot_e_static_coeffs::TotalEnergyEmpiricalStaticCoefficients;
 end
 
 mutable struct PolarizationEnergyCoefficients
     max_atomic_number::Int;
     pol_e_xc_coeffs::EmpiricalXCCoefficients;
     pol_e_ke_coeffs::EmpiricalKECoefficients;
+    pol_e_static_coeffs::PolarizationEnergyEmpiricalStaticCoefficients;
 end
 
 mutable struct SimulationSystem

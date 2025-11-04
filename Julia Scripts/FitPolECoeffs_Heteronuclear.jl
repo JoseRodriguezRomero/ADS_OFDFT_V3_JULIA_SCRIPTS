@@ -63,7 +63,43 @@ for atomic_numbers in which_atomic_numbers
                 aux_x[4] = μ - μ0_2;
                 aux_x[5] = μ;
 
+                μ_model = (aux_m \ aux_y)[end];
+
                 ret_val[thread_id] += norm((aux_m \ aux_y) - aux_x)^2;
+
+                if i > 1
+                    if all_data[i].charge != all_data[i-1].charge
+                        continue;
+                    end
+
+                    set_diatomic_system_to_parsed_file!(
+                        simulation[thread_id],all_data[i-1]);
+
+                    ζ1_nxt = atom_polarization_coeff(
+                        simulation[thread_id].system.molecules[1],1);
+                    ζ2_nxt = atom_polarization_coeff(
+                        simulation[thread_id].system.molecules[1],2);
+                    μ_nxt = simulation[thread_id].system.chemical_potential;
+
+                    aux_m, aux_y = 
+                        polarization_matrix_problem(simulation[thread_id]);
+
+                    aux_x = zeros(aux_type,5);
+                    aux_x[1] = ζ1_nxt;
+                    aux_x[2] = ζ2_nxt;
+                    aux_x[3] = μ_nxt - μ0_1;
+                    aux_x[4] = μ_nxt - μ0_2;
+                    aux_x[5] = μ_nxt;
+
+                    μ_model_nxt = (aux_m \ aux_y)[end];
+
+                    Δd = all_data[i-1].atomic_separation - all_data[i].atomic_separation;
+
+                    model_dev = (μ_model_nxt - μ_model) / Δd;
+                    dft_dev = (μ_nxt - μ) / Δd;
+
+                    ret_val[thread_id] += (model_dev - dft_dev)^2;
+                end
             end
         end
 

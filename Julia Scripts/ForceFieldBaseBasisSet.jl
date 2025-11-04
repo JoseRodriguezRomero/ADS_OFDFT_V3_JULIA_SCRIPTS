@@ -100,14 +100,15 @@ function load_isolated_atoms_chemical_potential()
         M = zeros(Float64,3,3);
         Y = zeros(Float64,3);
 
-        M[1,:] = [(0.0)^2, (0.0)^1, (0.0)^0];
-        M[2,:] = [(1.0)^2, (1.0)^1, (1.0)^0];
-        M[3,:] = [(-1.0)^2, (-1.0)^1, (-1.0)^0];
+        M[1,:] = [ (0.0)^2,  (0.0)^1, 1.0];
+        M[2,:] = [ (1.0)^2,  (1.0)^1, 1.0];
+        M[3,:] = [(-1.0)^2, (-1.0)^1, 1.0];
 
         Y[:] = [e_neutral, e_cation, e_anion];
         X = (M \ Y)[:];
 
-        chemical_potentials[i] = -(2*X[1] + X[2]);
+        charge = 0.0;
+        chemical_potentials[i] = -(2*X[1]*charge + X[2]);
     end
 
     return chemical_potentials;
