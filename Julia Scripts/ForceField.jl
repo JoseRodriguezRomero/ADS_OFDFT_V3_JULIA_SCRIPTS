@@ -228,7 +228,7 @@ function polarization_matrix_problem(simulation::SimulationSystem)
         atom_shift_index = tot_num_atoms + atom_index;
         μ0 = atoms_μ0[atom.atomic_number];
 
-        Δμ_atom_index = tot_num_atoms + i;
+        Δμ_atom_index = tot_num_atoms + atom_index;
         aux_M[atom_shift_index,end] -= 1.0;
         aux_M[atom_shift_index,atom_shift_index] += 1.0;
         aux_M[atom_index,atom_shift_index] -= atom.valence_electrons;
@@ -258,7 +258,7 @@ function polarization_matrix_problem(simulation::SimulationSystem)
         return;
     end
 
-    function compute_ne_energies(atom_1::Atom, atom_2::Atom,
+    function compute_en_energies(atom_1::Atom, atom_2::Atom,
         atom_index_1::Int, atom_index_2::Int)
         z1 = atom_1.atomic_number;
         z2 = atom_2.atomic_number;
@@ -283,7 +283,7 @@ function polarization_matrix_problem(simulation::SimulationSystem)
         return;
     end
 
-    function compute_ne_energies(atom::Atom, atom_index::Int)
+    function compute_en_energies(atom::Atom, atom_index::Int)
         z = atom.atomic_number;
         e_naive, e_xc_sph, e_xc_cyl = unpol_en_energy(atom,atom);
 
@@ -334,10 +334,8 @@ function polarization_matrix_problem(simulation::SimulationSystem)
 
         d = norm(atom_1.coordinates - atom_2.coordinates);
 
-        z1_eff = at1.valence_electrons;
-        z2_eff = at2.valence_electrons;
-
-        d = norm(at1.coordinates - at2.coordinates);
+        z1_eff = atom_1.valence_electrons;
+        z2_eff = atom_2.valence_electrons;
 
         exp_coeffs = core_valence[(z1,z2)];
         A = exp_coeffs.amplitude;
@@ -350,57 +348,73 @@ function polarization_matrix_problem(simulation::SimulationSystem)
         return;
     end
 
-    for ii in eachindex(molecules)
-        molecule1 = molecules[ii];
-        num_atoms1 = number_of_atoms(molecule1);
+    function compute_one_body_terms()
+        for molecule_index in eachindex(molecules)
+            molecule = molecules[molecule_index];
 
-        # Intramolecular and one-body interactions
-        for i in 1:num_atoms1
-            for j in i:num_atoms1
-                atom_1 = molecule1.atoms[i];
-                atom_2 = molecule1.atoms[j];
+            for i in eachindex(molecule.atoms)
+                atom = molecule.atoms[i];
+                atom_index = atom_ind_base[molecule_index] + i - 1;
 
-                atom_index_1 = atom_ind_base[ii] + i - 1;
-                atom_index_2 = atom_ind_base[ii] + j - 1;
+                compute_en_energies(atom,atom_index);
+                compute_ee_energies(atom,atom_index);
+                compute_kinetic_energies(atom,atom_index);
+                compute_chemical_potential(atom,atom_index);
+                compute_chemical_potential_shift(atom,atom_index);
+            end
+        end
+    end
 
-                if i != j
+    function compute_two_body_intramolecular_terms()
+        for molecule_index in eachindex(molecules)
+            molecule = molecules[molecule_index];
+
+            for i in eachindex(molecule.atoms)
+                for j in (i+1):length(molecule.atoms)
+                    atom_1 = molecule.atoms[i];
+                    atom_2 = molecule.atoms[j];
+
+                    atom_index_1 = atom_ind_base[molecule_index] + i - 1;
+                    atom_index_2 = atom_ind_base[molecule_index] + j - 1;
+
                     compute_en_energies(atom_1,atom_2,atom_index_1,atom_index_2);
-                    compute_en_energies(atom_2,atom_1,atom_index_2,atom_index_1);
                     compute_ee_energies(atom_1,atom_2,atom_index_1,atom_index_2);
-                    compute_core_valence_static_energy(atom_1,atom_2,atom_index_1,atom_index_2);
                     compute_core_valence_static_energy(atom_2,atom_1,atom_index_2,atom_index_1);
-                else
-                    compute_en_energies(atom_1,atom_index_1);
-                    compute_ee_energies(atom_1,atom_index_1);
-                    compute_kinetic_energies(atom_1,atom_index_1);
-                    compute_chemical_potential(atom_1,atom_index_1);
-                    compute_chemical_potential_shift(atom_1,atom_index_1);
                 end
             end
         end
+    end
 
-        # Intermolecular interactions
-        for jj in (ii+1):num_molecules
-            molecule2 = molecules[jj];
-            num_atoms2 = number_of_atoms(molecule2);
+    function compute_two_body_intermolecular_terms()
+        for molecule_index_1 in eachindex(molecules)
+            for molecule_index_2 in (molecule_index_1+1):length(molecules)
+                molecule_1 = molecules[molecule_index_1];
+                molecule_2 = molecules[molecule_index_2];
 
-            for i in 1:num_atoms1
-                for j in 1:num_atoms2
-                    atom_1 = molecule1.atoms[i];
-                    atom_2 = molecule2.atoms[j];
+                for i in eachindex(molecule_1)
+                    for j in eachindex(molecule_2)
+                        atom_1 = molecule_1.atoms[i];
+                        atom_2 = molecule_2.atoms[j];
 
-                    atom_index_1 = atom_ind_base[ii] + i - 1;
-                    atom_index_2 = atom_ind_base[jj] + j - 1;
+                        atom_index_1 = atom_ind_base[molecule_index_1] + i - 1;
+                        atom_index_2 = atom_ind_base[molecule_index_2] + j - 1;
 
-                    compute_en_energies(atom_1,atom_2,atom_index_1,atom_index_2);
-                    compute_en_energies(atom_2,atom_1,atom_index_2,atom_index_1);
-                    compute_ee_energies(atom_1,atom_2,atom_index_1,atom_index_2);
-                    compute_core_valence_static_energy(atom_1,atom_2,atom_index_1,atom_index_2);
-                    compute_core_valence_static_energy(atom_2,atom_1,atom_index_2,atom_index_1);
+                        compute_en_energies(atom_1,atom_2,atom_index_1,atom_index_2);
+                        compute_ee_energies(atom_1,atom_2,atom_index_1,atom_index_2);
+                        compute_core_valence_static_energy(atom_2,atom_1,atom_index_2,atom_index_1);
+                    end
                 end
-            end          
+            end
         end
     end
+
+    function compute_two_body_terms()
+        compute_two_body_intramolecular_terms();
+        compute_two_body_intermolecular_terms();
+    end
+
+    compute_one_body_terms();
+    compute_two_body_terms();
 
     return aux_M, aux_Y;
 end
@@ -411,6 +425,8 @@ function polarize_molecules!(simulation::SimulationSystem)
     minimizer = aux_m \ aux_y;
 
     # display(hcat(aux_m,aux_y));
+
+    molecules = simulation.system.molecules;
 
     tot_num_atoms = 0;
     atom_ind_base = [];
@@ -426,16 +442,15 @@ function polarize_molecules!(simulation::SimulationSystem)
 
     simulation.system.chemical_potential = minimizer[end];
 
-    for i in eachindex(simulation.system.molecules)
-        i0 = atom_ind_base[i];
-        atoms = simulation.system.molecules[i].atoms;
+    for molecule_index in eachindex(molecules)
+        molecule = molecules[molecule_index];
 
-        for ii in eachindex(atoms)
-            ζ = minimizer[i0+ii-1];
-            atoms[ii].polarization_coefficient = ζ;
+        for i in eachindex(molecule.atoms)
+            atom_index = atom_ind_base[molecule_index] + i - 1;
+
+            ζ = minimizer[atom_index];
+            molecules[molecule_index].atoms[i].polarization_coefficient = ζ;
         end
-
-        simulation.system.molecules[i].atoms = atoms;
     end
 end
 
@@ -481,11 +496,16 @@ function system_energies(simulation::SimulationSystem)
         z2 = at2.atomic_number;
 
         d = norm(at1.coordinates - at2.coordinates);
-        en_naive, en_xc_sph, en_xc_cyl = en_energy(at1,at2);
 
+        en_naive, en_xc_sph, en_xc_cyl = en_energy(at1,at2);
         naive_energy += en_naive;
         xc_energy += en_xc_sph*get_xc_2b_coeff(xc_c_2b[(z1,z2)],d);
         xc_energy += en_xc_cyl*get_xc_2b_coeff(xc_d_2b[(z1,z2)],d);
+
+        en_naive, en_xc_sph, en_xc_cyl = en_energy(at2,at1);
+        naive_energy += en_naive;
+        xc_energy += en_xc_sph*get_xc_2b_coeff(xc_c_2b[(z2,z1)],d);
+        xc_energy += en_xc_cyl*get_xc_2b_coeff(xc_d_2b[(z2,z1)],d);
 
         return;
     end
@@ -548,20 +568,6 @@ function system_energies(simulation::SimulationSystem)
         return;
     end
 
-    function compute_nonpolarizable_energy(at1::Atom, at2::Atom)
-        z1 = at1.atomic_number;
-        z2 = at2.atomic_number;
-        
-        d = norm(at1.coordinates - at2.coordinates);
-
-        morse_coeffs = morse_2b[(z1,z2)];
-        de = morse_coeffs.depth;
-        a = morse_coeffs.exponential_decay;
-        re = morse_coeffs.equilibrium_distance;
-        nonpolarizable_energy += de * ((1.0 - exp(-a * (d - re)))^2 - 1.0);
-        return;
-    end
-
     function compute_core_core_static_energy(at1::Atom, at2::Atom)
         z1 = at1.atomic_number;
         z2 = at2.atomic_number;
@@ -596,49 +602,52 @@ function system_energies(simulation::SimulationSystem)
         return;
     end
 
-    for ii in 1:num_molecules
-        molecule1 = molecules[ii];
-        num_atoms1 = number_of_atoms(molecule1);
+    function compute_one_body_energies()
+        for molecule in molecules
+            for atom in molecule.atoms
+                compute_kinetic_energies(atom);
+                compute_en_energies(atom);
+                compute_ee_energies(atom);
+            end
+        end
+    end
 
-        # Intramolecular interactions
-        for i in 1:num_atoms1
-            for j in i:num_atoms1
-                at1 = molecule1.atoms[i];
-                at2 = molecule1.atoms[j];
+    function compute_two_body_energies()
+        # Intramolecular interaction
+        for molecule in molecules
+            for atom_index_1 in eachindex(molecule.atoms)
+                for atom_index_2 in (atom_index_1+1):length(molecule.atoms)
+                    atom_1 = molecule.atoms[atom_index_1];
+                    atom_2 = molecule.atoms[atom_index_2];
 
-                if i != j
-                    compute_nn_energy(at1,at2);
-                    compute_en_energies(at1,at2);
-                    compute_en_energies(at2,at1);
-                    compute_ee_energies(at1,at2);
-                    compute_nonpolarizable_energy(at1,at2);
-                else
-                    compute_kinetic_energies(at1);
-                    compute_en_energies(at1);
-                    compute_ee_energies(at1);
+                    compute_nn_energy(atom_1,atom_2);
+                    compute_en_energies(atom_1,atom_2);
+                    compute_ee_energies(atom_1,atom_2);
+                    compute_nonpolarizable_energy(atom_1,atom_2);
                 end
             end
         end
 
         # Intermolecular interactions
-        for jj in (ii+1):num_molecules
-            molecule2 = molecules[jj];
-            num_atoms2 = number_of_atoms(molecule2);
+        for molecule_index_1 in eachindex(molecules)
+            for molecule_index_2 in (molecule_index_1+1):length(molecules)
+                molecule_1 = molecules[molecule_index_1];
+                molecule_2 = molecules[molecule_index_2];
 
-            for i in 1:num_atoms1
-                for j in 1:num_atoms2
-                    at1 = molecule1.atoms[i];
-                    at2 = molecule2.atoms[j];
-
-                    compute_nn_energy(at1,at2);
-                    compute_en_energies(at1,at2);
-                    compute_en_energies(at2,at1);
-                    compute_ee_energies(at1,at2);
-                    compute_nonpolarizable_energy(at1,at2);
+                for atom_1 in molecule_1.atoms
+                    for atom_2 in molecule_2.atoms
+                        compute_nn_energy(atom_1,atom_2);
+                        compute_en_energies(atom_1,atom_2);
+                        compute_ee_energies(atom_1,atom_2);
+                        compute_nonpolarizable_energy(atom_1,atom_2);
+                    end
                 end
-            end          
+            end
         end
     end
+
+    compute_one_body_energies();
+    compute_two_body_energies();
 
     return naive_energy, kinetic_energy, xc_energy, static_energy;
 end

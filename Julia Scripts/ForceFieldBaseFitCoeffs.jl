@@ -6,7 +6,7 @@ function save_1b_coeffs(
     ke_e_1b::Dict{Int,Number}, ke_f_1b::Dict{Int,Number}, 
     max_atomic_number::Int, type::String)
     
-    base_dir = "XC Coeffs/"*type*"/One Body/";
+    base_dir = "Fitted Coefficients/"*type*"/One Body/";
     xc_coeffs_a_id = base_dir*"xc_coeffs_A.txt";
     xc_coeffs_b_id = base_dir*"xc_coeffs_B.txt";
     xc_coeffs_c_id = base_dir*"xc_coeffs_C.txt";
@@ -91,7 +91,7 @@ function save_2b_coeffs(
     xc_c_2b::Dict{Tuple{Int,Int},XCCoeff2B}, xc_d_2b::Dict{Tuple{Int,Int},XCCoeff2B},
     max_atomic_number::Int, type::String)
 
-    base_dir = "XC Coeffs/"*type*"/Two Body/";
+    base_dir = "Fitted Coefficients/"*type*"/Two Body/";
     xc_coeffs_a_id = base_dir*"xc_coeffs_A.txt";
     xc_coeffs_b_id = base_dir*"xc_coeffs_B.txt";
     xc_coeffs_c_id = base_dir*"xc_coeffs_C.txt";
@@ -127,22 +127,20 @@ function save_2b_coeffs(
 end
 
 function save_2b_coeffs(
-    morse_2b::Dict{Tuple{Int,Int},MorsePotentialCoefficients},
-    max_atomic_number::Int, type::String)
+    static_coeffs::Dict{Tuple{Int,Int},ExponentialCoefficients},
+    max_atomic_number::Int, type::String, name::String)
 
-    base_dir = "XC Coeffs/"*type*"/Two Body/";
-    morse_coeffs_id = base_dir*"morse_coeffs.txt";
+    base_dir = "Fitted Coefficients/"*type*"/Two Body/";
+    static_coeffs_id = base_dir*name*".txt";
 
-    function save_to_file(file_name::String, coeffs::Dict{Tuple{Int,Int},MorsePotentialCoefficients})
+    function save_to_file(file_name::String, coeffs::Dict{Tuple{Int,Int},ExponentialCoefficients})
         file_id = open(file_name,"w");
         for i in 1:max_atomic_number
             for j in i:max_atomic_number
                 if haskey(coeffs,(i,j))
-                    write(file_id, @sprintf "%18.8E " coeffs[(i,j)].depth);
-                    write(file_id, @sprintf "%18.8E " coeffs[(i,j)].exponential_decay);
-                    write(file_id, @sprintf "%18.8E " coeffs[(i,j)].equilibrium_distance);
+                    write(file_id, @sprintf "%18.8E " coeffs[(i,j)].amplitude);
+                    write(file_id, @sprintf "%18.8E " coeffs[(i,j)].decay);
                 else
-                    write(file_id, @sprintf "%18.8E " 0.0);
                     write(file_id, @sprintf "%18.8E " 0.0);
                     write(file_id, @sprintf "%18.8E " 0.0);
                 end
@@ -156,7 +154,7 @@ function save_2b_coeffs(
         close(file_id);
     end
 
-    save_to_file(morse_coeffs_id,morse_2b);
+    save_to_file(static_coeffs_id,static_coeffs);
 
     return;
 end
@@ -167,13 +165,15 @@ function save_2b_coeffs(coeffs::TotalEnergyCoefficients)
     xc_c_2b = coeffs.tot_e_xc_coeffs.xc_c_2b;
     xc_d_2b = coeffs.tot_e_xc_coeffs.xc_d_2b;
 
-    morse_2b = coeffs.tot_e_static_coeffs.morse_2b
+    core_core = coeffs.tot_e_static_coeffs.core_core;
+    core_valence = coeffs.tot_e_static_coeffs.core_valence;
 
     max_atomic_number = coeffs.max_atomic_number;
 
     type = "Energy";
     save_2b_coeffs(xc_a_2b,xc_b_2b,xc_c_2b,xc_d_2b,max_atomic_number,type);
-    save_2b_coeffs(morse_2b,max_atomic_number,type);
+    save_2b_coeffs(core_core,max_atomic_number,type,"static_core_core");
+    save_2b_coeffs(core_valence,max_atomic_number,type,"static_core_valence");
     
     return;
 end
@@ -184,10 +184,13 @@ function save_2b_coeffs(coeffs::PolarizationEnergyCoefficients)
     xc_c_2b = coeffs.pol_e_xc_coeffs.xc_c_2b;
     xc_d_2b = coeffs.pol_e_xc_coeffs.xc_d_2b;
 
+    core_valence = coeffs.pol_e_static_coeffs.core_valence;
+
     max_atomic_number = coeffs.max_atomic_number;
 
     type = "Polarization";
     save_2b_coeffs(xc_a_2b,xc_b_2b,xc_c_2b,xc_d_2b,max_atomic_number,type);
+    save_2b_coeffs(core_valence,max_atomic_number,type,"static_core_valence");
     
     return;
 end
@@ -203,7 +206,7 @@ function save_2b_tot_e_coeffs(simulation::SimulationSystem)
 end
 
 function load_1b_xc_coeffs(type::String)
-    base_dir = "XC Coeffs/"*type*"/One Body/";
+    base_dir = "Fitted Coefficients/"*type*"/One Body/";
     xc_coeffs_a_id = base_dir*"xc_coeffs_A.txt";
     xc_coeffs_b_id = base_dir*"xc_coeffs_B.txt";
     xc_coeffs_c_id = base_dir*"xc_coeffs_C.txt";
@@ -233,7 +236,7 @@ function load_1b_xc_coeffs(type::String)
 end
 
 function load_1b_ke_coeffs(type::String)
-    base_dir = "XC Coeffs/"*type*"/One Body/";
+    base_dir = "Fitted Coefficients/"*type*"/One Body/";
     ke_coeffs_e_id = base_dir*"ke_coeffs_E.txt";
     ke_coeffs_f_id = base_dir*"ke_coeffs_F.txt";
 
@@ -287,7 +290,7 @@ function load_1b_tot_e_coeffs!(simulation::SimulationSystem)
 end
 
 function load_2b_xc_coeffs(type::String)
-    base_dir = "XC Coeffs/"*type*"/Two Body/";
+    base_dir = "Fitted Coefficients/"*type*"/Two Body/";
     xc_coeffs_a_id = base_dir*"xc_coeffs_A.txt";
     xc_coeffs_b_id = base_dir*"xc_coeffs_B.txt";
     xc_coeffs_c_id = base_dir*"xc_coeffs_C.txt";
@@ -327,13 +330,13 @@ function load_2b_xc_coeffs(type::String)
     return xc_a_2b, xc_b_2b, xc_c_2b, xc_d_2b;
 end
 
-function load_2b_morse_coeffs()
-    base_dir = "XC Coeffs/Energy/Two Body/";
-    morse_coeffs_id = base_dir*"morse_coeffs.txt";
+function load_2b_exp_coeffs(type::String, name::String)
+    base_dir = "Fitted Coefficients/"*type*"/Two Body/";
+    exp_coeffs_id = base_dir*name*".txt";
 
     function read_xc_file(file_name::String)
         lines = readlines(file_name);
-        coeffs = Dict{Tuple{Int,Int},MorsePotentialCoefficients}();
+        coeffs = Dict{Tuple{Int,Int},ExponentialCoefficients}();
 
         for i in eachindex(lines)
             line_splitted = string.(split(lines[i]));
@@ -345,10 +348,9 @@ function load_2b_morse_coeffs()
             dict_key_1 = (atomic_number_1,atomic_number_2);
             dict_key_2 = (atomic_number_2,atomic_number_1);
 
-            coeff = MorsePotentialCoefficients(0.0,0.0,0.0);
-            coeff.depth = parse(Float64,line_splitted[1]);
-            coeff.exponential_decay = parse(Float64,line_splitted[2]);
-            coeff.equilibrium_distance = parse(Float64,line_splitted[3]);
+            coeff = ExponentialCoefficients(0.0,0.0);
+            coeff.amplitude = parse(Float64,line_splitted[1]);
+            coeff.decay = parse(Float64,line_splitted[2]);
 
             coeffs[dict_key_1] = coeff;
             coeffs[dict_key_2] = coeff;
@@ -357,31 +359,37 @@ function load_2b_morse_coeffs()
         return coeffs;
     end
 
-    morse_2b = read_xc_file(morse_coeffs_id);
+    exp_coeffs_2b = read_xc_file(exp_coeffs_id);
 
-    return morse_2b;
+    return exp_coeffs_2b;
 end
 
 function load_2b_pol_e_coeffs!(simulation::SimulationSystem)
     xc_a_2b, xc_b_2b, xc_c_2b, xc_d_2b = load_2b_xc_coeffs("Polarization");
+    core_valence = load_2b_exp_coeffs("Polarization","static_core_valence");
 
     simulation.pol_e_coeffs.pol_e_xc_coeffs.xc_a_2b = xc_a_2b;
     simulation.pol_e_coeffs.pol_e_xc_coeffs.xc_b_2b = xc_b_2b;
     simulation.pol_e_coeffs.pol_e_xc_coeffs.xc_c_2b = xc_c_2b;
     simulation.pol_e_coeffs.pol_e_xc_coeffs.xc_d_2b = xc_d_2b;
 
+    simulation.pol_e_coeffs.pol_e_static_coeffs.core_valence = core_valence;
+
     return;
 end
 
 function load_2b_tot_e_coeffs!(simulation::SimulationSystem)
     xc_a_2b, xc_b_2b, xc_c_2b, xc_d_2b = load_2b_xc_coeffs("Energy");
-    morse_2b = load_2b_morse_coeffs();
+    core_core = load_2b_exp_coeffs("Energy","static_core_core");
+    core_valence = load_2b_exp_coeffs("Energy","static_core_valence");
 
     simulation.tot_e_coeffs.tot_e_xc_coeffs.xc_a_2b = xc_a_2b;
     simulation.tot_e_coeffs.tot_e_xc_coeffs.xc_b_2b = xc_b_2b;
     simulation.tot_e_coeffs.tot_e_xc_coeffs.xc_c_2b = xc_c_2b;
     simulation.tot_e_coeffs.tot_e_xc_coeffs.xc_d_2b = xc_d_2b;
-    simulation.tot_e_coeffs.tot_e_static_coeffs.morse_2b = morse_2b;
+
+    simulation.tot_e_coeffs.tot_e_static_coeffs.core_core = core_core;
+    simulation.tot_e_coeffs.tot_e_static_coeffs.core_valence = core_valence;
 
     return;
 end
@@ -430,21 +438,26 @@ function reset_fitted_coeffs()
     xc_b_2b = Dict{Tuple{Int,Int},XCCoeff2B}();
     xc_c_2b = Dict{Tuple{Int,Int},XCCoeff2B}();
     xc_d_2b = Dict{Tuple{Int,Int},XCCoeff2B}();
-    morse_2b = Dict{Tuple{Int,Int},MorsePotentialCoefficients}();
+
+    core_core = Dict{Tuple{Int,Int},ExponentialCoefficients}();
+    core_valence = Dict{Tuple{Int,Int},ExponentialCoefficients}();
 
     tot_e_xc_coeffs = EmpiricalXCCoefficients(
         xc_a_1b,xc_b_1b,xc_c_1b,xc_d_1b,xc_a_2b,xc_b_2b,xc_c_2b,xc_d_2b);
     tot_e_ke_coeffs = EmpiricalKECoefficients(ke_e_1b,ke_f_1b);
-    tot_e_static_coeffs = EmpiricalStaticCoefficients(morse_2b);
+    tot_e_static_coeffs = TotalEnergyEmpiricalStaticCoefficients(
+        core_core,core_valence);
 
     pol_e_xc_coeffs = EmpiricalXCCoefficients(
         xc_a_1b,xc_b_1b,xc_c_1b,xc_d_1b,xc_a_2b,xc_b_2b,xc_c_2b,xc_d_2b);
     pol_e_ke_coeffs = EmpiricalKECoefficients(ke_e_1b,ke_f_1b);
+    pol_e_static_coeffs = PolarizationEnergyEmpiricalStaticCoefficients(
+        core_valence);
 
     default_tot_e_coeffs = TotalEnergyCoefficients(max_atomic_number,
         tot_e_xc_coeffs,tot_e_ke_coeffs,tot_e_static_coeffs);
     default_pol_e_coeffs = PolarizationEnergyCoefficients(max_atomic_number,
-        pol_e_xc_coeffs,pol_e_ke_coeffs);
+        pol_e_xc_coeffs,pol_e_ke_coeffs,pol_e_static_coeffs);
     
     save_1b_coeffs(default_tot_e_coeffs);
     save_2b_coeffs(default_tot_e_coeffs);
