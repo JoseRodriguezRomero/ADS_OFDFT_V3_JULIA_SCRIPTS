@@ -5,7 +5,8 @@ using Base.Threads;
 
 include("FitCoeffs_General.jl")
 
-which_atomic_numbers = [[1,6],[1,8],[6,8],[7,8]];
+# which_atomic_numbers = [[1,6],[1,8],[6,8],[7,8]];
+which_atomic_numbers = [[7,8]];
 for atomic_numbers in which_atomic_numbers
     Z1 = atomic_numbers[1];
     Z2 = atomic_numbers[2];
@@ -20,9 +21,6 @@ for atomic_numbers in which_atomic_numbers
     for thread_id in 1:n_threads
         simulation[thread_id] = make_system_from_parsed_file(all_data[1]);
     end
-
-    num_vars = 8;
-    aux_X = zeros(Float64,num_vars);
 
     atoms_μ0 = simulation[1].basis_set_settings.atoms_μ0;
     μ0_1 = atoms_μ0[Z1];
@@ -63,14 +61,20 @@ for atomic_numbers in which_atomic_numbers
                 aux_x[4] = μ - μ0_2;
                 aux_x[5] = μ;
 
-                μ_model = (aux_m \ aux_y)[end];
+                diff_vec_1 = (aux_m \ aux_y) - aux_x;
+                diff_vec_2 = (aux_m * aux_x) - aux_y;
 
-                ret_val[thread_id] += norm((aux_m \ aux_y) - aux_x)^2;
+                ret_val[thread_id] += norm(diff_vec_1)^2;
+                ret_val[thread_id] += norm(diff_vec_2)^2;
 
                 if i > 1
                     if all_data[i].charge != all_data[i-1].charge
                         continue;
                     end
+
+                    d1 = all_data[i].atomic_separation;
+                    d2 = all_data[i-1].atomic_separation;
+                    Δd = d2 - d1;
 
                     set_diatomic_system_to_parsed_file!(
                         simulation[thread_id],all_data[i-1]);
@@ -81,34 +85,51 @@ for atomic_numbers in which_atomic_numbers
                         simulation[thread_id].system.molecules[1],2);
                     μ_nxt = simulation[thread_id].system.chemical_potential;
 
-                    aux_m, aux_y = 
+                    aux_m_nxt, aux_y_nxt = 
                         polarization_matrix_problem(simulation[thread_id]);
 
-                    aux_x = zeros(aux_type,5);
-                    aux_x[1] = ζ1_nxt;
-                    aux_x[2] = ζ2_nxt;
-                    aux_x[3] = μ_nxt - μ0_1;
-                    aux_x[4] = μ_nxt - μ0_2;
-                    aux_x[5] = μ_nxt;
+                    aux_x_nxt = zeros(aux_type,5);
+                    aux_x_nxt[1] = ζ1_nxt;
+                    aux_x_nxt[2] = ζ2_nxt;
+                    aux_x_nxt[3] = μ_nxt - μ0_1;
+                    aux_x_nxt[4] = μ_nxt - μ0_2;
+                    aux_x_nxt[5] = μ_nxt;
 
-                    μ_model_nxt = (aux_m \ aux_y)[end];
+                    diff_vec_1_nxt = (aux_m_nxt \ aux_y_nxt) - aux_x_nxt;
+                    diff_vec_2_nxt = (aux_m_nxt * aux_x_nxt) - aux_y_nxt;
 
-                    Δd = all_data[i-1].atomic_separation - all_data[i].atomic_separation;
-
-                    model_dev = (μ_model_nxt - μ_model) / Δd;
-                    dft_dev = (μ_nxt - μ) / Δd;
-
-                    ret_val[thread_id] += (model_dev - dft_dev)^2;
+                    ret_val[thread_id] += 
+                        (norm(diff_vec_1_nxt - diff_vec_1) / Δd)^2;
+                    ret_val[thread_id] += 
+                        (norm(diff_vec_2_nxt - diff_vec_2) / Δd)^2;
                 end
             end
         end
 
-        return sum(ret_val);
+        return sum(ret_val) / length(all_data);
+    end
+
+    num_vars = 8;
+    aux_X = 2.0 .* (rand(Float64,num_vars) .- 0.5);
+
+    for i in 1:1500
+        cost_func_eval = cost_func(aux_X);
+        new_aux_X = 2.0 .* (rand(Float64,num_vars) .- 0.5);
+
+        if cost_func_eval <= 0.1
+            println("Initial guess found!");
+            break;
+        end
+
+        if cost_func(new_aux_X) < cost_func_eval
+            aux_X = new_aux_X;
+            print(@sprintf "Current best %18.6E \n" cost_func(aux_X));
+        end
     end
 
     # needs_casting = false;
     # sol = Optim.optimize(cost_func, aux_X, NelderMead(),
-    #     Optim.Options(show_trace=true,iterations=8000));
+    #     Optim.Options(show_trace=true,iterations=2000));
     # aux_X = Optim.minimizer(sol);
 
     needs_casting = true;

@@ -163,8 +163,8 @@ function compare_data()
 
     l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
     l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*string(R²), :right, 10));
+    R² = @sprintf "%.5lf" round(R²,digits=5);
+    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
 
     # C₂ Plots
     eC2, R² = test_result_ΔE(6);
@@ -178,8 +178,8 @@ function compare_data()
 
     l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
     l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*string(R²), :right, 10));
+    R² = @sprintf "%.5lf" round(R²,digits=5);
+    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
 
     # N₂ Plots
     eN2, R² = test_result_ΔE(7);  
@@ -193,8 +193,8 @@ function compare_data()
 
     l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
     l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*string(R²), :right, 10));
+    R² = @sprintf "%.5lf" round(R²,digits=5);
+    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
 
     # O₂ Plots
     eO2, R² = test_result_ΔE(8);
@@ -208,8 +208,8 @@ function compare_data()
 
     l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
     l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*string(R²), :right, 10));
+    R² = @sprintf "%.5lf" round(R²,digits=5);
+    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
 
     # Chemical Potentials
     y_label_all = L"$\tilde{\mu} \quad \mathrm{(This \ Work)}$";
@@ -229,8 +229,8 @@ function compare_data()
 
     l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
     l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*string(R²), :right, 10));
+    R² = @sprintf "%.5lf" round(R²,digits=5);
+    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
 
     # C₂ Plots
     pC2, R² = test_result_chemical_potential(6);
@@ -244,8 +244,8 @@ function compare_data()
 
     l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
     l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*string(R²), :right, 10));
+    R² = @sprintf "%.5lf" round(R²,digits=5);
+    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
 
     # N₂ Plots
     pN2, R² = test_result_chemical_potential(7);
@@ -259,8 +259,8 @@ function compare_data()
 
     l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
     l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*string(R²), :right, 10));
+    R² = @sprintf "%.5lf" round(R²,digits=5);
+    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
 
     # O₂ Plots
     pO2, R² = test_result_chemical_potential(8);
@@ -274,8 +274,8 @@ function compare_data()
 
     l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
     l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*string(R²), :right, 10));
+    R² = @sprintf "%.5lf" round(R²,digits=5);
+    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
 
     # Join all plots
     p = plot(eH2,eC2,eN2,eO2,pH2,pC2,pN2,pO2,
@@ -301,7 +301,7 @@ function test_result_ΔE2(atomic_number::Int)
             dft_r[i] = bohr_to_angstrom*data[i].atomic_separation;
         end
 
-        r0 = 0.05;
+        r0 = 0.1;
         r1 = angstrom_to_bohr*6.5;
 
         model_r = collect(r0:0.01:r1);
@@ -506,60 +506,6 @@ function comp_homonuclear_scan(Z1::Int, Z2::Int)
     savefig("Figures/HomonuclearScanComp.pdf");
 
     return p;
-end
-
-function dummy_foo(Z1::Int)
-    return dummy_foo(Z1,Z1);
-end
-
-function dummy_foo(Z1::Int, Z2::Int)
-    neutral_data, cation_data, anion_data = 
-        read_all_sanitized_data(Z1,Z2,true);
-
-    function get_plot(data::Vector{ParsedFile})
-        dft_μ = zeros(Float64,length(data));
-        dft_r = zeros(Float64,length(data));
-        
-        for i in eachindex(data)
-            dft_μ[i] = data[i].chemical_potential;
-
-            mol = make_system_from_parsed_file(data[i]);
-            r1 = atom_position(mol.system.molecules[1],1);
-            r2 = atom_position(mol.system.molecules[1],2);
-            dft_r[i] = norm(r1-r2);
-        end
-
-        model_r0 = 1.0*dft_r[1] - 0.1;
-        model_r1 = 1.5*dft_r[end];
-        model_dr = (model_r1 - model_r0)/100.0;
-        model_r = collect(model_r0:model_dr:model_r1);
-        model_μ = zeros(Float64,length(model_r));
-
-        mol = make_system_from_parsed_file(data[1]);
-        set_diatomic_system_to_parsed_file!(mol,data[1]);
-        for i in eachindex(model_r)
-            r1 = [0.0,0.0, model_r[i]/2.0];
-            r2 = [0.0,0.0,-model_r[i]/2.0];
-            set_atom_coordinates!(mol.system.molecules[1],r1,1);
-            set_atom_coordinates!(mol.system.molecules[1],r2,2);
-            polarize_molecules!(mol);
-            model_μ[i] = mol.system.chemical_potential;
-        end
-
-        p = plot(model_r, model_μ, 
-            label="ADS OF-DFT", line=:solid, linewidth=2);
-        plot!(dft_r, dft_μ, 
-        label="KS-DFT", line=:dash, linewidth=2);
-        plot!(ylabel="μ");
-
-        return p;
-    end
-    
-    p1 = get_plot(neutral_data);
-    p2 = get_plot(cation_data);
-    p3 = get_plot(anion_data);
-
-    return plot(p1,p2,p3,layout=(3,1));
 end
 
 comp_homonuclear_scan(1,8);

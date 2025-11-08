@@ -31,6 +31,10 @@ function xc_sph(λ::Real, d::Real)
         return 0.0;
     end
 
+    if isinf(ret_val)
+        return 0.0;
+    end
+
     return ret_val;
 end
 
@@ -45,31 +49,46 @@ function xc_cyl(λ::Real, d::Real)
         return 0.0;
     end
 
+    if isinf(ret_val)
+        return 0.0;
+    end
+
     return ret_val;
 end
 
-function unpol_ee_energy(at1::Atom, at2::Atom)
+function morse_u(depth::Real, stifness_parameter::Real, 
+    equilibrium_distance::Real, atomic_separation::Real)
+    A = depth;
+    B = stifness_parameter;
+    C = equilibrium_distance;
+
+    r = atomic_separation;
+
+    return A * ((1 - exp(-B * (r - C)))^2 - 1);
+end
+
+function unpol_ee_energy(atom_1::Atom, atom_2::Atom)
     # Calculates the unpolarized electron-electron interactions between the 
-    # valence electron shells of atoms at1 and at2.
-    at1_cloud = at1.electron_cloud_shells[end];
-    at1_basis_size = length(at1_cloud.basis_function_amplitude);
+    # valence electron shells of atoms atom_1 and atom_2.
+    atom_1_cloud = atom_1.electron_cloud_shells[end];
+    atom_1_basis_size = length(atom_1_cloud.basis_function_amplitude);
 
-    at2_cloud = at2.electron_cloud_shells[end];
-    at2_basis_size = length(at2_cloud.basis_function_amplitude);
+    atom_2_cloud = atom_2.electron_cloud_shells[end];
+    atom_2_basis_size = length(atom_2_cloud.basis_function_amplitude);
 
-    d = norm(at1.coordinates - at2.coordinates);
+    d = norm(atom_1.coordinates - atom_2.coordinates);
 
     e_naive = 0;
     e_xc_sph = 0;
     e_xc_cyl = 0;
 
-    for i in 1:at1_basis_size
-        for j in 1:at2_basis_size
-            c1 = at1_cloud.basis_function_amplitude[i];
-            λ1 = at1_cloud.basis_function_decay[i];
+    for i in 1:atom_1_basis_size
+        for j in 1:atom_2_basis_size
+            c1 = atom_1_cloud.basis_function_amplitude[i];
+            λ1 = atom_1_cloud.basis_function_decay[i];
 
-            c2 = at2_cloud.basis_function_amplitude[j];
-            λ2 = at2_cloud.basis_function_decay[j];
+            c2 = atom_2_cloud.basis_function_amplitude[j];
+            λ2 = atom_2_cloud.basis_function_decay[j];
 
             c = c1 * c2;
             λ = (λ1 * λ2) / (λ1 + λ2);
@@ -83,13 +102,13 @@ function unpol_ee_energy(at1::Atom, at2::Atom)
     return e_naive, e_xc_sph, e_xc_cyl;
 end
 
-function ee_energy(at1::Atom, at2::Atom)
+function ee_energy(atom_1::Atom, atom_2::Atom)
     # Calculates the polarized electron-electron interactions between the 
-    # electron shells of atoms at1 and at2.
-    ζ1 = at1.polarization_coefficient;
-    ζ2 = at2.polarization_coefficient;
+    # electron shells of atoms atom_1 and atom_2.
+    ζ1 = atom_1.polarization_coefficient;
+    ζ2 = atom_2.polarization_coefficient;
 
-    e_naive, e_xc_sph, e_xc_cyl = unpol_ee_energy(at1,at2);
+    e_naive, e_xc_sph, e_xc_cyl = unpol_ee_energy(atom_1,atom_2);
 
     e_naive = ζ1*ζ2*e_naive;
     e_xc_sph = ζ1*ζ2*e_xc_sph;
@@ -98,24 +117,24 @@ function ee_energy(at1::Atom, at2::Atom)
     return e_naive, e_xc_sph, e_xc_cyl;
 end
 
-function unpol_en_energy(at1::Atom, at2::Atom)
+function unpol_en_energy(atom_1::Atom, atom_2::Atom)
     # Calculates the unpolarized interactions between the valence electron shell 
-    # of atom at1 and the nuclei of atom at2. The charge of the nuclei of at2 is 
-    # replaced with its number of valence electrons.
-    at1_cloud = at1.electron_cloud_shells[end];
-    at1_basis_size = length(at1_cloud.basis_function_amplitude);
+    # of atom atom_1 and the nuclei of atom atom_2. The charge of the nuclei of 
+    # atom_2 is replaced with its number of valence electrons.
+    atom_1_cloud = atom_1.electron_cloud_shells[end];
+    atom_1_basis_size = length(atom_1_cloud.basis_function_amplitude);
 
-    d = norm(at1.coordinates - at2.coordinates);
+    d = norm(atom_1.coordinates - atom_2.coordinates);
 
     e_naive = 0;
     e_xc_sph = 0;
     e_xc_cyl = 0;
 
-    for i in 1:at1_basis_size
-        c1 = at1_cloud.basis_function_amplitude[i];
-        λ1 = at1_cloud.basis_function_decay[i];
+    for i in 1:atom_1_basis_size
+        c1 = atom_1_cloud.basis_function_amplitude[i];
+        λ1 = atom_1_cloud.basis_function_decay[i];
 
-        q2 = at2.valence_electrons;
+        q2 = atom_2.valence_electrons;
 
         c = c1 * q2;
         λ = λ1;
@@ -128,20 +147,20 @@ function unpol_en_energy(at1::Atom, at2::Atom)
     return e_naive, e_xc_sph, e_xc_cyl;
 end
 
-function unpol_ne_energy(at1::Atom, at2::Atom)
+function unpol_ne_energy(atom_1::Atom, atom_2::Atom)
     # Calculates the unpolarized interactions between the valence electron shell 
-    # of atom at2 and the nuclei of atom at1. The charge of the nuclei of at1 is 
-    # replaced with its number of valence electrons.
-    e_naive, e_xc_sph, e_xc_cyl = unpol_en_energy(at2,at1);
+    # of atom atom_2 and the nuclei of atom atom_1. The charge of the nuclei of 
+    # atom_1 is replaced with its number of valence electrons.
+    e_naive, e_xc_sph, e_xc_cyl = unpol_en_energy(atom_2,atom_1);
     return e_naive, e_xc_sph, e_xc_cyl;
 end
 
-function en_energy(at1::Atom, at2::Atom)
+function en_energy(atom_1::Atom, atom_2::Atom)
     # Calculates the polarized interactions between the electron shells of atom 
-    # at1 and the nuclei of atom at2.
-    ζ1 = at1.polarization_coefficient;
+    # atom_1 and the nuclei of atom atom_2.
+    ζ1 = atom_1.polarization_coefficient;
 
-    e_naive, e_xc_sph, e_xc_cyl = unpol_en_energy(at1,at2);
+    e_naive, e_xc_sph, e_xc_cyl = unpol_en_energy(atom_1,atom_2);
 
     e_naive = ζ1*e_naive;
     e_xc_sph = ζ1*e_xc_sph;
@@ -150,20 +169,21 @@ function en_energy(at1::Atom, at2::Atom)
     return e_naive, e_xc_sph, e_xc_cyl;
 end
 
-function ne_energy(at1::Atom, at2::Atom)
-    # Calculates the polarized interactions between the nuclei of atom at1 and 
-    # the electron shells of atom at2.
-    e_naive, e_xc_sph, e_xc_cyl = en_energy(at2,at1);
+function ne_energy(atom_1::Atom, atom_2::Atom)
+    # Calculates the polarized interactions between the nuclei of atom atom_1 
+    # and the electron shells of atom atom_2.
+    e_naive, e_xc_sph, e_xc_cyl = en_energy(atom_2,atom_1);
     return e_naive, e_xc_sph, e_xc_cyl;
 end
 
-function nn_energy(at1::Atom, at2::Atom)
-    # Calculates the Couloumb interaction between the nuclei of atoms at1 and 
-    # at2. The atomic numbers are replaced with the number of valence electrons.
-    q1 = at1.valence_electrons;
-    q2 = at2.valence_electrons;
+function nn_energy(atom_1::Atom, atom_2::Atom)
+    # Calculates the Couloumb interaction between the nuclei of atoms atom_1 and 
+    # atom_2. The atomic numbers are replaced with the number of valence 
+    # electrons.
+    q1 = atom_1.valence_electrons;
+    q2 = atom_2.valence_electrons;
 
-    d = norm(at1.coordinates - at2.coordinates);
+    d = norm(atom_1.coordinates - atom_2.coordinates);
     e_naive = (q1*q2)/d;
 
     return e_naive;
@@ -174,6 +194,8 @@ function rotate_molecule!(molecule::Molecule, Δθ::Matrix{Number})
     for i in eachindex(molecule.atoms)
         molecule.atoms[i].position = Δθ*(molecule.atoms[i].position);
     end
+
+    return;
 end
 
 function polarization_matrix_problem(simulation::SimulationSystem)
@@ -182,19 +204,33 @@ function polarization_matrix_problem(simulation::SimulationSystem)
     molecules = simulation.system.molecules;
     charge = simulation.system.charge;
 
-    xc_a_1b = simulation.pol_e_coeffs.pol_e_xc_coeffs.xc_a_1b;
-    xc_b_1b = simulation.pol_e_coeffs.pol_e_xc_coeffs.xc_b_1b;
-    xc_c_1b = simulation.pol_e_coeffs.pol_e_xc_coeffs.xc_c_1b;
-    xc_d_1b = simulation.pol_e_coeffs.pol_e_xc_coeffs.xc_d_1b;
-    ke_e_1b = simulation.pol_e_coeffs.pol_e_ke_coeffs.ke_e_1b;
-    ke_f_1b = simulation.pol_e_coeffs.pol_e_ke_coeffs.ke_f_1b;
-    
-    xc_a_2b = simulation.pol_e_coeffs.pol_e_xc_coeffs.xc_a_2b;
-    xc_b_2b = simulation.pol_e_coeffs.pol_e_xc_coeffs.xc_b_2b;
-    xc_c_2b = simulation.pol_e_coeffs.pol_e_xc_coeffs.xc_c_2b;
-    xc_d_2b = simulation.pol_e_coeffs.pol_e_xc_coeffs.xc_d_2b;
+    coeffs = simulation.pol_e_coeffs;
 
-    core_valence = simulation.pol_e_coeffs.pol_e_static_coeffs.core_valence;
+    xc_a_1b = coeffs.xc_coeffs.xc_a_1b;
+    xc_b_1b = coeffs.xc_coeffs.xc_b_1b;
+    xc_c_1b = coeffs.xc_coeffs.xc_c_1b;
+    xc_d_1b = coeffs.xc_coeffs.xc_d_1b;
+    ke_e_1b = coeffs.ke_coeffs.ke_e_1b;
+    ke_f_1b = coeffs.ke_coeffs.ke_f_1b;
+    
+    xc_a_2b = coeffs.xc_coeffs.xc_a_2b;
+    xc_b_2b = coeffs.xc_coeffs.xc_b_2b;
+    xc_c_2b = coeffs.xc_coeffs.xc_c_2b;
+    xc_d_2b = coeffs.xc_coeffs.xc_d_2b;
+
+    polarizable_morse_depth = 
+        coeffs.polarizable_morse_coeffs.depth;
+    polarizable_morse_equilibrium_distance = 
+        coeffs.polarizable_morse_coeffs.equilibrium_distance;
+    polarizable_morse_stiffness_parameter = 
+        coeffs.polarizable_morse_coeffs.stiffness_parameter;
+
+    non_polarizable_morse_depth = 
+        coeffs.non_polarizable_morse_coeffs.depth;
+    non_polarizable_morse_equilibrium_distance = 
+        coeffs.non_polarizable_morse_coeffs.equilibrium_distance;
+    non_polarizable_morse_stiffness_parameter = 
+        coeffs.non_polarizable_morse_coeffs.stiffness_parameter;
 
     aux_type = typeof(xc_a_1b[1]);
     atoms_μ0 = simulation.basis_set_settings.atoms_μ0;
@@ -228,11 +264,10 @@ function polarization_matrix_problem(simulation::SimulationSystem)
         atom_shift_index = tot_num_atoms + atom_index;
         μ0 = atoms_μ0[atom.atomic_number];
 
-        Δμ_atom_index = tot_num_atoms + atom_index;
         aux_M[atom_shift_index,end] -= 1.0;
         aux_M[atom_shift_index,atom_shift_index] += 1.0;
         aux_M[atom_index,atom_shift_index] -= atom.valence_electrons;
-        aux_Y[Δμ_atom_index] -= μ0;
+        aux_Y[atom_shift_index] -= μ0;
 
         return;
     end
@@ -263,19 +298,17 @@ function polarization_matrix_problem(simulation::SimulationSystem)
         z1 = atom_1.atomic_number;
         z2 = atom_2.atomic_number;
 
-        d = norm(atom_1.coordinates - atom_2.coordinates);
-
         e_naive, e_xc_sph, e_xc_cyl = unpol_en_energy(atom_1,atom_2);
 
         energy_sum_12 = e_naive;
-        energy_sum_12 += e_xc_sph*get_xc_2b_coeff(xc_c_2b[(z1,z2)],d);
-        energy_sum_12 += e_xc_cyl*get_xc_2b_coeff(xc_d_2b[(z1,z2)],d);
+        energy_sum_12 += e_xc_sph*xc_c_2b[(z1,z2)];
+        energy_sum_12 += e_xc_cyl*xc_d_2b[(z1,z2)];
 
         e_naive, e_xc_sph, e_xc_cyl = unpol_en_energy(atom_2,atom_1);
         
         energy_sum_21 = e_naive;
-        energy_sum_21 += e_xc_sph*get_xc_2b_coeff(xc_c_2b[(z2,z1)],d);
-        energy_sum_21 += e_xc_cyl*get_xc_2b_coeff(xc_d_2b[(z2,z1)],d);
+        energy_sum_21 += e_xc_sph*xc_c_2b[(z2,z1)];
+        energy_sum_21 += e_xc_cyl*xc_d_2b[(z2,z1)];
 
         aux_Y[atom_index_1] -= energy_sum_12;
         aux_Y[atom_index_2] -= energy_sum_21;
@@ -302,14 +335,12 @@ function polarization_matrix_problem(simulation::SimulationSystem)
         z2 = atom_2.atomic_number;
         e_naive, e_xc_sph, e_xc_cyl = unpol_ee_energy(atom_1,atom_2);
 
-        d = norm(atom_1.coordinates - atom_2.coordinates);
-
         energy_sum = e_naive;
-        energy_sum += e_xc_sph*get_xc_2b_coeff(xc_a_2b[(z1,z2)],d);
-        energy_sum += e_xc_cyl*get_xc_2b_coeff(xc_b_2b[(z1,z2)],d);
+        energy_sum += e_xc_sph*xc_a_2b[(z1,z2)];
+        energy_sum += e_xc_cyl*xc_b_2b[(z1,z2)];
 
-        aux_M[atom_index_1,atom_index_2] -= energy_sum;
-        aux_M[atom_index_2,atom_index_1] -= energy_sum;
+        aux_M[atom_index_1,atom_index_2] += energy_sum;
+        aux_M[atom_index_2,atom_index_1] += energy_sum;
 
         return;
     end
@@ -322,28 +353,53 @@ function polarization_matrix_problem(simulation::SimulationSystem)
         energy_sum += e_xc_sph*xc_a_1b[z];
         energy_sum += e_xc_cyl*xc_b_1b[z];
 
-        aux_M[atom_index,atom_index] -= energy_sum;
+        aux_M[atom_index,atom_index] += energy_sum;
 
         return;
     end
 
-    function compute_core_valence_static_energy(atom_1::Atom, atom_2::Atom,
+    function compute_polarizable_morse_potential(atom_1::Atom, atom_2::Atom,
         atom_index_1::Int, atom_index_2::Int)
         z1 = atom_1.atomic_number;
         z2 = atom_2.atomic_number;
-
+        
         d = norm(atom_1.coordinates - atom_2.coordinates);
 
-        z1_eff = atom_1.valence_electrons;
-        z2_eff = atom_2.valence_electrons;
+        A = polarizable_morse_depth[(z1,z2)];
+        B = polarizable_morse_stiffness_parameter[(z1,z2)];
+        C = polarizable_morse_equilibrium_distance[(z1,z2)];
+        morse_potential = morse_u(A,B,C,d);
 
-        exp_coeffs = core_valence[(z1,z2)];
-        A = exp_coeffs.amplitude;
-        B = exp_coeffs.decay;
+        aux_M[atom_index_1,atom_index_2] += morse_potential;
+        aux_M[atom_index_2,atom_index_1] += morse_potential;
 
-        model_exp = A * exp(- B * d);
-        aux_Y[atom_index_1] -= z1_eff * model_exp;
-        aux_Y[atom_index_2] -= z2_eff * model_exp;
+        return;
+    end
+
+    function compute_non_polarizable_morse_potential(atom_1::Atom, atom_2::Atom,
+        atom_index_1::Int, atom_index_2::Int)
+        z1 = atom_1.atomic_number;
+        z2 = atom_2.atomic_number;
+        
+        d = norm(atom_1.coordinates - atom_2.coordinates);
+
+        A = non_polarizable_morse_depth[(z1,z2)];
+        B = non_polarizable_morse_stiffness_parameter[(z1,z2)];
+        C = non_polarizable_morse_equilibrium_distance[(z1,z2)];
+        morse_potential = morse_u(A,B,C,d);
+
+        aux_Y[atom_index_1] -= morse_potential;
+        aux_Y[atom_index_2] -= morse_potential;
+
+        return;
+    end
+
+    function compute_morse_potentials(atom_1::Atom, atom_2::Atom,
+        atom_index_1::Int, atom_index_2::Int)
+        compute_polarizable_morse_potential(atom_1,atom_2,
+            atom_index_1,atom_index_2);
+        compute_non_polarizable_morse_potential(atom_1,atom_2,
+            atom_index_1,atom_index_2);
 
         return;
     end
@@ -363,6 +419,8 @@ function polarization_matrix_problem(simulation::SimulationSystem)
                 compute_chemical_potential_shift(atom,atom_index);
             end
         end
+
+        return;
     end
 
     function compute_two_body_intramolecular_terms()
@@ -377,12 +435,17 @@ function polarization_matrix_problem(simulation::SimulationSystem)
                     atom_index_1 = atom_ind_base[molecule_index] + i - 1;
                     atom_index_2 = atom_ind_base[molecule_index] + j - 1;
 
-                    compute_en_energies(atom_1,atom_2,atom_index_1,atom_index_2);
-                    compute_ee_energies(atom_1,atom_2,atom_index_1,atom_index_2);
-                    compute_core_valence_static_energy(atom_2,atom_1,atom_index_2,atom_index_1);
+                    compute_en_energies(
+                        atom_1,atom_2,atom_index_1,atom_index_2);
+                    compute_ee_energies(
+                        atom_1,atom_2,atom_index_1,atom_index_2);
+                    compute_morse_potentials(
+                        atom_1,atom_2,atom_index_1,atom_index_2);
                 end
             end
         end
+
+        return;
     end
 
     function compute_two_body_intermolecular_terms()
@@ -399,18 +462,25 @@ function polarization_matrix_problem(simulation::SimulationSystem)
                         atom_index_1 = atom_ind_base[molecule_index_1] + i - 1;
                         atom_index_2 = atom_ind_base[molecule_index_2] + j - 1;
 
-                        compute_en_energies(atom_1,atom_2,atom_index_1,atom_index_2);
-                        compute_ee_energies(atom_1,atom_2,atom_index_1,atom_index_2);
-                        compute_core_valence_static_energy(atom_2,atom_1,atom_index_2,atom_index_1);
+                        compute_en_energies(
+                            atom_1,atom_2,atom_index_1,atom_index_2);
+                        compute_ee_energies(
+                            atom_1,atom_2,atom_index_1,atom_index_2);
+                        compute_morse_potentials(
+                            atom_1,atom_2,atom_index_1,atom_index_2);
                     end
                 end
             end
         end
+
+        return;
     end
 
     function compute_two_body_terms()
         compute_two_body_intramolecular_terms();
         compute_two_body_intermolecular_terms();
+
+        return;
     end
 
     compute_one_body_terms();
@@ -422,7 +492,7 @@ end
 function polarize_molecules!(simulation::SimulationSystem)
     # Calculates and sets the polarization coefficients of the atoms.
     aux_m, aux_y = polarization_matrix_problem(simulation);
-    minimizer = aux_m \ aux_y;
+    minimizer = inv(transpose(aux_m) * aux_m) * (transpose(aux_m) * aux_y);
 
     # display(hcat(aux_m,aux_y));
 
@@ -452,92 +522,103 @@ function polarize_molecules!(simulation::SimulationSystem)
             molecules[molecule_index].atoms[i].polarization_coefficient = ζ;
         end
     end
+
+    return;
 end
 
 function system_energies(simulation::SimulationSystem)
     # Returns the kinetic, naive and xc energy contributions of our simplified 
     # model.
     molecules = simulation.system.molecules;
-    num_molecules = length(molecules);
 
-    xc_a_1b = simulation.tot_e_coeffs.tot_e_xc_coeffs.xc_a_1b;
-    xc_b_1b = simulation.tot_e_coeffs.tot_e_xc_coeffs.xc_b_1b;
-    xc_c_1b = simulation.tot_e_coeffs.tot_e_xc_coeffs.xc_c_1b;
-    xc_d_1b = simulation.tot_e_coeffs.tot_e_xc_coeffs.xc_d_1b;
-    ke_e_1b = simulation.tot_e_coeffs.tot_e_ke_coeffs.ke_e_1b;
-    ke_f_1b = simulation.tot_e_coeffs.tot_e_ke_coeffs.ke_f_1b;
+    coeffs = simulation.tot_e_coeffs;
 
-    xc_a_2b = simulation.tot_e_coeffs.tot_e_xc_coeffs.xc_a_2b;
-    xc_b_2b = simulation.tot_e_coeffs.tot_e_xc_coeffs.xc_b_2b;
-    xc_c_2b = simulation.tot_e_coeffs.tot_e_xc_coeffs.xc_c_2b;
-    xc_d_2b = simulation.tot_e_coeffs.tot_e_xc_coeffs.xc_d_2b;
+    xc_a_1b = coeffs.xc_coeffs.xc_a_1b;
+    xc_b_1b = coeffs.xc_coeffs.xc_b_1b;
+    xc_c_1b = coeffs.xc_coeffs.xc_c_1b;
+    xc_d_1b = coeffs.xc_coeffs.xc_d_1b;
+    ke_e_1b = coeffs.ke_coeffs.ke_e_1b;
+    ke_f_1b = coeffs.ke_coeffs.ke_f_1b;
 
-    core_core = simulation.tot_e_coeffs.tot_e_static_coeffs.core_core;
-    core_valence = simulation.tot_e_coeffs.tot_e_static_coeffs.core_valence;
+    xc_a_2b = coeffs.xc_coeffs.xc_a_2b;
+    xc_b_2b = coeffs.xc_coeffs.xc_b_2b;
+    xc_c_2b = coeffs.xc_coeffs.xc_c_2b;
+    xc_d_2b = coeffs.xc_coeffs.xc_d_2b;
+
+    polarizable_morse_depth = 
+        coeffs.polarizable_morse_coeffs.depth;
+    polarizable_morse_stiffness_parameter = 
+        coeffs.polarizable_morse_coeffs.stiffness_parameter;
+    polarizable_morse_equilibrium_distance = 
+        coeffs.polarizable_morse_coeffs.equilibrium_distance;
+
+    non_polarizable_morse_depth = 
+        coeffs.non_polarizable_morse_coeffs.depth;
+    non_polarizable_morse_stiffness_parameter = 
+        coeffs.non_polarizable_morse_coeffs.stiffness_parameter;
+    non_polarizable_morse_equilibrium_distance = 
+        coeffs.non_polarizable_morse_coeffs.equilibrium_distance;
     
     aux_type = typeof(xc_a_1b[1]);
     xc_energy = aux_type(0.0);
     naive_energy = aux_type(0.0);
-    static_energy = aux_type(0.0);
+    morse_energy = aux_type(0.0);
     kinetic_energy = aux_type(0.0);
 
-    function compute_nn_energy(at1::Atom, at2::Atom)
-        d = norm(at1.coordinates - at2.coordinates);
+    function compute_nn_energy(atom_1::Atom, atom_2::Atom)
+        d = norm(atom_1.coordinates - atom_2.coordinates);
 
         if d > atoms_dist_cutoff()
-            naive_energy += nn_energy(at1,at2);
+            naive_energy += nn_energy(atom_1,atom_2);
         end
 
         return;
     end
 
-    function compute_en_energies(at1::Atom, at2::Atom)
-        z1 = at1.atomic_number;
-        z2 = at2.atomic_number;
+    function compute_en_energies(atom_1::Atom, atom_2::Atom)
+        z1 = atom_1.atomic_number;
+        z2 = atom_2.atomic_number;
 
-        d = norm(at1.coordinates - at2.coordinates);
-
-        en_naive, en_xc_sph, en_xc_cyl = en_energy(at1,at2);
+        en_naive, en_xc_sph, en_xc_cyl = en_energy(atom_1,atom_2);
         naive_energy += en_naive;
-        xc_energy += en_xc_sph*get_xc_2b_coeff(xc_c_2b[(z1,z2)],d);
-        xc_energy += en_xc_cyl*get_xc_2b_coeff(xc_d_2b[(z1,z2)],d);
+        xc_energy += en_xc_sph*xc_c_2b[(z1,z2)];
+        xc_energy += en_xc_cyl*xc_d_2b[(z1,z2)];
 
-        en_naive, en_xc_sph, en_xc_cyl = en_energy(at2,at1);
+        en_naive, en_xc_sph, en_xc_cyl = en_energy(atom_2,atom_1);
         naive_energy += en_naive;
-        xc_energy += en_xc_sph*get_xc_2b_coeff(xc_c_2b[(z2,z1)],d);
-        xc_energy += en_xc_cyl*get_xc_2b_coeff(xc_d_2b[(z2,z1)],d);
+        xc_energy += en_xc_sph*xc_c_2b[(z2,z1)];
+        xc_energy += en_xc_cyl*xc_d_2b[(z2,z1)];
 
         return;
     end
 
-    function compute_en_energies(at1::Atom)
-        z1 = at1.atomic_number;
+    function compute_en_energies(atom_1::Atom)
+        z1 = atom_1.atomic_number;
 
-        en_naive, en_xc_sph, en_xc_cyl = en_energy(at1,at1);
+        en_naive, en_xc_sph, en_xc_cyl = en_energy(atom_1,atom_1);
 
         naive_energy += en_naive;
         xc_energy += en_xc_sph*xc_c_1b[z1];
         xc_energy += en_xc_cyl*xc_d_1b[z1];
     end
 
-    function compute_ee_energies(at1::Atom, at2::Atom)
-        z1 = at1.atomic_number;
-        z2 = at2.atomic_number;
+    function compute_ee_energies(atom_1::Atom, atom_2::Atom)
+        z1 = atom_1.atomic_number;
+        z2 = atom_2.atomic_number;
         
-        d = norm(at1.coordinates - at2.coordinates);
-        ee_naive, ee_xc_sph, ee_xc_cyl = ee_energy(at1,at2);
+        ee_naive, ee_xc_sph, ee_xc_cyl = ee_energy(atom_1,atom_2);
         
         naive_energy += ee_naive;
-        xc_energy += ee_xc_sph*get_xc_2b_coeff(xc_a_2b[(z1,z2)],d);
-        xc_energy += ee_xc_cyl*get_xc_2b_coeff(xc_b_2b[(z1,z2)],d);
+        xc_energy += ee_xc_sph*xc_a_2b[(z1,z2)];
+        xc_energy += ee_xc_cyl*xc_b_2b[(z1,z2)];
 
         return;
     end
 
-    function compute_ee_energies(at1::Atom)
-        z1 = at1.atomic_number;
+    function compute_ee_energies(atom_1::Atom)
+        z1 = atom_1.atomic_number;
         
-        ee_naive, ee_xc_sph, ee_xc_cyl = ee_energy(at1,at1);
+        ee_naive, ee_xc_sph, ee_xc_cyl = ee_energy(atom_1,atom_1);
 
         naive_energy += ee_naive / 2.0;
         xc_energy += ee_xc_sph*xc_a_1b[z1];
@@ -546,10 +627,10 @@ function system_energies(simulation::SimulationSystem)
         return;
     end
 
-    function compute_kinetic_energies(at1::Atom)
-        z1 = at1.atomic_number;
-        ζ1 = at1.polarization_coefficient;
-        e_shell = at1.electron_cloud_shells[end];
+    function compute_kinetic_energies(atom_1::Atom)
+        z1 = atom_1.atomic_number;
+        ζ1 = atom_1.polarization_coefficient;
+        e_shell = atom_1.electron_cloud_shells[end];
 
         unpol_tf_ke = e_shell.thomas_fermi_ke;
         unpol_vw_ke = e_shell.von_weizsacker_ke;
@@ -568,38 +649,40 @@ function system_energies(simulation::SimulationSystem)
         return;
     end
 
-    function compute_core_core_static_energy(at1::Atom, at2::Atom)
-        z1 = at1.atomic_number;
-        z2 = at2.atomic_number;
-        
-        d = norm(at1.coordinates - at2.coordinates);
+    function compute_polarizable_morse_potential(atom_1::Atom, atom_2::Atom)
+        z1 = atom_1.atomic_number;
+        z2 = atom_2.atomic_number;
 
-        exp_coeffs = core_core[(z1,z2)];
-        A = exp_coeffs.amplitude;
-        B = exp_coeffs.decay;
+        ζ1 = atom_1.polarization_coefficient;
+        ζ2 = atom_2.polarization_coefficient;
 
-        static_energy += A * exp(- B * d);
+        d = norm(atom_1.coordinates - atom_2.coordinates);
+
+        A = polarizable_morse_depth[(z1,z2)];
+        B = polarizable_morse_stiffness_parameter[(z1,z2)];
+        C = polarizable_morse_equilibrium_distance[(z1,z2)];
+        morse_energy += (ζ1 + ζ2) * morse_u(A,B,C,d);
+
         return;
     end
 
-    function compute_core_valence_static_energy(at1::Atom, at2::Atom)
-        z1 = at1.atomic_number;
-        z2 = at2.atomic_number;
+    function compute_non_polarizable_morse_potential(atom_1::Atom, atom_2::Atom)
+        z1 = atom_1.atomic_number;
+        z2 = atom_2.atomic_number;
 
-        z1_eff = at1.valence_electrons;
-        z2_eff = at2.valence_electrons;
+        d = norm(atom_1.coordinates - atom_2.coordinates);
 
-        ζ1 = at1.polarization_coefficient;
-        ζ2 = at2.polarization_coefficient;
-        
-        d = norm(at1.coordinates - at2.coordinates);
+        A = non_polarizable_morse_depth[(z1,z2)];
+        B = non_polarizable_morse_stiffness_parameter[(z1,z2)];
+        C = non_polarizable_morse_equilibrium_distance[(z1,z2)];
+        morse_energy += morse_u(A,B,C,d);
 
-        exp_coeffs = core_valence[(z1,z2)];
-        A = exp_coeffs.amplitude;
-        B = exp_coeffs.decay;
-
-        static_energy += A * exp(- B * d) * (z1_eff * ζ1 + z2_eff * ζ2);
         return;
+    end
+
+    function compute_morse_potentials(atom_1::Atom, atom_2::Atom)
+        compute_polarizable_morse_potential(atom_1,atom_2);
+        compute_non_polarizable_morse_potential(atom_1,atom_2);
     end
 
     function compute_one_body_energies()
@@ -610,10 +693,11 @@ function system_energies(simulation::SimulationSystem)
                 compute_ee_energies(atom);
             end
         end
+
+        return;
     end
 
-    function compute_two_body_energies()
-        # Intramolecular interaction
+    function compute_two_body_intramolecular_energies()
         for molecule in molecules
             for atom_index_1 in eachindex(molecule.atoms)
                 for atom_index_2 in (atom_index_1+1):length(molecule.atoms)
@@ -623,12 +707,15 @@ function system_energies(simulation::SimulationSystem)
                     compute_nn_energy(atom_1,atom_2);
                     compute_en_energies(atom_1,atom_2);
                     compute_ee_energies(atom_1,atom_2);
-                    compute_nonpolarizable_energy(atom_1,atom_2);
+                    compute_morse_potentials(atom_1,atom_2);
                 end
             end
         end
 
-        # Intermolecular interactions
+        return;
+    end
+
+    function compute_two_body_intermolecular_energies()
         for molecule_index_1 in eachindex(molecules)
             for molecule_index_2 in (molecule_index_1+1):length(molecules)
                 molecule_1 = molecules[molecule_index_1];
@@ -639,24 +726,33 @@ function system_energies(simulation::SimulationSystem)
                         compute_nn_energy(atom_1,atom_2);
                         compute_en_energies(atom_1,atom_2);
                         compute_ee_energies(atom_1,atom_2);
-                        compute_nonpolarizable_energy(atom_1,atom_2);
+                        compute_morse_potentials(atom_1,atom_2);
                     end
                 end
             end
         end
+
+        return;
+    end
+
+    function compute_two_body_energies()
+        compute_two_body_intramolecular_energies();
+        compute_two_body_intermolecular_energies();
+
+        return;
     end
 
     compute_one_body_energies();
     compute_two_body_energies();
 
-    return naive_energy, kinetic_energy, xc_energy, static_energy;
+    return naive_energy, kinetic_energy, xc_energy, morse_energy;
 end
 
 function total_energy(simulation::SimulationSystem)
     # Returns the sum of all three energy contributions.
-    naive_energy, kinetic_energy, xc_energy, static_energy = 
+    naive_energy, kinetic_energy, xc_energy, morse_energy = 
         system_energies(simulation);
-    return naive_energy + kinetic_energy + xc_energy + static_energy;
+    return naive_energy + kinetic_energy + xc_energy + morse_energy;
 end
 
 function save_fitted_coeffs(simulation::SimulationSystem)
@@ -671,7 +767,6 @@ end
 
 function initialize_simulation_environment()
     basis_set_settings = load_basis_set();
-    max_atomic_number = basis_set_settings.max_atomic_number;
     
     xc_a_1b = Dict{Int,Float64}();
     xc_b_1b = Dict{Int,Float64}();
@@ -680,29 +775,27 @@ function initialize_simulation_environment()
     ke_e_1b = Dict{Int,Float64}();
     ke_f_1b = Dict{Int,Float64}();
     
-    xc_a_2b = Dict{Tuple{Int,Int},XCCoeff2B}();
-    xc_b_2b = Dict{Tuple{Int,Int},XCCoeff2B}();
-    xc_c_2b = Dict{Tuple{Int,Int},XCCoeff2B}();
-    xc_d_2b = Dict{Tuple{Int,Int},XCCoeff2B}();
-    core_core = Dict{Tuple{Int,Int},ExponentialCoefficients}();
-    core_valence = Dict{Tuple{Int,Int},ExponentialCoefficients}();
+    xc_a_2b = Dict{Tuple{Int,Int},Number}();
+    xc_b_2b = Dict{Tuple{Int,Int},Number}();
+    xc_c_2b = Dict{Tuple{Int,Int},Number}();
+    xc_d_2b = Dict{Tuple{Int,Int},Number}();
 
-    tot_e_xc_coeffs = EmpiricalXCCoefficients(
+    morse_depth = Dict{Tuple{Int,Int},Number}();
+    morse_stiffness_parameter = Dict{Tuple{Int,Int},Number}();
+    morse_equilibrium_distance = Dict{Tuple{Int,Int},Number}();
+
+    xc_coeffs = EmpiricalXCCoefficients(
         xc_a_1b,xc_b_1b,xc_c_1b,xc_d_1b,xc_a_2b,xc_b_2b,xc_c_2b,xc_d_2b);
-    tot_e_ke_coeffs = EmpiricalKECoefficients(ke_e_1b,ke_f_1b);
-    tot_e_static_coeffs = TotalEnergyEmpiricalStaticCoefficients(
-        core_core,core_valence);
+    ke_coeffs = EmpiricalKECoefficients(ke_e_1b,ke_f_1b);
+    polarizable_morse_coeffs = EmpiricalMorseCoefficients(morse_depth,
+        morse_stiffness_parameter,morse_equilibrium_distance);
+    non_polarizable_morse_coeffs = EmpiricalMorseCoefficients(morse_depth,
+        morse_stiffness_parameter,morse_equilibrium_distance);
 
-    pol_e_xc_coeffs = EmpiricalXCCoefficients(
-        xc_a_1b,xc_b_1b,xc_c_1b,xc_d_1b,xc_a_2b,xc_b_2b,xc_c_2b,xc_d_2b);
-    pol_e_ke_coeffs = EmpiricalKECoefficients(ke_e_1b,ke_f_1b);
-    pol_e_static_coeffs = PolarizationEnergyEmpiricalStaticCoefficients(
-        core_valence);
-
-    tot_e_coeffs = TotalEnergyCoefficients(max_atomic_number,
-        tot_e_xc_coeffs,tot_e_ke_coeffs,tot_e_static_coeffs);
-    pol_e_coeffs = PolarizationEnergyCoefficients(max_atomic_number,
-        pol_e_xc_coeffs,pol_e_ke_coeffs,pol_e_static_coeffs);
+    tot_e_coeffs = deepcopy(EnergyCoefficients(xc_coeffs,ke_coeffs,
+        polarizable_morse_coeffs,non_polarizable_morse_coeffs));
+    pol_e_coeffs = deepcopy(EnergyCoefficients(xc_coeffs,ke_coeffs,
+        polarizable_morse_coeffs,non_polarizable_morse_coeffs));
 
     system = MolecularSystem();
     simulation = SimulationSystem(system,tot_e_coeffs,pol_e_coeffs,
@@ -738,23 +831,23 @@ function make_diatomic_molecule(
     reference_atoms::Dict{Int,Atom}, Z1::Int,Z2::Int,d::Number,charge::Int)
     # Makes a diatomic molecule with a diatomic separation d in Bohr with the 
     # specified charge.
-    at1 = copy(reference_atoms[Z1]);
-    at2 = copy(reference_atoms[Z2]);
+    atom_1 = copy(reference_atoms[Z1]);
+    atom_2 = copy(reference_atoms[Z2]);
 
-    z1_eff = at1.valence_electrons;
-    z2_eff = at2.valence_electrons;
+    z1_eff = atom_1.valence_electrons;
+    z2_eff = atom_2.valence_electrons;
 
     charge1 = charge*z1_eff/(z1_eff+z2_eff);
     charge2 = charge*z2_eff/(z1_eff+z2_eff);
 
-    at1.polarization_coefficient = (z1_eff - charge1) / z1_eff;
-    at2.polarization_coefficient = (z2_eff - charge2) / z2_eff;
+    atom_1.polarization_coefficient = (z1_eff - charge1) / z1_eff;
+    atom_2.polarization_coefficient = (z2_eff - charge2) / z2_eff;
 
-    at1.coordinates = [0.0, 0.0, +d/2.0];
-    at2.coordinates = [0.0, 0.0, -d/2.0];
+    atom_1.coordinates = [0.0, 0.0, +d/2.0];
+    atom_2.coordinates = [0.0, 0.0, -d/2.0];
 
     molecule = Molecule();
-    molecule.atoms = [at1,at2];
+    molecule.atoms = [atom_1,atom_2];
 
     return molecule;
 end

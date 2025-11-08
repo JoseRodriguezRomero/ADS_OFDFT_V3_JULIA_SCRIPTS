@@ -5,7 +5,8 @@ using Base.Threads;
 
 include("FitCoeffs_General.jl")
 
-which_atomic_numbers = [[1,6],[1,8],[6,7],[6,8],[7,8]];
+# which_atomic_numbers = [[1,6],[1,8],[6,8],[7,8]];
+which_atomic_numbers = [[6,8]];
 for atomic_numbers in which_atomic_numbers
     Z1 = atomic_numbers[1];
     Z2 = atomic_numbers[2];
@@ -21,10 +22,6 @@ for atomic_numbers in which_atomic_numbers
         simulation[i] = make_system_from_parsed_file(all_data[1]);
     end
 
-    num_vars = 11;
-    aux_X = zeros(Float64,num_vars);
-    aux_X[(end-2):end] .= 1.0;
-    
     neutral_at1 = make_monoatomic_system(Z1,0);
     neutral_at2 = make_monoatomic_system(Z2,0);
 
@@ -35,6 +32,15 @@ for atomic_numbers in which_atomic_numbers
     polarize_to_model!(neutral_data);
     polarize_to_model!(cation_data);
     polarize_to_model!(anion_data);
+
+    neutral_min_index = 1;
+    for index in eachindex(neutral_data)
+        if neutral_data[neutral_min_index].total_energy > neutral_data[index].total_energy
+            neutral_min_index = index;
+        end
+    end
+
+    reference_system = neutral_data[neutral_min_index];
 
     needs_casting = true;
     function cost_func(aux_X::Vector)
@@ -61,6 +67,18 @@ for atomic_numbers in which_atomic_numbers
         set_fitted_coeffs!(neutral_at1);
         set_fitted_coeffs!(neutral_at2);
 
+        model_at1_neutral_e = total_energy(neutral_at1);
+        model_at2_neutral_e = total_energy(neutral_at2);
+
+        set_fitted_coeffs!(simulation[1]);
+        set_diatomic_system_to_parsed_file!(simulation[1],reference_system);
+
+        dft_e0_1 = reference_system.total_energy;
+        model_e0_1 = total_energy(simulation[1]);
+        
+        dft_e0_2 = dft_neutral_at1_e + dft_neutral_at2_e;
+        model_e0_2 = model_at1_neutral_e + model_at2_neutral_e;
+
         ret_val = zeros(aux_type,n_threads);
         @threads for thread_id in 1:n_threads
             set_fitted_coeffs!(simulation[thread_id]);
@@ -71,6 +89,14 @@ for atomic_numbers in which_atomic_numbers
 
                 dft_tot_e = all_data[i].total_energy;
                 model_tot_e = total_energy(simulation[thread_id]);
+
+                dft_e_diff = dft_tot_e - dft_e0_1;
+                model_e_diff = model_tot_e - model_e0_1;
+                ret_val[thread_id] += (model_e_diff - dft_e_diff)^2;
+
+                # dft_e_diff = dft_tot_e - dft_e0_2;
+                # model_e_diff = model_tot_e - model_e0_2;
+                # ret_val[thread_id] += (model_e_diff - dft_e_diff)^2;
 
                 if i > 1
                     if all_data[i].charge != all_data[i-1].charge
@@ -98,13 +124,31 @@ for atomic_numbers in which_atomic_numbers
             end
         end
 
-        return sum(ret_val);
+        return sum(ret_val) / length(all_data);
     end
 
-    # needs_casting = false;
-    # sol = Optim.optimize(cost_func, aux_X[:], NelderMead(),
-    #     Optim.Options(show_trace=true,iterations=8000));
-    # aux_X = Optim.minimizer(sol);
+    num_vars = 8;
+    aux_X = rand(Float64,num_vars);
+
+    for i in 1:1500
+        cost_func_eval = cost_func(aux_X);
+        new_aux_X = 8.0 .* (rand(Float64,num_vars) .- 0.5);
+
+        if cost_func_eval <= 0.1
+            println("Initial guess found!");
+            break;
+        end
+
+        if cost_func(new_aux_X) < cost_func_eval
+            aux_X = new_aux_X;
+            print(@sprintf "Current best %18.6E \n" cost_func(aux_X));
+        end
+    end
+
+    needs_casting = false;
+    sol = Optim.optimize(cost_func, aux_X[:], NelderMead(),
+        Optim.Options(show_trace=true,iterations=8000));
+    aux_X = Optim.minimizer(sol);
 
     needs_casting = true;
     sol = Optim.optimize(cost_func, aux_X[:], LBFGS(), autodiff=:forward,

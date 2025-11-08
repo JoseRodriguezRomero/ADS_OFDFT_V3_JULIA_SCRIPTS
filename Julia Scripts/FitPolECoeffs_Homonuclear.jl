@@ -1,11 +1,11 @@
 using Optim, Plots;
 using Printf, LinearAlgebra;
-using LaTeXStrings, Latexify, Measures;
 using Base.Threads;
 
 include("FitCoeffs_General.jl")
 
-which_atomic_numbers = [1,6,7,8];
+# which_atomic_numbers = [1,6,7,8];
+which_atomic_numbers = [7];
 for atomic_number in which_atomic_numbers
     neutral_data, cation_data, anion_data = 
         read_all_sanitized_data(atomic_number,true);
@@ -38,9 +38,6 @@ for atomic_number in which_atomic_numbers
     atoms_μ0 = simulation[1].basis_set_settings.atoms_μ0;
     μ0 = atoms_μ0[atomic_number];
 
-    num_vars = 14;
-    aux_X = zeros(Float64,num_vars);
-
     needs_casting = true;
     function cost_func(aux_X::Vector)
         aux_type = typeof(aux_X[1]);
@@ -65,10 +62,6 @@ for atomic_number in which_atomic_numbers
         set_fitted_coeffs!(at_cation);
         set_fitted_coeffs!(at_anion);
 
-        model_at_neutral_e = total_energy(at_neutral)
-        model_at_cation_e = total_energy(at_cation);
-        model_at_anion_e = total_energy(at_anion);
-    
         ret_val = zeros(aux_type,n_threads);
         @threads for thread_id in 1:n_threads
             # Set the trial coefficients in the simulation structure.
@@ -95,14 +88,20 @@ for atomic_number in which_atomic_numbers
                 aux_x[4] = μ - μ0;
                 aux_x[5] = μ;
 
-                μ_model = (aux_m \ aux_y)[end];
-                
-                ret_val[thread_id] += norm((aux_m \ aux_y) - aux_x)^2;
+                diff_vec_1 = (aux_m \ aux_y) - aux_x;
+                diff_vec_2 = (aux_m * aux_x) - aux_y;
+
+                ret_val[thread_id] += norm(diff_vec_1)^2;
+                ret_val[thread_id] += norm(diff_vec_2)^2;
 
                 if i > 1
                     if all_data[i].charge != all_data[i-1].charge
                         continue;
                     end
+
+                    d1 = all_data[i].atomic_separation;
+                    d2 = all_data[i-1].atomic_separation;
+                    Δd = d2 - d1;
 
                     set_diatomic_system_to_parsed_file!(
                         simulation[thread_id],all_data[i-1]);
@@ -113,29 +112,28 @@ for atomic_number in which_atomic_numbers
                         simulation[thread_id].system.molecules[1],2);
                     μ_nxt = simulation[thread_id].system.chemical_potential;
 
-                    aux_m, aux_y = 
+                    aux_m_nxt, aux_y_nxt = 
                         polarization_matrix_problem(simulation[thread_id]);
 
-                    aux_x = zeros(aux_type,5);
-                    aux_x[1] = ζ1_nxt;
-                    aux_x[2] = ζ2_nxt;
-                    aux_x[3] = μ_nxt - μ0;
-                    aux_x[4] = μ_nxt - μ0;
-                    aux_x[5] = μ_nxt;
+                    aux_x_nxt = zeros(aux_type,5);
+                    aux_x_nxt[1] = ζ1_nxt;
+                    aux_x_nxt[2] = ζ2_nxt;
+                    aux_x_nxt[3] = μ_nxt - μ0;
+                    aux_x_nxt[4] = μ_nxt - μ0;
+                    aux_x_nxt[5] = μ_nxt;
 
-                    μ_model_nxt = (aux_m \ aux_y)[end];
+                    diff_vec_1_nxt = (aux_m_nxt \ aux_y_nxt) - aux_x_nxt;
+                    diff_vec_2_nxt = (aux_m_nxt * aux_x_nxt) - aux_y_nxt;
 
-                    Δd = all_data[i-1].atomic_separation - all_data[i].atomic_separation;
-
-                    model_dev = (μ_model_nxt - μ_model) / Δd;
-                    dft_dev = (μ_nxt - μ) / Δd;
-
-                    ret_val[thread_id] += (model_dev - dft_dev)^2;
+                    ret_val[thread_id] += 
+                        (norm(diff_vec_1_nxt - diff_vec_1) / Δd)^2;
+                    ret_val[thread_id] += 
+                        (norm(diff_vec_2_nxt - diff_vec_2) / Δd)^2;
                 end
             end
         end
 
-        ret_val = sum(ret_val) / length(ret_val);
+        ret_val = sum(ret_val) / length(all_data);
         for atom in all_atoms
             set_fitted_coeffs!(atom);
 
@@ -150,15 +148,52 @@ for atomic_number in which_atomic_numbers
             aux_x[3] = μ;
 
             ret_val += norm((aux_m \ aux_y) - aux_x)^2;
+            ret_val += norm((aux_m * aux_x) - aux_y)^2;
         end
+
+        set_diatomic_system_to_parsed_file!(simulation[1],all_data[1]);
+        simulation[1].system.molecules[1].atoms[1].coordinates .= 0.0;
+        simulation[1].system.molecules[1].atoms[2].coordinates .= 0.0;
+
+        Δd = 1.0E-2;
+        d0 = 1.0E-3;
+        d1 = d0 + Δd;
+        
+        simulation[1].system.molecules[1].atoms[1].coordinates[3] = d0;
+        aux_m0, aux_y0 = polarization_matrix_problem(simulation[1]);
+
+        simulation[1].system.molecules[1].atoms[1].coordinates[3] = d1;
+        aux_m1, aux_y1 = polarization_matrix_problem(simulation[1]);
+
+        aux_x0 = aux_m0 \ aux_y0;
+        aux_x1 = aux_m1 \ aux_y1;
+        ret_val += norm((aux_x1 - aux_x0) ./ Δd)^2;
 
         return ret_val;
     end
 
-    # needs_casting = false;
-    # sol = Optim.optimize(cost_func, aux_X[:], NelderMead(),
-    #     Optim.Options(show_trace=true,iterations=8000));
-    # aux_X = Optim.minimizer(sol);
+    num_vars = 12;
+    aux_X = rand(Float64,num_vars);
+
+    for i in 1:2500
+        cost_func_eval = cost_func(aux_X);
+        new_aux_X = 4.0 .* (rand(Float64,num_vars) .- 0.5);
+
+        if cost_func_eval <= 0.1
+            println("Initial guess found!");
+            break;
+        end
+
+        if cost_func(new_aux_X) < cost_func_eval
+            aux_X = new_aux_X;
+            print(@sprintf "Current best %18.6E \n" cost_func(aux_X));
+        end
+    end
+
+    needs_casting = true;
+    sol = Optim.optimize(cost_func, aux_X[:], NelderMead(),
+        Optim.Options(show_trace=true,iterations=8000));
+    aux_X = Optim.minimizer(sol);
     
     needs_casting = true;
     sol = Optim.optimize(cost_func, aux_X[:], LBFGS(), autodiff=:forward,

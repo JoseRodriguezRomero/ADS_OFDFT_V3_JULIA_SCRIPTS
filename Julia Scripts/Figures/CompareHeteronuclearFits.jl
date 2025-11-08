@@ -64,9 +64,6 @@ function test_result_ΔE(Z1::Int, Z2::Int)
     SS_tot = sum((dft_ΔE .- mean_dft_ΔE).^2.0);
     R² = 1.0 - SS_res / SS_tot;
 
-    min_x = minimum([minimum(model_ΔE), minimum(dft_ΔE)]);
-    max_x = maximum([maximum(model_ΔE), maximum(dft_ΔE)]);
-
     elem_symbol1 = get_element_symbol(Z1);
     elem_symbol2 = get_element_symbol(Z2);
 
@@ -160,7 +157,7 @@ function compare_data()
     y_label_all = L"$\Delta E \quad \mathrm{(This \ Work)}$";
     x_label_all = L"$\Delta E \quad (\mathrm{KS{-}DFT})$";
 
-    R²_rel_pos_x = (5.0/8.0);
+    R²_rel_pos_x = (14.0/15.0);
     R²_rel_pos_y = (1.0/8.0);
 
     # Energy Differences
@@ -178,8 +175,8 @@ function compare_data()
 
     l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
     l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*string(R²), :center, 10));
+    R² = @sprintf "%.5lf" round(R²,digits=5);
+    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
 
     # HO Plots
     eHO, R² = test_result_ΔE(1,8);
@@ -193,8 +190,8 @@ function compare_data()
 
     l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
     l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*string(R²), :center, 10));
+    R² = @sprintf "%.5lf" round(R²,digits=5);
+    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
 
     # CO Plots
     eCO, R² = test_result_ΔE(6,8);  
@@ -208,8 +205,8 @@ function compare_data()
 
     l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
     l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*string(R²), :center, 10));
+    R² = @sprintf "%.5lf" round(R²,digits=5);
+    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
 
     # NO Plots
     eNO, R² = test_result_ΔE(7,8);
@@ -223,8 +220,8 @@ function compare_data()
 
     l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
     l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*string(R²), :center, 10));
+    R² = @sprintf "%.5lf" round(R²,digits=5);
+    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
 
     # Chemical Potentials
     y_label_all = L"$\tilde{\mu} \quad \mathrm{(This \ Work)}$";
@@ -244,8 +241,8 @@ function compare_data()
 
     l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
     l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*string(R²), :center, 10));
+    R² = @sprintf "%.5lf" round(R²,digits=5);
+    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
 
     # HO Plots
     pHO, R² = test_result_chemical_potential(1,8);
@@ -259,8 +256,8 @@ function compare_data()
 
     l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
     l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*string(R²), :center, 10));
+    R² = @sprintf "%.5lf" round(R²,digits=5);
+    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
 
     # CO Plots
     pCO, R² = test_result_chemical_potential(6,8);
@@ -274,8 +271,8 @@ function compare_data()
 
     l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
     l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*string(R²), :center, 10));
+    R² = @sprintf "%.5lf" round(R²,digits=5);
+    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
 
     # NO Plots
     pNO, R² = test_result_chemical_potential(7,8);
@@ -289,8 +286,8 @@ function compare_data()
 
     l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
     l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*string(R²), :center, 10));
+    R² = @sprintf "%.5lf" round(R²,digits=5);
+    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
 
     # Join all plots
     p = plot(eHC,eHO,eCO,eNO,pHC,pHO,pCO,pNO,layout=(2,4), size=(1100,470));
@@ -420,6 +417,49 @@ function comp_heteronuclear_scan(pair1::Tuple{Int,Int}, pair2::Tuple{Int,Int})
     savefig("Figures/HeteronuclearScanComp.pdf");
 
     return p;
+end
+
+function dummy_test(Z1::Int, Z2::Int, Q::Int)
+    sim = make_diatomic_system(Z1,Z2,0.0,Q);
+
+    r = collect(0.0:0.001:0.05);
+    q1 = zeros(Float64,length(r));
+    q2 = zeros(Float64,length(r));
+
+    for i in eachindex(r)
+        sim.system.molecules[1].atoms[1].coordinates[3] = r[i];
+        polarize_molecules!(sim);
+
+        z1_eff = sim.system.molecules[1].atoms[1].valence_electrons;
+        ζ1 = sim.system.molecules[1].atoms[1].polarization_coefficient;
+
+        z2_eff = sim.system.molecules[1].atoms[2].valence_electrons;
+        ζ2 = sim.system.molecules[1].atoms[2].polarization_coefficient;
+
+        q1[i] = z1_eff * (1 - ζ1);
+        q2[i] = z2_eff * (1 - ζ2);
+    end
+
+    p = plot(r,q1);
+    plot!(r,q2);
+    return p;
+
+    # sim = make_diatomic_system(Z1,Z2,0.0,Q);
+
+    # r = collect(0.5:0.01:5);
+    # u = zeros(Float64,length(r));
+
+    # for i in eachindex(r)
+    #     sim.system.molecules[1].atoms[1].coordinates[3] = r[i];
+    #     polarize_molecules!(sim);
+
+    #     u[i] = total_energy(sim);
+    # end
+    
+    # u .-= total_energy(make_monoatomic_system(Z1,0));
+    # u .-= total_energy(make_monoatomic_system(Z2,0));
+
+    # return plot(r,u);
 end
 
 comp_heteronuclear_scan((7,8),(6,8));
