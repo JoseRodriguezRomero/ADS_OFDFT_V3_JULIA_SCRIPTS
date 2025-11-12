@@ -1,34 +1,39 @@
-using Optim, Plots;
+using Optim;
 using Printf, LinearAlgebra;
-using LaTeXStrings, Latexify, Measures;
 using Base.Threads;
 
 include("FitCoeffs_General.jl")
 
 # which_atomic_numbers = [[1,6],[1,8],[6,8],[7,8]];
-which_atomic_numbers = [[7,8]];
+which_atomic_numbers = [[6,8]];
 for atomic_numbers in which_atomic_numbers
     Z1 = atomic_numbers[1];
     Z2 = atomic_numbers[2];
 
-    neutral_data, cation_data, anion_data = read_all_sanitized_data(Z1,Z2,true);
+    local neutral_data, cation_data, anion_data = 
+        read_all_sanitized_data(Z1,Z2,true);
     all_data = vcat(neutral_data, cation_data, anion_data);
 
     n_threads = Threads.nthreads();
     simulation = Vector{SimulationSystem}();
     resize!(simulation,n_threads);
 
-    for thread_id in 1:n_threads
-        simulation[thread_id] = make_system_from_parsed_file(all_data[1]);
+    simulation = Vector{SimulationSystem}();
+    resize!(simulation,n_threads);
+    for i in 1:n_threads
+        simulation[i] = make_system_from_parsed_file(all_data[1]);
     end
 
-    atoms_μ0 = simulation[1].basis_set_settings.atoms_μ0;
-    μ0_1 = atoms_μ0[Z1];
-    μ0_2 = atoms_μ0[Z2];
+    z1_eff = simulation[1].system.molecules[1].atoms[1].valence_electrons;
+    z2_eff = simulation[1].system.molecules[1].atoms[2].valence_electrons;
 
     needs_casting = true;
     function cost_func(aux_X::Vector)
         aux_type = typeof(aux_X[1]);
+
+        function set_fitted_coeffs!(simulation::SimulationSystem)
+            set_fitted_pol_e_coeffs!(simulation,Z1,Z2,aux_X);
+        end
 
         if needs_casting
             needs_casting = false;
@@ -39,7 +44,11 @@ for atomic_numbers in which_atomic_numbers
         
         ret_val = zeros(aux_type,n_threads);
         @threads for thread_id in 1:n_threads
-            set_fitted_pol_e_coeffs!(simulation[thread_id],Z1,Z2,aux_X);
+            set_fitted_coeffs!(simulation[thread_id]);
+
+            atoms_μ0 = simulation[thread_id].basis_set_settings.atoms_μ0;
+            μ0_1 = atoms_μ0[Z1];
+            μ0_2 = atoms_μ0[Z2];
 
             for i in thread_id:n_threads:(length(all_data))
                 set_diatomic_system_to_parsed_file!(
@@ -61,11 +70,11 @@ for atomic_numbers in which_atomic_numbers
                 aux_x[4] = μ - μ0_2;
                 aux_x[5] = μ;
 
-                diff_vec_1 = (aux_m \ aux_y) - aux_x;
-                diff_vec_2 = (aux_m * aux_x) - aux_y;
+                diff_vec = ((aux_m \ aux_y) - aux_x);
+                diff_vec[1] *= z1_eff;
+                diff_vec[2] *= z2_eff;
 
-                ret_val[thread_id] += norm(diff_vec_1)^2;
-                ret_val[thread_id] += norm(diff_vec_2)^2;
+                ret_val[thread_id] += norm(diff_vec)^2;
 
                 if i > 1
                     if all_data[i].charge != all_data[i-1].charge
@@ -95,24 +104,44 @@ for atomic_numbers in which_atomic_numbers
                     aux_x_nxt[4] = μ_nxt - μ0_2;
                     aux_x_nxt[5] = μ_nxt;
 
-                    diff_vec_1_nxt = (aux_m_nxt \ aux_y_nxt) - aux_x_nxt;
-                    diff_vec_2_nxt = (aux_m_nxt * aux_x_nxt) - aux_y_nxt;
+                    diff_vec_nxt = ((aux_m_nxt \ aux_y_nxt) - aux_x_nxt);
+                    diff_vec_nxt[1] *= z1_eff;
+                    diff_vec_nxt[2] *= z2_eff;
 
-                    ret_val[thread_id] += 
-                        (norm(diff_vec_1_nxt - diff_vec_1) / Δd)^2;
-                    ret_val[thread_id] += 
-                        (norm(diff_vec_2_nxt - diff_vec_2) / Δd)^2;
+                    ret_val[thread_id] += (norm(diff_vec_nxt-diff_vec) / Δd)^2;
                 end
             end
         end
 
-        return sum(ret_val) / length(all_data);
+        ret_val = sum(ret_val) / length(all_data);
+
+        det_cond_sum = zeros(aux_type,n_threads);
+        r = 0.1:((10.0-0.1)/200.0):10.0;
+        @threads for thread_id in 1:n_threads
+            set_diatomic_system_to_parsed_file!(
+                simulation[thread_id],all_data[1]);
+                simulation[thread_id].system.molecules[1].atoms[1].coordinates .= 0.0;
+                simulation[thread_id].system.molecules[1].atoms[2].coordinates .= 0.0;
+
+            for atomic_separation in r[thread_id:n_threads:end]
+                simulation[thread_id].system.molecules[1].atoms[1].coordinates[3] = 
+                    atomic_separation;
+
+                aux_m, _ = polarization_matrix_problem(simulation[thread_id]);
+                det_aux_m = det(aux_m);
+
+                det_cond_sum[thread_id] += (det_aux_m - abs(det_aux_m))^2;
+            end
+        end
+        ret_val += sum(det_cond_sum) / length(det_cond_sum);
+
+        return ret_val;
     end
 
-    num_vars = 8;
+    num_vars = 4;
     aux_X = 2.0 .* (rand(Float64,num_vars) .- 0.5);
 
-    for i in 1:1500
+    for i in 1:2500
         cost_func_eval = cost_func(aux_X);
         new_aux_X = 2.0 .* (rand(Float64,num_vars) .- 0.5);
 
@@ -126,11 +155,6 @@ for atomic_numbers in which_atomic_numbers
             print(@sprintf "Current best %18.6E \n" cost_func(aux_X));
         end
     end
-
-    # needs_casting = false;
-    # sol = Optim.optimize(cost_func, aux_X, NelderMead(),
-    #     Optim.Options(show_trace=true,iterations=2000));
-    # aux_X = Optim.minimizer(sol);
 
     needs_casting = true;
     sol = Optim.optimize(cost_func, aux_X, LBFGS(), autodiff=:forward,

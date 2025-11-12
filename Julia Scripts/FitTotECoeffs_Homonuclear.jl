@@ -1,10 +1,11 @@
-using Optim, Plots;
+using Optim;
 using Printf, LinearAlgebra;
 using Base.Threads;
 
 include("FitCoeffs_General.jl")
 
-which_atomic_numbers = [1,6,7,8];
+# which_atomic_numbers = [1,6,7,8];
+which_atomic_numbers = [8];
 for atomic_number in which_atomic_numbers
     neutral_data, cation_data, anion_data = 
         read_all_sanitized_data(atomic_number);
@@ -129,14 +130,14 @@ for atomic_number in which_atomic_numbers
         return ret_val;
     end
 
-    num_vars = 12;
-    aux_X = rand(Float64,num_vars);
+    num_vars = 13;
+    aux_X = 2.0 .* (rand(Float64,num_vars) .- 0.5);
 
-    for i in 1:2000
+    for i in 1:2500
         cost_func_eval = cost_func(aux_X);
-        new_aux_X = 8.0 .* (rand(Float64,num_vars) .- 0.5);
+        new_aux_X = 2.0 .* (rand(Float64,num_vars) .- 0.5);
 
-        if cost_func_eval <= 0.1
+        if cost_func_eval <= 0.001
             println("Initial guess found!");
             break;
         end
@@ -146,11 +147,6 @@ for atomic_number in which_atomic_numbers
             print(@sprintf "Current best %18.6E \n" cost_func(aux_X));
         end
     end
-
-    # needs_casting = false;
-    # sol = Optim.optimize(cost_func, aux_X[:], NelderMead(),
-    #     Optim.Options(show_trace=true,iterations=8000));
-    # aux_X = Optim.minimizer(sol);
 
     needs_casting = true;
     sol = Optim.optimize(cost_func, aux_X[:], LBFGS(), autodiff=:forward,

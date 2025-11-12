@@ -402,16 +402,16 @@ function comp_heteronuclear_scan(pair1::Tuple{Int,Int}, pair2::Tuple{Int,Int})
 
     p1 = test_result_ΔE2(pair1[1],pair1[2]);
     plot!(ylabel=L"$\Delta E \quad \mathrm{[eV]}$");
-    plot!(ylims=[-5,35],yticks=-5:10:35);
+    plot!(ylims=[-5,55],yticks=-5:15:55);
     plot!(xlims=[0.0,x_max],xticks=(0:2:6,[]));
-    plot!(legend = :outertopright)
+    plot!(legend = :topright)
 
     p2 = test_result_ΔE2(pair2[1],pair2[2]);
     plot!(xlabel=L"$d \quad \mathrm{[\AA ngstrom]}$");
     plot!(ylabel=L"$\Delta E \quad \mathrm{[eV]}$");
-    plot!(ylims=[-5,35],yticks=-5:10:35);
+    plot!(ylims=[-5,55],yticks=-5:15:55);
     plot!(xlims=[0.0,x_max],xticks=0:2:6);
-    plot!(legend = :outertopright)
+    plot!(legend = :topright)
 
     p = plot(p1,p2, layout=(2,1), size = (500,380));
     savefig("Figures/HeteronuclearScanComp.pdf");
@@ -419,47 +419,151 @@ function comp_heteronuclear_scan(pair1::Tuple{Int,Int}, pair2::Tuple{Int,Int})
     return p;
 end
 
-function dummy_test(Z1::Int, Z2::Int, Q::Int)
+function plot_chemical_potential_scan(Z1::Int, Z2::Int, Q::Int)
     sim = make_diatomic_system(Z1,Z2,0.0,Q);
 
-    r = collect(0.0:0.001:0.05);
-    q1 = zeros(Float64,length(r));
-    q2 = zeros(Float64,length(r));
+    r = collect(0.0:0.01:5);
+    u = zeros(Float64,length(r));
 
     for i in eachindex(r)
         sim.system.molecules[1].atoms[1].coordinates[3] = r[i];
-        polarize_molecules!(sim);
-
-        z1_eff = sim.system.molecules[1].atoms[1].valence_electrons;
-        ζ1 = sim.system.molecules[1].atoms[1].polarization_coefficient;
-
-        z2_eff = sim.system.molecules[1].atoms[2].valence_electrons;
-        ζ2 = sim.system.molecules[1].atoms[2].polarization_coefficient;
-
-        q1[i] = z1_eff * (1 - ζ1);
-        q2[i] = z2_eff * (1 - ζ2);
+        aux_m, aux_y = polarization_matrix_problem(sim);
+    
+        u[i] = (aux_m \ aux_y)[end];
     end
 
-    p = plot(r,q1);
-    plot!(r,q2);
+    bohr_to_angstrom = 0.529177;
+    r .*= bohr_to_angstrom;
+
+    p = plot(r,u,label=false);
+    plot!(xlabel="Atomic Separation [Å]");
+    plot!(ylabel="Chemical Potential [Hartree]");
+    plot!(framestyle = :box);
+    plot!(xlims=[r[1],r[end]]);
+
     return p;
+end
 
-    # sim = make_diatomic_system(Z1,Z2,0.0,Q);
+function plot_partial_charges(Z1::Int, Z2::Int, Q::Int)
+    sim = make_diatomic_system(Z1,Z2,0.0,Q);
 
-    # r = collect(0.5:0.01:5);
-    # u = zeros(Float64,length(r));
+    ref_data = Vector{ParsedFile}();
+    neutral_data, cation_data, anion_data = 
+        read_all_sanitized_data(Z1,Z2);
+    if Q == 0
+        ref_data = neutral_data;
+    elseif Q == 1
+        ref_data = cation_data;
+    else
+        ref_data = anion_data;
+    end
 
-    # for i in eachindex(r)
-    #     sim.system.molecules[1].atoms[1].coordinates[3] = r[i];
-    #     polarize_molecules!(sim);
+    r0 = ref_data[1].atomic_separation * 0.95;
+    r1 = ref_data[end].atomic_separation * 1.05;
 
-    #     u[i] = total_energy(sim);
-    # end
+    r = collect(r0:0.01:r1);
+    q1 = zeros(Float64,length(r));
+    q2 = zeros(Float64,length(r));
+
+    r_dft = zeros(Float64,length(ref_data));
+    q1_dft = zeros(Float64,length(ref_data));
+    q2_dft = zeros(Float64,length(ref_data));
+
+    for i in eachindex(r)
+        sim.system.molecules[1].atoms[1].coordinates[3] = r[i];
+        aux_m, aux_y = polarization_matrix_problem(sim);
     
-    # u .-= total_energy(make_monoatomic_system(Z1,0));
-    # u .-= total_energy(make_monoatomic_system(Z2,0));
+        aux_x = aux_m \ aux_y;
 
-    # return plot(r,u);
+        q1[i] = aux_x[1];
+        q2[i] = aux_x[2];
+    end
+
+    for i in eachindex(ref_data)
+        r_dft[i] = ref_data[i].atomic_separation;
+        q1_dft[i] = ref_data[i].partial_charge_1;
+        q2_dft[i] = ref_data[i].partial_charge_2;
+    end
+
+    z1_eff = sim.system.molecules[1].atoms[1].valence_electrons;
+    z2_eff = sim.system.molecules[1].atoms[2].valence_electrons;
+
+    q1 = (1.0 .- q1) .* z1_eff;
+    q2 = (1.0 .- q2) .* z2_eff;
+
+    bohr_to_angstrom = 0.529177;
+    r .*= bohr_to_angstrom;
+    r_dft .*= bohr_to_angstrom;
+
+    p = plot(r,q1,label=get_element_symbol(Z1),
+        color=palette(:auto)[1]);
+    plot!(r,q2,label=get_element_symbol(Z2),
+        color=palette(:auto)[2]);
+    plot!(xlabel="Atomic Separation [Å]");
+    plot!(ylabel="Partial Charge");
+    plot!(framestyle = :box);
+    plot!(xlims=[r[1],r[end]]);
+
+    scatter!(r_dft,q1_dft,label=false,color=palette(:auto)[1]);
+    scatter!(r_dft,q2_dft,label=false,color=palette(:auto)[2]);
+
+    return p;
+end
+
+function plot_compare_partial_charges(Z1::Int, Z2::Int, Q::Int)
+    sim = make_diatomic_system(Z1,Z2,0.0,Q);
+
+    ref_data = Vector{ParsedFile}();
+    neutral_data, cation_data, anion_data = 
+        read_all_sanitized_data(Z1,Z2);
+    if Q == 0
+        ref_data = neutral_data;
+    elseif Q == 1
+        ref_data = cation_data;
+    else
+        ref_data = anion_data;
+    end
+
+    q1 = zeros(Float64,length(ref_data));
+    q2 = zeros(Float64,length(ref_data));
+
+    q1_dft = zeros(Float64,length(ref_data));
+    q2_dft = zeros(Float64,length(ref_data));
+
+    for i in eachindex(ref_data)
+        set_diatomic_system_to_parsed_file!(sim,ref_data[i]);
+        polarize_molecules!(sim);
+
+
+        q1_dft[i] = ref_data[i].partial_charge_1;
+        q2_dft[i] = ref_data[i].partial_charge_2;
+
+        q1[i] = sim.system.molecules[1].atoms[1].polarization_coefficient;
+        q2[i] = sim.system.molecules[1].atoms[2].polarization_coefficient;
+    end
+
+    z1_eff = sim.system.molecules[1].atoms[1].valence_electrons;
+    z2_eff = sim.system.molecules[1].atoms[2].valence_electrons;
+
+    # q1 = (1.0 .- q1) .* z1_eff;
+    # q2 = (1.0 .- q2) .* z2_eff;
+
+    q1 *= z1_eff;
+    q2 *= z2_eff;
+
+    q1_dft = z1_eff .- q1_dft;
+    q2_dft = z2_eff .- q2_dft;
+
+    q12_dft = vcat(q1_dft,q2_dft);
+    q12_model = vcat(q1,q2);
+
+    min_x = minimum(vcat(q12_dft,q12_model));
+    max_x = maximum(vcat(q12_dft,q12_model));
+
+    p = plot([min_x,max_x],[min_x,max_x],label=false)
+    scatter!(q12_dft,q12_model);
+
+    return p;
 end
 
 comp_heteronuclear_scan((7,8),(6,8));

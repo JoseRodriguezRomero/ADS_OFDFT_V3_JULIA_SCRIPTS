@@ -21,8 +21,8 @@ function save_1b_coeffs(coeffs::Dict{Int,Number},
     return;
 end
 
-function save_1b_coeffs(coeffs::EnergyCoefficients, max_atomic_number::Int,
-    type::String)
+function save_1b_coeffs(coeffs::PolarizationEnergyCoefficients, 
+    max_atomic_number::Int)
     xc_a_1b = coeffs.xc_coeffs.xc_a_1b;
     xc_b_1b = coeffs.xc_coeffs.xc_b_1b;
     xc_c_1b = coeffs.xc_coeffs.xc_c_1b;
@@ -30,6 +30,27 @@ function save_1b_coeffs(coeffs::EnergyCoefficients, max_atomic_number::Int,
     ke_e_1b = coeffs.ke_coeffs.ke_e_1b;
     ke_f_1b = coeffs.ke_coeffs.ke_f_1b;
 
+    type = "Polarization";
+    save_1b_coeffs(xc_a_1b,max_atomic_number,type,"xc_coeffs_A");
+    save_1b_coeffs(xc_b_1b,max_atomic_number,type,"xc_coeffs_B");
+    save_1b_coeffs(xc_c_1b,max_atomic_number,type,"xc_coeffs_C");
+    save_1b_coeffs(xc_d_1b,max_atomic_number,type,"xc_coeffs_D");
+    save_1b_coeffs(ke_e_1b,max_atomic_number,type,"ke_coeffs_E");
+    save_1b_coeffs(ke_f_1b,max_atomic_number,type,"ke_coeffs_F");
+    
+    return;
+end
+
+function save_1b_coeffs(coeffs::TotalEnergyCoefficients, 
+    max_atomic_number::Int)
+    xc_a_1b = coeffs.xc_coeffs.xc_a_1b;
+    xc_b_1b = coeffs.xc_coeffs.xc_b_1b;
+    xc_c_1b = coeffs.xc_coeffs.xc_c_1b;
+    xc_d_1b = coeffs.xc_coeffs.xc_d_1b;
+    ke_e_1b = coeffs.ke_coeffs.ke_e_1b;
+    ke_f_1b = coeffs.ke_coeffs.ke_f_1b;
+
+    type = "Energy";
     save_1b_coeffs(xc_a_1b,max_atomic_number,type,"xc_coeffs_A");
     save_1b_coeffs(xc_b_1b,max_atomic_number,type,"xc_coeffs_B");
     save_1b_coeffs(xc_c_1b,max_atomic_number,type,"xc_coeffs_C");
@@ -43,18 +64,16 @@ end
 function save_1b_pol_e_coeffs(simulation::SimulationSystem)
     coeffs = simulation.pol_e_coeffs;
     max_atomic_number = simulation.basis_set_settings.max_atomic_number;
-    type = "Polarization";
 
-    save_1b_coeffs(coeffs,max_atomic_number,type);
+    save_1b_coeffs(coeffs,max_atomic_number);
     return;
 end
 
 function save_1b_tot_e_coeffs(simulation::SimulationSystem)
     coeffs = simulation.tot_e_coeffs;
     max_atomic_number = simulation.basis_set_settings.max_atomic_number;
-    type = "Energy";
 
-    save_1b_coeffs(coeffs,max_atomic_number,type);
+    save_1b_coeffs(coeffs,max_atomic_number);
     return;
 end
 
@@ -83,44 +102,46 @@ function save_2b_coeffs(coeffs::Dict{Tuple{Int,Int},Number},
     return;
 end
 
-function save_2b_coeffs(coeffs::EnergyCoefficients, max_atomic_number::Int, 
-    type::String)
+function save_2b_coeffs(coeffs::PolarizationEnergyCoefficients, 
+    max_atomic_number::Int)
     xc_a_2b = coeffs.xc_coeffs.xc_a_2b;
     xc_b_2b = coeffs.xc_coeffs.xc_b_2b;
     xc_c_2b = coeffs.xc_coeffs.xc_c_2b;
     xc_d_2b = coeffs.xc_coeffs.xc_d_2b;
 
-    polarizable_morse_depth = 
-        coeffs.polarizable_morse_coeffs.depth;
-    polarizable_morse_stiffness_parameter = 
-        coeffs.polarizable_morse_coeffs.stiffness_parameter;
-    polarizable_morse_equilibrium_distance = 
-        coeffs.polarizable_morse_coeffs.equilibrium_distance;
+    type = "Polarization";
+    save_2b_coeffs(xc_a_2b,max_atomic_number,type,"xc_coeffs_A");
+    save_2b_coeffs(xc_b_2b,max_atomic_number,type,"xc_coeffs_B");
+    save_2b_coeffs(xc_c_2b,max_atomic_number,type,"xc_coeffs_C");
+    save_2b_coeffs(xc_d_2b,max_atomic_number,type,"xc_coeffs_D");
     
-    non_polarizable_morse_depth = 
-        coeffs.non_polarizable_morse_coeffs.depth;
-    non_polarizable_morse_stiffness_parameter = 
-        coeffs.non_polarizable_morse_coeffs.stiffness_parameter;
-    non_polarizable_morse_equilibrium_distance = 
-        coeffs.non_polarizable_morse_coeffs.equilibrium_distance;
+    return;
+end
 
+function save_2b_coeffs(coeffs::TotalEnergyCoefficients, 
+    max_atomic_number::Int)
+    xc_a_2b = coeffs.xc_coeffs.xc_a_2b;
+    xc_b_2b = coeffs.xc_coeffs.xc_b_2b;
+    xc_c_2b = coeffs.xc_coeffs.xc_c_2b;
+    xc_d_2b = coeffs.xc_coeffs.xc_d_2b;
+
+    morse_depth = coeffs.non_polarizable_coeffs.depth;
+    morse_stiffness_parameter = 
+        coeffs.non_polarizable_coeffs.stiffness_parameter;
+    morse_equilibrium_distance = 
+        coeffs.non_polarizable_coeffs.equilibrium_distance;
+
+    type = "Energy";
     save_2b_coeffs(xc_a_2b,max_atomic_number,type,"xc_coeffs_A");
     save_2b_coeffs(xc_b_2b,max_atomic_number,type,"xc_coeffs_B");
     save_2b_coeffs(xc_c_2b,max_atomic_number,type,"xc_coeffs_C");
     save_2b_coeffs(xc_d_2b,max_atomic_number,type,"xc_coeffs_D");
 
-    save_2b_coeffs(polarizable_morse_depth,max_atomic_number,
-        type,"polarizable_morse_depth");
-    save_2b_coeffs(polarizable_morse_stiffness_parameter,max_atomic_number,
-        type,"polarizable_morse_stiffness_parameter");
-    save_2b_coeffs(polarizable_morse_equilibrium_distance,max_atomic_number,
-        type,"polarizable_morse_equilibrium_distance");
-
-    save_2b_coeffs(non_polarizable_morse_depth,max_atomic_number,
+    save_2b_coeffs(morse_depth,max_atomic_number,
         type,"non_polarizable_morse_depth");
-    save_2b_coeffs(non_polarizable_morse_stiffness_parameter,max_atomic_number,
+    save_2b_coeffs(morse_stiffness_parameter,max_atomic_number,
         type,"non_polarizable_morse_stiffness_parameter");
-    save_2b_coeffs(non_polarizable_morse_equilibrium_distance,max_atomic_number,
+    save_2b_coeffs(morse_equilibrium_distance,max_atomic_number,
         type,"non_polarizable_morse_equilibrium_distance");
     
     return;
@@ -129,18 +150,16 @@ end
 function save_2b_pol_e_coeffs(simulation::SimulationSystem)
     coeffs = simulation.pol_e_coeffs;
     max_atomic_number = simulation.basis_set_settings.max_atomic_number;
-    type = "Polarization";
 
-    save_2b_coeffs(coeffs,max_atomic_number,type);
+    save_2b_coeffs(coeffs,max_atomic_number);
     return;
 end
 
 function save_2b_tot_e_coeffs(simulation::SimulationSystem)
     coeffs = simulation.tot_e_coeffs;
     max_atomic_number = simulation.basis_set_settings.max_atomic_number;
-    type = "Energy";
 
-    save_2b_coeffs(coeffs,max_atomic_number,type);
+    save_2b_coeffs(coeffs,max_atomic_number);
     return;
 end
 
@@ -166,25 +185,6 @@ function load_1b_coeffs(type::String, name::String)
     return coeffs;
 end
 
-function load_1b_tot_e_coeffs!(simulation::SimulationSystem)
-    type = "Energy";
-    xc_a_1b = load_1b_coeffs(type,"xc_coeffs_A");
-    xc_b_1b = load_1b_coeffs(type,"xc_coeffs_B");
-    xc_c_1b = load_1b_coeffs(type,"xc_coeffs_C");
-    xc_d_1b = load_1b_coeffs(type,"xc_coeffs_D");
-    ke_e_1b = load_1b_coeffs(type,"ke_coeffs_E");
-    ke_f_1b = load_1b_coeffs(type,"ke_coeffs_F");
-    
-    simulation.tot_e_coeffs.xc_coeffs.xc_a_1b = xc_a_1b;
-    simulation.tot_e_coeffs.xc_coeffs.xc_b_1b = xc_b_1b;
-    simulation.tot_e_coeffs.xc_coeffs.xc_c_1b = xc_c_1b;
-    simulation.tot_e_coeffs.xc_coeffs.xc_d_1b = xc_d_1b;
-    simulation.tot_e_coeffs.ke_coeffs.ke_e_1b = ke_e_1b;
-    simulation.tot_e_coeffs.ke_coeffs.ke_f_1b = ke_f_1b;
-
-    return;
-end
-
 function load_1b_pol_e_coeffs!(simulation::SimulationSystem)
     type = "Polarization";
     xc_a_1b = load_1b_coeffs(type,"xc_coeffs_A");
@@ -200,6 +200,25 @@ function load_1b_pol_e_coeffs!(simulation::SimulationSystem)
     simulation.pol_e_coeffs.xc_coeffs.xc_d_1b = xc_d_1b;
     simulation.pol_e_coeffs.ke_coeffs.ke_e_1b = ke_e_1b;
     simulation.pol_e_coeffs.ke_coeffs.ke_f_1b = ke_f_1b;
+
+    return;
+end
+
+function load_1b_tot_e_coeffs!(simulation::SimulationSystem)
+    type = "Energy";
+    xc_a_1b = load_1b_coeffs(type,"xc_coeffs_A");
+    xc_b_1b = load_1b_coeffs(type,"xc_coeffs_B");
+    xc_c_1b = load_1b_coeffs(type,"xc_coeffs_C");
+    xc_d_1b = load_1b_coeffs(type,"xc_coeffs_D");
+    ke_e_1b = load_1b_coeffs(type,"ke_coeffs_E");
+    ke_f_1b = load_1b_coeffs(type,"ke_coeffs_F");
+    
+    simulation.tot_e_coeffs.xc_coeffs.xc_a_1b = xc_a_1b;
+    simulation.tot_e_coeffs.xc_coeffs.xc_b_1b = xc_b_1b;
+    simulation.tot_e_coeffs.xc_coeffs.xc_c_1b = xc_c_1b;
+    simulation.tot_e_coeffs.xc_coeffs.xc_d_1b = xc_d_1b;
+    simulation.tot_e_coeffs.ke_coeffs.ke_e_1b = ke_e_1b;
+    simulation.tot_e_coeffs.ke_coeffs.ke_f_1b = ke_f_1b;
 
     return;
 end
@@ -239,38 +258,10 @@ function load_2b_pol_e_coeffs!(simulation::SimulationSystem)
     xc_c_2b = load_2b_coeffs(type,"xc_coeffs_C");
     xc_d_2b = load_2b_coeffs(type,"xc_coeffs_D");
 
-    polarizable_morse_depth = load_2b_coeffs(type,
-        "polarizable_morse_depth");
-    polarizable_morse_stiffness_parameter = load_2b_coeffs(type,
-        "polarizable_morse_stiffness_parameter");
-    polarizable_morse_equilibrium_distance = load_2b_coeffs(type,
-        "polarizable_morse_equilibrium_distance");
-
-    non_polarizable_morse_depth = load_2b_coeffs(type,
-        "non_polarizable_morse_depth");
-    non_polarizable_morse_stiffness_parameter = load_2b_coeffs(type,
-        "non_polarizable_morse_stiffness_parameter");
-    non_polarizable_morse_equilibrium_distance = load_2b_coeffs(type,
-        "non_polarizable_morse_equilibrium_distance");
-
     simulation.pol_e_coeffs.xc_coeffs.xc_a_2b = xc_a_2b;
     simulation.pol_e_coeffs.xc_coeffs.xc_b_2b = xc_b_2b;
     simulation.pol_e_coeffs.xc_coeffs.xc_c_2b = xc_c_2b;
     simulation.pol_e_coeffs.xc_coeffs.xc_d_2b = xc_d_2b;
-
-    simulation.pol_e_coeffs.polarizable_morse_coeffs.depth = 
-        polarizable_morse_depth;
-    simulation.pol_e_coeffs.polarizable_morse_coeffs.stiffness_parameter = 
-        polarizable_morse_stiffness_parameter;
-    simulation.pol_e_coeffs.polarizable_morse_coeffs.equilibrium_distance = 
-        polarizable_morse_equilibrium_distance;
-
-    simulation.pol_e_coeffs.non_polarizable_morse_coeffs.depth = 
-        non_polarizable_morse_depth;
-    simulation.pol_e_coeffs.non_polarizable_morse_coeffs.stiffness_parameter = 
-        non_polarizable_morse_stiffness_parameter;
-    simulation.pol_e_coeffs.non_polarizable_morse_coeffs.equilibrium_distance = 
-        non_polarizable_morse_equilibrium_distance;
 
     return;
 end
@@ -281,13 +272,6 @@ function load_2b_tot_e_coeffs!(simulation::SimulationSystem)
     xc_b_2b = load_2b_coeffs(type,"xc_coeffs_B");
     xc_c_2b = load_2b_coeffs(type,"xc_coeffs_C");
     xc_d_2b = load_2b_coeffs(type,"xc_coeffs_D");
-
-    polarizable_morse_depth = load_2b_coeffs(type,
-        "polarizable_morse_depth");
-    polarizable_morse_stiffness_parameter = load_2b_coeffs(type,
-        "polarizable_morse_stiffness_parameter");
-    polarizable_morse_equilibrium_distance = load_2b_coeffs(type,
-        "polarizable_morse_equilibrium_distance");
 
     non_polarizable_morse_depth = load_2b_coeffs(type,
         "non_polarizable_morse_depth");
@@ -301,18 +285,11 @@ function load_2b_tot_e_coeffs!(simulation::SimulationSystem)
     simulation.tot_e_coeffs.xc_coeffs.xc_c_2b = xc_c_2b;
     simulation.tot_e_coeffs.xc_coeffs.xc_d_2b = xc_d_2b;
 
-    simulation.tot_e_coeffs.polarizable_morse_coeffs.depth = 
-        polarizable_morse_depth;
-    simulation.tot_e_coeffs.polarizable_morse_coeffs.stiffness_parameter = 
-        polarizable_morse_stiffness_parameter;
-    simulation.tot_e_coeffs.polarizable_morse_coeffs.equilibrium_distance = 
-        polarizable_morse_equilibrium_distance;
-
-    simulation.tot_e_coeffs.non_polarizable_morse_coeffs.depth = 
+    simulation.tot_e_coeffs.non_polarizable_coeffs.depth = 
         non_polarizable_morse_depth;
-    simulation.tot_e_coeffs.non_polarizable_morse_coeffs.stiffness_parameter = 
+    simulation.tot_e_coeffs.non_polarizable_coeffs.stiffness_parameter = 
         non_polarizable_morse_stiffness_parameter;
-    simulation.tot_e_coeffs.non_polarizable_morse_coeffs.equilibrium_distance = 
+    simulation.tot_e_coeffs.non_polarizable_coeffs.equilibrium_distance = 
         non_polarizable_morse_equilibrium_distance;
 
     return;
@@ -329,15 +306,11 @@ function load_fitted_coeffs!(simulation::SimulationSystem)
 end
 
 function save_fitted_coeffs(simulation::SimulationSystem)
-    tot_e_coeffs = simulation.tot_e_coeffs;
-    pol_e_coeffs = simulation.pol_e_coeffs;
-    max_atomic_number = simulation.basis_set_settings.max_atomic_number;
+    save_1b_pol_e_coeffs(simulation);
+    save_2b_pol_e_coeffs(simulation);
 
-    save_1b_coeffs(tot_e_coeffs,max_atomic_number,"Energy");
-    save_2b_coeffs(tot_e_coeffs,max_atomic_number,"Energy");
-    
-    save_1b_coeffs(pol_e_coeffs,max_atomic_number,"Polarization");
-    save_2b_coeffs(pol_e_coeffs,max_atomic_number,"Polarization");
+    save_1b_tot_e_coeffs(simulation);
+    save_2b_tot_e_coeffs(simulation);
 
     return;
 end
@@ -364,21 +337,18 @@ function reset_fitted_coeffs()
     xc_coeffs = EmpiricalXCCoefficients(
         xc_a_1b,xc_b_1b,xc_c_1b,xc_d_1b,xc_a_2b,xc_b_2b,xc_c_2b,xc_d_2b);
     ke_coeffs = EmpiricalKECoefficients(ke_e_1b,ke_f_1b);
-    polarizable_morse_coeffs = EmpiricalMorseCoefficients(morse_depth,
-        morse_stiffness_parameter,morse_equilibrium_distance);
-    non_polarizable_morse_coeffs = EmpiricalMorseCoefficients(morse_depth,
+    non_polarizable_coeffs = EmpiricalMorseCoefficients(morse_depth,
         morse_stiffness_parameter,morse_equilibrium_distance);
 
-    tot_e_coeffs = EnergyCoefficients(xc_coeffs,ke_coeffs,
-        polarizable_morse_coeffs,non_polarizable_morse_coeffs);
-    pol_e_coeffs = EnergyCoefficients(xc_coeffs,ke_coeffs,
-        polarizable_morse_coeffs,non_polarizable_morse_coeffs);
+    tot_e_coeffs = TotalEnergyCoefficients(xc_coeffs,ke_coeffs,
+        non_polarizable_coeffs);
+    pol_e_coeffs = PolarizationEnergyCoefficients(xc_coeffs,ke_coeffs);
     
-    save_1b_coeffs(tot_e_coeffs,max_atomic_number,"Energy");
-    save_2b_coeffs(tot_e_coeffs,max_atomic_number,"Energy");
+    save_1b_coeffs(tot_e_coeffs,max_atomic_number);
+    save_2b_coeffs(tot_e_coeffs,max_atomic_number);
 
-    save_1b_coeffs(pol_e_coeffs,max_atomic_number,"Polarization");
-    save_2b_coeffs(pol_e_coeffs,max_atomic_number,"Polarization");
+    save_1b_coeffs(pol_e_coeffs,max_atomic_number);
+    save_2b_coeffs(pol_e_coeffs,max_atomic_number);
 
     return;
 end

@@ -1,11 +1,11 @@
-using Optim, Plots;
+using Optim;
 using Printf, LinearAlgebra;
 using Base.Threads;
 
 include("FitCoeffs_General.jl")
 
 # which_atomic_numbers = [1,6,7,8];
-which_atomic_numbers = [7];
+which_atomic_numbers = [8];
 for atomic_number in which_atomic_numbers
     neutral_data, cation_data, anion_data = 
         read_all_sanitized_data(atomic_number,true);
@@ -88,11 +88,8 @@ for atomic_number in which_atomic_numbers
                 aux_x[4] = μ - μ0;
                 aux_x[5] = μ;
 
-                diff_vec_1 = (aux_m \ aux_y) - aux_x;
-                diff_vec_2 = (aux_m * aux_x) - aux_y;
-
-                ret_val[thread_id] += norm(diff_vec_1)^2;
-                ret_val[thread_id] += norm(diff_vec_2)^2;
+                diff_vec = (aux_m \ aux_y) - aux_x;
+                ret_val[thread_id] += norm(diff_vec)^2;
 
                 if i > 1
                     if all_data[i].charge != all_data[i-1].charge
@@ -122,13 +119,9 @@ for atomic_number in which_atomic_numbers
                     aux_x_nxt[4] = μ_nxt - μ0;
                     aux_x_nxt[5] = μ_nxt;
 
-                    diff_vec_1_nxt = (aux_m_nxt \ aux_y_nxt) - aux_x_nxt;
-                    diff_vec_2_nxt = (aux_m_nxt * aux_x_nxt) - aux_y_nxt;
-
+                    diff_vec_nxt = (aux_m_nxt \ aux_y_nxt) - aux_x_nxt;
                     ret_val[thread_id] += 
-                        (norm(diff_vec_1_nxt - diff_vec_1) / Δd)^2;
-                    ret_val[thread_id] += 
-                        (norm(diff_vec_2_nxt - diff_vec_2) / Δd)^2;
+                        (norm(diff_vec_nxt - diff_vec) / Δd)^2;
                 end
             end
         end
@@ -148,36 +141,17 @@ for atomic_number in which_atomic_numbers
             aux_x[3] = μ;
 
             ret_val += norm((aux_m \ aux_y) - aux_x)^2;
-            ret_val += norm((aux_m * aux_x) - aux_y)^2;
         end
-
-        set_diatomic_system_to_parsed_file!(simulation[1],all_data[1]);
-        simulation[1].system.molecules[1].atoms[1].coordinates .= 0.0;
-        simulation[1].system.molecules[1].atoms[2].coordinates .= 0.0;
-
-        Δd = 1.0E-2;
-        d0 = 1.0E-3;
-        d1 = d0 + Δd;
-        
-        simulation[1].system.molecules[1].atoms[1].coordinates[3] = d0;
-        aux_m0, aux_y0 = polarization_matrix_problem(simulation[1]);
-
-        simulation[1].system.molecules[1].atoms[1].coordinates[3] = d1;
-        aux_m1, aux_y1 = polarization_matrix_problem(simulation[1]);
-
-        aux_x0 = aux_m0 \ aux_y0;
-        aux_x1 = aux_m1 \ aux_y1;
-        ret_val += norm((aux_x1 - aux_x0) ./ Δd)^2;
 
         return ret_val;
     end
 
-    num_vars = 12;
-    aux_X = rand(Float64,num_vars);
+    num_vars = 10;
+    aux_X = 2.0 .* (rand(Float64,num_vars) .- 0.5);
 
     for i in 1:2500
         cost_func_eval = cost_func(aux_X);
-        new_aux_X = 4.0 .* (rand(Float64,num_vars) .- 0.5);
+        new_aux_X = 2.0 .* (rand(Float64,num_vars) .- 0.5);
 
         if cost_func_eval <= 0.1
             println("Initial guess found!");
@@ -189,11 +163,6 @@ for atomic_number in which_atomic_numbers
             print(@sprintf "Current best %18.6E \n" cost_func(aux_X));
         end
     end
-
-    needs_casting = true;
-    sol = Optim.optimize(cost_func, aux_X[:], NelderMead(),
-        Optim.Options(show_trace=true,iterations=8000));
-    aux_X = Optim.minimizer(sol);
     
     needs_casting = true;
     sol = Optim.optimize(cost_func, aux_X[:], LBFGS(), autodiff=:forward,

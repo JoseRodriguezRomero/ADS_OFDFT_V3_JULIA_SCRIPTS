@@ -153,12 +153,27 @@ function parse_shell_densities(Z::Int)
 end
 
 function num_gaussians()
-    return 6;
+    return factorial(num_fit_gaussians());
+end
+
+function num_fit_gaussians()
+    return 3;
 end
 
 function fit_gaussians(data_x::Vector, data_y::Vector, num_electrons::Int)
     # Fits three s-type Gaussian basis-functions to the data.
     
+    peak_value = maximum((data_x .^ 2) .* data_y);
+
+    for i in eachindex(data_x)
+        comp_value = (data_x[i] ^ 2) * data_y[i];
+        if comp_value > 0.25 * peak_value;
+            data_y = data_y[i:end];
+            data_x = data_x[i:end];
+            break;
+        end
+    end
+
     function cost_func(params::Vector)
         λ = abs.(params[1:2:end]);
         c = params[2:2:end];
@@ -171,22 +186,34 @@ function fit_gaussians(data_x::Vector, data_y::Vector, num_electrons::Int)
                 ρ = data_y[i];
 
                 model_ρ = 0;
-                for k in 1:num_gaussians()
-                    model_ρ += c[k] * ((λ[k]/π)^(3.0/2.0)) * exp(- λ[k] * r^2);
+                for k in eachindex(c)
+                    model_ρ += c[k] * exp(- λ[k] * r^2);
                 end
 
-                ret_val[thread_id] += ((r^2)*(ρ - model_ρ))^2;
+                model_ρ = model_ρ ^ 2;
+                model_diff = (r^2)*(ρ - model_ρ);
+                ret_val[thread_id] += model_diff^2;
             end
         end
 
         ret_val = sum(ret_val);
-
         ret_val /= length(data_x);
-        ret_val += (sum(c) - num_electrons)^2;
+
+        aux_int = 0.0;
+        for i in eachindex(c)
+            for j in eachindex(c)
+                int_ij = c[i] * c[j];
+                int_ij *= (π / (λ[i] + λ[j])) ^ (3/2);
+                aux_int += int_ij;
+            end
+        end
+
+        ret_val += (aux_int - num_electrons)^2;
         return ret_val;
     end
 
-    params_0 = 40.0 .* (rand(Float64,2*num_gaussians()) .- 0.5);
+    params_0 = 5.0 .* (rand(Float64,2*num_fit_gaussians()) .- 0.5);
+
     sol = Optim.optimize(cost_func,params_0, NelderMead(),
         Optim.Options(show_trace=true));
     params_0 = Optim.minimizer(sol);
@@ -196,8 +223,9 @@ function fit_gaussians(data_x::Vector, data_y::Vector, num_electrons::Int)
     params_0 = Optim.minimizer(sol);
 
     old_params_0 = copy(params_0);
-    for _ in 1:40
-        params_0 = 40.0 .* (rand(Float64,2*num_gaussians()) .- 0.5);
+    for _ in 1:20
+        params_0 = 5.0 .* (rand(Float64,2*num_fit_gaussians()) .- 0.5);
+
         sol = Optim.optimize(cost_func,params_0, NelderMead(),
             Optim.Options(show_trace=true));
         params_0 = Optim.minimizer(sol);
@@ -211,8 +239,25 @@ function fit_gaussians(data_x::Vector, data_y::Vector, num_electrons::Int)
         end
     end
 
-    old_params_0[1:2:end] = abs.(old_params_0[1:2:end]);
-    return old_params_0;
+    A = abs.(old_params_0[1:2:end]);
+    B = old_params_0[2:2:end];
+    ret_params = zeros(Float64,2*num_gaussians());
+
+    ret_params[1]  = 2 * A[1];
+    ret_params[3]  = 2 * A[2];
+    ret_params[5]  = 2 * A[3];
+    ret_params[7]  = A[1] + A[2];
+    ret_params[9]  = A[1] + A[3];
+    ret_params[11] = A[2] + A[3];
+
+    ret_params[2]  = (B[1] ^ 2) * ((π / (2 * A[1])) ^ (3/2));
+    ret_params[4]  = (B[2] ^ 2) * ((π / (2 * A[2])) ^ (3/2));
+    ret_params[6]  = (B[3] ^ 2) * ((π / (2 * A[3])) ^ (3/2));
+    ret_params[8]  = 2 * (B[1] * B[2]) * ((π / (A[1] + A[2])) ^ (3/2));
+    ret_params[10] = 2 * (B[1] * B[3]) * ((π / (A[1] + A[3])) ^ (3/2));
+    ret_params[12] = 2 * (B[2] * B[3]) * ((π / (A[2] + A[3])) ^ (3/2));
+
+    return ret_params;
 end
 
 function eval_fitted_gaussians(data_x::Vector, gaussian_params::Vector)
@@ -224,7 +269,7 @@ function eval_fitted_gaussians(data_x::Vector, gaussian_params::Vector)
     for i in eachindex(data_x)
         ρ = 0;
         r = data_x[i];
-        for k in 1:num_gaussians()
+        for k in eachindex(c)
             ρ += c[k] * ((λ[k]/π)^(3.0/2.0)) * exp(-λ[k]*(r^2));
         end
 
@@ -352,6 +397,7 @@ function plot_density(Z::Int)
     end
 
     plot!(xaxis = :log10);
+    plot!(xlims = [1.0E-3,1.0E3]);
     plot!(xlims = [1.0E-3,1.0E3]);
 
     plot!(framestyle=:box);

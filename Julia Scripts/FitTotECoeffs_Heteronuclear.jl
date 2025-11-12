@@ -1,17 +1,16 @@
-using Optim, Plots;
+using Optim;
 using Printf, LinearAlgebra;
-using LaTeXStrings, Latexify, Measures;
 using Base.Threads;
 
 include("FitCoeffs_General.jl")
 
 # which_atomic_numbers = [[1,6],[1,8],[6,8],[7,8]];
-which_atomic_numbers = [[6,8]];
+which_atomic_numbers = [[7,8]];
 for atomic_numbers in which_atomic_numbers
     Z1 = atomic_numbers[1];
     Z2 = atomic_numbers[2];
 
-    neutral_data, cation_data, anion_data = 
+    local neutral_data, cation_data, anion_data = 
         read_all_sanitized_data(Z1,Z2);
     all_data = vcat(neutral_data, cation_data, anion_data);
 
@@ -73,11 +72,11 @@ for atomic_numbers in which_atomic_numbers
         set_fitted_coeffs!(simulation[1]);
         set_diatomic_system_to_parsed_file!(simulation[1],reference_system);
 
-        dft_e0_1 = reference_system.total_energy;
-        model_e0_1 = total_energy(simulation[1]);
-        
-        dft_e0_2 = dft_neutral_at1_e + dft_neutral_at2_e;
-        model_e0_2 = model_at1_neutral_e + model_at2_neutral_e;
+        # dft_e0 = reference_system.total_energy;
+        # model_e0 = total_energy(simulation[1]);
+
+        dft_e0 = dft_neutral_at1_e + dft_neutral_at2_e;
+        model_e0 = model_at1_neutral_e + model_at2_neutral_e;
 
         ret_val = zeros(aux_type,n_threads);
         @threads for thread_id in 1:n_threads
@@ -90,13 +89,9 @@ for atomic_numbers in which_atomic_numbers
                 dft_tot_e = all_data[i].total_energy;
                 model_tot_e = total_energy(simulation[thread_id]);
 
-                dft_e_diff = dft_tot_e - dft_e0_1;
-                model_e_diff = model_tot_e - model_e0_1;
+                dft_e_diff = dft_tot_e - dft_e0;
+                model_e_diff = model_tot_e - model_e0;
                 ret_val[thread_id] += (model_e_diff - dft_e_diff)^2;
-
-                # dft_e_diff = dft_tot_e - dft_e0_2;
-                # model_e_diff = model_tot_e - model_e0_2;
-                # ret_val[thread_id] += (model_e_diff - dft_e_diff)^2;
 
                 if i > 1
                     if all_data[i].charge != all_data[i-1].charge
@@ -127,12 +122,12 @@ for atomic_numbers in which_atomic_numbers
         return sum(ret_val) / length(all_data);
     end
 
-    num_vars = 8;
-    aux_X = rand(Float64,num_vars);
+    num_vars = 7;
+    aux_X = 2.0 .* (rand(Float64,num_vars) .- 0.5);
 
-    for i in 1:1500
+    for i in 1:2500
         cost_func_eval = cost_func(aux_X);
-        new_aux_X = 8.0 .* (rand(Float64,num_vars) .- 0.5);
+        new_aux_X = 2.0 .* (rand(Float64,num_vars) .- 0.5);
 
         if cost_func_eval <= 0.1
             println("Initial guess found!");
@@ -144,11 +139,6 @@ for atomic_numbers in which_atomic_numbers
             print(@sprintf "Current best %18.6E \n" cost_func(aux_X));
         end
     end
-
-    needs_casting = false;
-    sol = Optim.optimize(cost_func, aux_X[:], NelderMead(),
-        Optim.Options(show_trace=true,iterations=8000));
-    aux_X = Optim.minimizer(sol);
 
     needs_casting = true;
     sol = Optim.optimize(cost_func, aux_X[:], LBFGS(), autodiff=:forward,

@@ -493,14 +493,14 @@ function comp_homonuclear_scan(Z1::Int, Z2::Int)
     plot!(ylabel=L"$\Delta E \quad \mathrm{[eV]}$");
     plot!(ylims=[-5,55],yticks=-5:15:55);
     plot!(xlims=[0.0,x_max],xticks=(0:2:6,[]));
-    plot!(legend = :outertopright)
+    plot!(legend = :topright)
 
     p2 = test_result_ΔE2(Z2);
     plot!(xlabel=L"$d \quad \mathrm{[\AA ngstrom]}$");
     plot!(ylabel=L"$\Delta E \quad \mathrm{[eV]}$");
     plot!(ylims=[-5,55],yticks=-5:15:55);
     plot!(xlims=[0.0,x_max],xticks=0:2:6);
-    plot!(legend = :outertopright)
+    plot!(legend = :topright)
 
     p = plot(p1,p2, layout=(2,1), size = (500,380));
     savefig("Figures/HomonuclearScanComp.pdf");

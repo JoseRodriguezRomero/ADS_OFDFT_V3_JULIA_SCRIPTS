@@ -55,19 +55,20 @@ function xc_cyl(λ::Real, d::Real)
         2*erf(sqrt(λ)*d))/(2*d^2));
 end
 
+λ = 7;
+
 r = collect(0:0.001:3.0);
-e_sphe_t10_l8_λ8 = xc_sph_trunc.(10,8,r);
-e_sphe_t20_l8_λ8 = xc_sph_trunc.(20,8,r);
-e_sphe_exact_l8_λ8 = xc_sph.(8,r);
+e_sphe_t10 = xc_sph_trunc.(10,λ,r);
+e_sphe_t20 = xc_sph_trunc.(20,λ,r);
+e_sphe_exact = xc_sph.(λ,r);
 
-e_cyl_t10_l8_λ8 = xc_cyl_trunc.(10,8,r);
-e_cyl_t20_l8_λ8 = xc_cyl_trunc.(20,8,r);
-e_cyl_exact_l8_λ8 = xc_cyl.(8,r);
+e_cyl_t10 = xc_cyl_trunc.(10,λ,r);
+e_cyl_t20 = xc_cyl_trunc.(20,λ,r);
+e_cyl_exact = xc_cyl.(λ,r);
 
-p1 = plot(r, e_sphe_t10_l8_λ8, label="Truncated Sum (K = 10)", linewidth = 2);
-plot!(r, e_sphe_t20_l8_λ8, label="Truncated Sum (K = 20)", linewidth = 2);
-plot!(r, e_sphe_exact_l8_λ8, label="Exact", linewidth = 2,
-    linestyle = :dot);
+p1 = plot(r, e_sphe_t10, label="Truncated Sum (K = 10)", linewidth = 2);
+plot!(r, e_sphe_t20, label="Truncated Sum (K = 20)", linewidth = 2);
+plot!(r, e_sphe_exact, label="Exact", linewidth = 2, linestyle = :dot);
 
 plot!(xlims=[0,3], framestyle = :box);
 plot!(xticks=(0:1:3,[]));
@@ -77,7 +78,7 @@ plot!(ylabel=L"$\mathrm{XC}_\mathrm{Sph}^\mathrm{EN} (d)$");
 
 l_x_pos = 2.5;
 l_y_pos = -2 + (4 - (-2)) * (1.0/6.0);
-annotate!(l_x_pos, l_y_pos, text(L"$\lambda = 8$", :center, 10));
+annotate!(l_x_pos, l_y_pos, text(L"$\lambda = 7$", :center, 10));
 
 p2 = plot(r, e_cyl_t10_l8_λ8, label="Truncated Sum (K = 10)", linewidth = 2);
 plot!(r, e_cyl_t20_l8_λ8, label="Truncated Sum (K = 20)", linewidth = 2);
@@ -93,7 +94,7 @@ plot!(yticks=-2:2:4);
 
 l_x_pos = 2.5;
 l_y_pos = -2 + (4 - (-2)) * (1.0/6.0);
-annotate!(l_x_pos, l_y_pos, text(L"$\lambda = 8$", :center, 10));
+annotate!(l_x_pos, l_y_pos, text(L"$\lambda = 7$", :center, 10));
 
 plot(p1,p2,layout=(2,1), size = (500, 400))
 savefig("Figures/XC_exact_comp_old.pdf");
@@ -109,18 +110,6 @@ function XC_Sph_Trunc(K::Integer, λ::Real, d::Real)
         aux_ret -= aux_val;
     end
 
-    return aux_ret;
-end
-
-function XC_Sph(λ::Real, d::Real)
-    # return sqrt(λ/π)*((1-exp(4*λ*d))/(exp(λ*(d+1)^2)));
-    return -(((exp(4*d*λ)-1)*sqrt(λ))/(exp((d^2*λ)+2*d*λ+λ)*sqrt(π)));
-end
-
-function XC_Cyl_Trunc(K::Integer, λ::Real, d::Real)
-    # New definition
-    aux_ret = 0.0;
-
     for k in 1:K
         aux_val = 2*(λ^(k+0.5))*(basis(Hermite,2*k)(sqrt(λ)*d));
         aux_val /= sqrt(π)*factorial(big(2*k));
@@ -131,49 +120,59 @@ function XC_Cyl_Trunc(K::Integer, λ::Real, d::Real)
     return aux_ret;
 end
 
-function XC_Cyl(λ::Real, d::Real)
-    return sqrt(λ/π)*((((exp(2*λ*d)-1)^2)/(exp(λ*(d+1)^2))) + 
-        ((2*(exp(-λ)-1))/(exp(λ*d^2))));
+function XC_Sph(λ::Real, d::Real)
+    return 2*sqrt(λ/π)*(exp(-2*λ*d-λ)-1)/exp(λ*d^2);
 end
 
-λ = 125;
+function XC_Cyl_Trunc(K::Integer, λ::Real, d::Real)
+    # New definition
+    function foo(d::Number)
+        return XC_Sph_Trunc(K,λ,d);
+    end
 
-r = collect(0:0.01:3);
+    return ForwardDiff.derivative(foo,d);
+end
+
+function XC_Cyl(λ::Real, d::Real)
+    return (4*exp(-(d^2*λ)-2*d*λ-λ)*(exp(2*d*λ+λ)*d-d-1)*λ^(3/2))/sqrt(π);
+end
+
+λ = 7;
+
+r = collect(0.0:0.01:3);
 xc_sph_K10 = -XC_Sph_Trunc.(10, λ, r);
 xc_sph_K20 = -XC_Sph_Trunc.(20, λ, r);
 xc_sph_exact = -XC_Sph.(λ, r);
 
-# p1 = plot(r, xc_sph_K10, label="Truncated Sum (K = 10)", linewidth = 2);
-# plot!(r, xc_sph_K20, label="Truncated Sum (K = 20)", linewidth = 2);
-# plot!(r, xc_sph_exact, label="Exact", linewidth = 2, linestyle=:dot);
+p1 = plot(r, xc_sph_K10, label="Truncated Sum (K = 10)", linewidth = 2);
+plot!(r, xc_sph_K20, label="Truncated Sum (K = 20)", linewidth = 2);
+plot!(r, xc_sph_exact, label="Exact", linewidth = 2, linestyle=:dot);
 
-p1 = plot(r, xc_sph_exact, label="Exact", linewidth = 2, linestyle=:dot);
-plot!(ylims=[-1,2],xlims=[0,3]);
+plot!(ylims=[-3,6],yticks=-3:3:6,xlims=[0,3]);
 plot!(xticks=(0:1:3,[]), framestyle = :box);
 plot!(ylabel=L"$- \mathrm{XC}_\mathrm{Sph}^\mathrm{EN} (d)$");
 
 l_x_pos = 2.5;
-l_y_pos = -1 + (2 - (-1)) * (1.0/6.0);
-annotate!(l_x_pos, l_y_pos, text(L"$\lambda = 8$", :center, 10));
+l_y_pos = -3 + (6 - (-3)) * (1.0/6.0);
+annotate!(l_x_pos, l_y_pos, text(L"$\lambda = 7$", :center, 10));
 
-r = collect(0:0.01:3);
-xc_cyl_K10 = -XC_Cyl_Trunc.(10, λ, r);
-xc_cyl_K20 = -XC_Cyl_Trunc.(20, λ, r);
-xc_cyl_exact = -XC_Cyl.(λ, r);
+r = collect(0.0:0.01:3);
+xc_cyl_K10 = XC_Cyl_Trunc.(10, λ, r);
+xc_cyl_K20 = XC_Cyl_Trunc.(20, λ, r);
+xc_cyl_exact = XC_Cyl.(λ, r);
 
-# p2 = plot(r, xc_cyl_K10, label="Truncated Sum (K = 10)", linewidth = 2);
-# plot!(r, xc_cyl_K20, label="Truncated Sum (K = 20)", linewidth = 2);
-# plot!(r, xc_cyl_exact, label="Exact", linewidth = 2, linestyle=:dot);
+p2 = plot(r, xc_cyl_K10, label="Truncated Sum (K = 10)", linewidth = 2);
+plot!(r, xc_cyl_K20, label="Truncated Sum (K = 20)", linewidth = 2);
+plot!(r, xc_cyl_exact, label="Exact", linewidth = 2, linestyle=:dot);
 
-p2 = plot(r, xc_cyl_exact, label="Exact", linewidth = 2, linestyle=:dot);
-plot!(ylims=[-3,6],xlims=[0,3]);
-plot!(xticks=0:1:3, framestyle = :box);
+plot!(ylims=[-5,10],xlims=[0,3]);
+plot!(xticks=0:1:3, yticks=-5:5:10, framestyle = :box);
 plot!(xlabel=L"d");
-plot!(ylabel=L"$- \mathrm{XC}_\mathrm{Cyl}^\mathrm{EN} (d)$");
+plot!(ylabel=L"$\mathrm{XC}_\mathrm{Cyl}^\mathrm{EN} (d)$");
 
 l_x_pos = 2.5;
-l_y_pos = -3 + (6 - (-3)) * (1.0/6.0);
-annotate!(l_x_pos, l_y_pos, text(L"$\lambda = 8$", :center, 10));
+l_y_pos = -5 + (10 - (-5)) * (1.0/6.0);
+annotate!(l_x_pos, l_y_pos, text(L"$\lambda = 7$", :center, 10));
 
 plot(p1,p2,layout=(2,1), size = (500, 400))
-# savefig("Figures/XC_exact_comp_new.pdf")
+savefig("Figures/XC_exact_comp_new.pdf")

@@ -1,3 +1,4 @@
+using Optim;
 using Integrals;
 using ForwardDiff;
 using SpecialFunctions;
@@ -21,17 +22,9 @@ function naive_coulomb_integral(λ::Real, d::Real)
 end 
 
 function xc_sph(λ::Real, d::Real)
-    if (abs(d) < atoms_dist_cutoff())
-        return 0.0;
-    end
-
-    ret_val = sqrt(λ/π)*(1-exp(4*λ*d))/exp(λ*(d+1)^2);
+    ret_val = 2*sqrt(λ/π)*(exp(-2*λ*d-λ)-1)/exp(λ*d^2);
 
     if isnan(ret_val)
-        return 0.0;
-    end
-
-    if isinf(ret_val)
         return 0.0;
     end
 
@@ -39,27 +32,19 @@ function xc_sph(λ::Real, d::Real)
 end
 
 function xc_cyl(λ::Real, d::Real)
-    if (abs(d) < atoms_dist_cutoff())
-        return (2*exp(-λ)*sqrt(λ))/sqrt(π)-(2*sqrt(λ))/sqrt(π);
-    end
-
-    ret_val = sqrt(λ/π)*((exp(2*λ*d)-exp(λ))^2-exp(2*λ)+1)/exp(λ*(d+1)^2);
+    ret_val = (4*exp(-(d^2*λ)-2*d*λ-λ)*(exp(2*d*λ+λ)*d-d-1)*λ^(3/2))/sqrt(π);
 
     if isnan(ret_val)
-        return 0.0;
-    end
-
-    if isinf(ret_val)
         return 0.0;
     end
 
     return ret_val;
 end
 
-function morse_u(depth::Real, stifness_parameter::Real, 
+function morse_u(depth::Real, stiffness_parameter::Real, 
     equilibrium_distance::Real, atomic_separation::Real)
     A = depth;
-    B = stifness_parameter;
+    B = stiffness_parameter;
     C = equilibrium_distance;
 
     r = atomic_separation;
@@ -218,20 +203,6 @@ function polarization_matrix_problem(simulation::SimulationSystem)
     xc_c_2b = coeffs.xc_coeffs.xc_c_2b;
     xc_d_2b = coeffs.xc_coeffs.xc_d_2b;
 
-    polarizable_morse_depth = 
-        coeffs.polarizable_morse_coeffs.depth;
-    polarizable_morse_equilibrium_distance = 
-        coeffs.polarizable_morse_coeffs.equilibrium_distance;
-    polarizable_morse_stiffness_parameter = 
-        coeffs.polarizable_morse_coeffs.stiffness_parameter;
-
-    non_polarizable_morse_depth = 
-        coeffs.non_polarizable_morse_coeffs.depth;
-    non_polarizable_morse_equilibrium_distance = 
-        coeffs.non_polarizable_morse_coeffs.equilibrium_distance;
-    non_polarizable_morse_stiffness_parameter = 
-        coeffs.non_polarizable_morse_coeffs.stiffness_parameter;
-
     aux_type = typeof(xc_a_1b[1]);
     atoms_μ0 = simulation.basis_set_settings.atoms_μ0;
 
@@ -358,52 +329,6 @@ function polarization_matrix_problem(simulation::SimulationSystem)
         return;
     end
 
-    function compute_polarizable_morse_potential(atom_1::Atom, atom_2::Atom,
-        atom_index_1::Int, atom_index_2::Int)
-        z1 = atom_1.atomic_number;
-        z2 = atom_2.atomic_number;
-        
-        d = norm(atom_1.coordinates - atom_2.coordinates);
-
-        A = polarizable_morse_depth[(z1,z2)];
-        B = polarizable_morse_stiffness_parameter[(z1,z2)];
-        C = polarizable_morse_equilibrium_distance[(z1,z2)];
-        morse_potential = morse_u(A,B,C,d);
-
-        aux_M[atom_index_1,atom_index_2] += morse_potential;
-        aux_M[atom_index_2,atom_index_1] += morse_potential;
-
-        return;
-    end
-
-    function compute_non_polarizable_morse_potential(atom_1::Atom, atom_2::Atom,
-        atom_index_1::Int, atom_index_2::Int)
-        z1 = atom_1.atomic_number;
-        z2 = atom_2.atomic_number;
-        
-        d = norm(atom_1.coordinates - atom_2.coordinates);
-
-        A = non_polarizable_morse_depth[(z1,z2)];
-        B = non_polarizable_morse_stiffness_parameter[(z1,z2)];
-        C = non_polarizable_morse_equilibrium_distance[(z1,z2)];
-        morse_potential = morse_u(A,B,C,d);
-
-        aux_Y[atom_index_1] -= morse_potential;
-        aux_Y[atom_index_2] -= morse_potential;
-
-        return;
-    end
-
-    function compute_morse_potentials(atom_1::Atom, atom_2::Atom,
-        atom_index_1::Int, atom_index_2::Int)
-        compute_polarizable_morse_potential(atom_1,atom_2,
-            atom_index_1,atom_index_2);
-        compute_non_polarizable_morse_potential(atom_1,atom_2,
-            atom_index_1,atom_index_2);
-
-        return;
-    end
-
     function compute_one_body_terms()
         for molecule_index in eachindex(molecules)
             molecule = molecules[molecule_index];
@@ -439,8 +364,6 @@ function polarization_matrix_problem(simulation::SimulationSystem)
                         atom_1,atom_2,atom_index_1,atom_index_2);
                     compute_ee_energies(
                         atom_1,atom_2,atom_index_1,atom_index_2);
-                    compute_morse_potentials(
-                        atom_1,atom_2,atom_index_1,atom_index_2);
                 end
             end
         end
@@ -466,8 +389,6 @@ function polarization_matrix_problem(simulation::SimulationSystem)
                             atom_1,atom_2,atom_index_1,atom_index_2);
                         compute_ee_energies(
                             atom_1,atom_2,atom_index_1,atom_index_2);
-                        compute_morse_potentials(
-                            atom_1,atom_2,atom_index_1,atom_index_2);
                     end
                 end
             end
@@ -492,7 +413,7 @@ end
 function polarize_molecules!(simulation::SimulationSystem)
     # Calculates and sets the polarization coefficients of the atoms.
     aux_m, aux_y = polarization_matrix_problem(simulation);
-    minimizer = inv(transpose(aux_m) * aux_m) * (transpose(aux_m) * aux_y);
+    minimizer = aux_m \ aux_y;
 
     # display(hcat(aux_m,aux_y));
 
@@ -545,25 +466,17 @@ function system_energies(simulation::SimulationSystem)
     xc_c_2b = coeffs.xc_coeffs.xc_c_2b;
     xc_d_2b = coeffs.xc_coeffs.xc_d_2b;
 
-    polarizable_morse_depth = 
-        coeffs.polarizable_morse_coeffs.depth;
-    polarizable_morse_stiffness_parameter = 
-        coeffs.polarizable_morse_coeffs.stiffness_parameter;
-    polarizable_morse_equilibrium_distance = 
-        coeffs.polarizable_morse_coeffs.equilibrium_distance;
-
-    non_polarizable_morse_depth = 
-        coeffs.non_polarizable_morse_coeffs.depth;
-    non_polarizable_morse_stiffness_parameter = 
-        coeffs.non_polarizable_morse_coeffs.stiffness_parameter;
-    non_polarizable_morse_equilibrium_distance = 
-        coeffs.non_polarizable_morse_coeffs.equilibrium_distance;
+    morse_depth = coeffs.non_polarizable_coeffs.depth;
+    morse_stiffness_parameter = 
+        coeffs.non_polarizable_coeffs.stiffness_parameter;
+    morse_equilibrium_distance = 
+        coeffs.non_polarizable_coeffs.equilibrium_distance;
     
     aux_type = typeof(xc_a_1b[1]);
     xc_energy = aux_type(0.0);
     naive_energy = aux_type(0.0);
-    morse_energy = aux_type(0.0);
     kinetic_energy = aux_type(0.0);
+    non_polarizable_energy = aux_type(0.0);
 
     function compute_nn_energy(atom_1::Atom, atom_2::Atom)
         d = norm(atom_1.coordinates - atom_2.coordinates);
@@ -649,40 +562,18 @@ function system_energies(simulation::SimulationSystem)
         return;
     end
 
-    function compute_polarizable_morse_potential(atom_1::Atom, atom_2::Atom)
-        z1 = atom_1.atomic_number;
-        z2 = atom_2.atomic_number;
-
-        ζ1 = atom_1.polarization_coefficient;
-        ζ2 = atom_2.polarization_coefficient;
-
-        d = norm(atom_1.coordinates - atom_2.coordinates);
-
-        A = polarizable_morse_depth[(z1,z2)];
-        B = polarizable_morse_stiffness_parameter[(z1,z2)];
-        C = polarizable_morse_equilibrium_distance[(z1,z2)];
-        morse_energy += (ζ1 + ζ2) * morse_u(A,B,C,d);
-
-        return;
-    end
-
-    function compute_non_polarizable_morse_potential(atom_1::Atom, atom_2::Atom)
+    function compute_morse_potential(atom_1::Atom, atom_2::Atom)
         z1 = atom_1.atomic_number;
         z2 = atom_2.atomic_number;
 
         d = norm(atom_1.coordinates - atom_2.coordinates);
 
-        A = non_polarizable_morse_depth[(z1,z2)];
-        B = non_polarizable_morse_stiffness_parameter[(z1,z2)];
-        C = non_polarizable_morse_equilibrium_distance[(z1,z2)];
-        morse_energy += morse_u(A,B,C,d);
+        A = morse_depth[(z1,z2)];
+        B = morse_stiffness_parameter[(z1,z2)];
+        C = morse_equilibrium_distance[(z1,z2)];
+        non_polarizable_energy += morse_u(A,B,C,d);
 
         return;
-    end
-
-    function compute_morse_potentials(atom_1::Atom, atom_2::Atom)
-        compute_polarizable_morse_potential(atom_1,atom_2);
-        compute_non_polarizable_morse_potential(atom_1,atom_2);
     end
 
     function compute_one_body_energies()
@@ -707,7 +598,7 @@ function system_energies(simulation::SimulationSystem)
                     compute_nn_energy(atom_1,atom_2);
                     compute_en_energies(atom_1,atom_2);
                     compute_ee_energies(atom_1,atom_2);
-                    compute_morse_potentials(atom_1,atom_2);
+                    compute_morse_potential(atom_1,atom_2);
                 end
             end
         end
@@ -745,14 +636,14 @@ function system_energies(simulation::SimulationSystem)
     compute_one_body_energies();
     compute_two_body_energies();
 
-    return naive_energy, kinetic_energy, xc_energy, morse_energy;
+    return naive_energy, kinetic_energy, xc_energy, non_polarizable_energy;
 end
 
 function total_energy(simulation::SimulationSystem)
     # Returns the sum of all three energy contributions.
-    naive_energy, kinetic_energy, xc_energy, morse_energy = 
+    naive_energy, kinetic_energy, xc_energy, non_polarizable_energy = 
         system_energies(simulation);
-    return naive_energy + kinetic_energy + xc_energy + morse_energy;
+    return naive_energy + kinetic_energy + xc_energy + non_polarizable_energy;
 end
 
 function save_fitted_coeffs(simulation::SimulationSystem)
@@ -787,15 +678,13 @@ function initialize_simulation_environment()
     xc_coeffs = EmpiricalXCCoefficients(
         xc_a_1b,xc_b_1b,xc_c_1b,xc_d_1b,xc_a_2b,xc_b_2b,xc_c_2b,xc_d_2b);
     ke_coeffs = EmpiricalKECoefficients(ke_e_1b,ke_f_1b);
-    polarizable_morse_coeffs = EmpiricalMorseCoefficients(morse_depth,
-        morse_stiffness_parameter,morse_equilibrium_distance);
-    non_polarizable_morse_coeffs = EmpiricalMorseCoefficients(morse_depth,
+    non_polarizable_coeffs = EmpiricalMorseCoefficients(morse_depth,
         morse_stiffness_parameter,morse_equilibrium_distance);
 
-    tot_e_coeffs = deepcopy(EnergyCoefficients(xc_coeffs,ke_coeffs,
-        polarizable_morse_coeffs,non_polarizable_morse_coeffs));
-    pol_e_coeffs = deepcopy(EnergyCoefficients(xc_coeffs,ke_coeffs,
-        polarizable_morse_coeffs,non_polarizable_morse_coeffs));
+    tot_e_coeffs = deepcopy(TotalEnergyCoefficients(xc_coeffs,ke_coeffs,
+        non_polarizable_coeffs));
+    pol_e_coeffs = deepcopy(PolarizationEnergyCoefficients(
+        xc_coeffs,ke_coeffs));
 
     system = MolecularSystem();
     simulation = SimulationSystem(system,tot_e_coeffs,pol_e_coeffs,
@@ -890,7 +779,7 @@ function full_model_reset()
     # Sets all the empirical coefficients to zero and recalculates the 
     # Thomas-Fermi and von Weizacker kinetic energies for the atoms allowed 
     # in the basis-set.
-    reset_xc_coeffs();
+    reset_fitted_coeffs();
     load_basis_set(true);
 
     return;

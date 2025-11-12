@@ -133,8 +133,8 @@ function make_system_from_parsed_file(parsed_file::ParsedFile)
     z1_eff = simulation.system.molecules[1].atoms[1].valence_electrons;
     z2_eff = simulation.system.molecules[1].atoms[2].valence_electrons;
 
-    ζ1 = (z1_eff - parsed_file.partial_charge_1)/z1_eff;
-    ζ2 = (z2_eff - parsed_file.partial_charge_2)/z2_eff;
+    ζ1 = (z1_eff - parsed_file.partial_charge_1) / z1_eff;
+    ζ2 = (z2_eff - parsed_file.partial_charge_2) / z2_eff;
     
     simulation.system.chemical_potential = chemical_potential;
     simulation.system.molecules[1].atoms[1].polarization_coefficient = ζ1;
@@ -170,15 +170,15 @@ function set_diatomic_system_to_parsed_file!(
     return;
 end
 
-function set_fitted_coeffs!(coeffs::EnergyCoefficients, 
+function set_fitted_coeffs!(coeffs::PolarizationEnergyCoefficients, 
     Z::Int, fitted_coeffs::Vector)
     # Store the 1B fitted coefficients
     xc_a_1b_ind = 1;
-    xc_b_1b_ind = 1;
-    xc_c_1b_ind = 2;
-    xc_d_1b_ind = 2;
-    ke_e_1b_ind = 3;
-    ke_f_1b_ind = 4;
+    xc_b_1b_ind = 2;
+    xc_c_1b_ind = 3;
+    xc_d_1b_ind = 4;
+    ke_e_1b_ind = 5;
+    ke_f_1b_ind = 6;
 
     coeffs.xc_coeffs.xc_a_1b[Z] = fitted_coeffs[xc_a_1b_ind];
     coeffs.xc_coeffs.xc_b_1b[Z] = fitted_coeffs[xc_b_1b_ind];
@@ -188,34 +188,55 @@ function set_fitted_coeffs!(coeffs::EnergyCoefficients,
     coeffs.ke_coeffs.ke_f_1b[Z] = fitted_coeffs[ke_f_1b_ind];
 
     # Store the 2B fitted coefficients
-    xc_a_2b_ind                            =  5;
-    xc_b_2b_ind                            =  5;
-    xc_c_2b_ind                            =  6;
-    xc_d_2b_ind                            =  6;
-    pol_morse_depth_ind                    =  7;
-    pol_morse_stiffness_parameter_ind      =  8;
-    pol_morse_equilibrium_distance_ind     =  9;
-    non_pol_morse_depth_ind                = 10;
-    non_pol_morse_stiffness_parameter_ind  = 11;
-    non_pol_morse_equilibrium_distance_ind = 12;
+    xc_a_2b_ind =  7;
+    xc_b_2b_ind =  8;
+    xc_c_2b_ind =  9;
+    xc_d_2b_ind = 10;
 
     coeffs.xc_coeffs.xc_a_2b[(Z,Z)] = fitted_coeffs[xc_a_2b_ind];
     coeffs.xc_coeffs.xc_b_2b[(Z,Z)] = fitted_coeffs[xc_b_2b_ind];
     coeffs.xc_coeffs.xc_c_2b[(Z,Z)] = fitted_coeffs[xc_c_2b_ind];
     coeffs.xc_coeffs.xc_d_2b[(Z,Z)] = fitted_coeffs[xc_d_2b_ind];
 
-    coeffs.polarizable_morse_coeffs.depth[(Z,Z)] = 
-        fitted_coeffs[pol_morse_depth_ind]^2;
-    coeffs.polarizable_morse_coeffs.stiffness_parameter[(Z,Z)] = 
-        fitted_coeffs[pol_morse_stiffness_parameter_ind]^2;
-    coeffs.polarizable_morse_coeffs.equilibrium_distance[(Z,Z)] = 
-        fitted_coeffs[pol_morse_equilibrium_distance_ind]^2;
+    return;
+end
 
-    coeffs.non_polarizable_morse_coeffs.depth[(Z,Z)] = 
+function set_fitted_coeffs!(coeffs::TotalEnergyCoefficients, 
+    Z::Int, fitted_coeffs::Vector)
+    # Store the 1B fitted coefficients
+    xc_a_1b_ind = 1;
+    xc_b_1b_ind = 2;
+    xc_c_1b_ind = 3;
+    xc_d_1b_ind = 4;
+    ke_e_1b_ind = 5;
+    ke_f_1b_ind = 6;
+
+    coeffs.xc_coeffs.xc_a_1b[Z] = fitted_coeffs[xc_a_1b_ind];
+    coeffs.xc_coeffs.xc_b_1b[Z] = fitted_coeffs[xc_b_1b_ind];
+    coeffs.xc_coeffs.xc_c_1b[Z] = fitted_coeffs[xc_c_1b_ind];
+    coeffs.xc_coeffs.xc_d_1b[Z] = fitted_coeffs[xc_d_1b_ind];
+    coeffs.ke_coeffs.ke_e_1b[Z] = fitted_coeffs[ke_e_1b_ind];
+    coeffs.ke_coeffs.ke_f_1b[Z] = fitted_coeffs[ke_f_1b_ind];
+
+    # Store the 2B fitted coefficients
+    xc_a_2b_ind                            =  7;
+    xc_b_2b_ind                            =  8;
+    xc_c_2b_ind                            =  9;
+    xc_d_2b_ind                            = 10;
+    non_pol_morse_depth_ind                = 11;
+    non_pol_morse_stiffness_parameter_ind  = 12;
+    non_pol_morse_equilibrium_distance_ind = 13;
+
+    coeffs.xc_coeffs.xc_a_2b[(Z,Z)] = fitted_coeffs[xc_a_2b_ind];
+    coeffs.xc_coeffs.xc_b_2b[(Z,Z)] = fitted_coeffs[xc_b_2b_ind];
+    coeffs.xc_coeffs.xc_c_2b[(Z,Z)] = fitted_coeffs[xc_c_2b_ind];
+    coeffs.xc_coeffs.xc_d_2b[(Z,Z)] = fitted_coeffs[xc_d_2b_ind];
+
+    coeffs.non_polarizable_coeffs.depth[(Z,Z)] = 
         fitted_coeffs[non_pol_morse_depth_ind]^2;
-    coeffs.non_polarizable_morse_coeffs.stiffness_parameter[(Z,Z)] = 
+    coeffs.non_polarizable_coeffs.stiffness_parameter[(Z,Z)] = 
         fitted_coeffs[non_pol_morse_stiffness_parameter_ind]^2;
-    coeffs.non_polarizable_morse_coeffs.equilibrium_distance[(Z,Z)] = 
+    coeffs.non_polarizable_coeffs.equilibrium_distance[(Z,Z)] = 
         fitted_coeffs[non_pol_morse_equilibrium_distance_ind]^2;
 
     return;
@@ -233,37 +254,43 @@ function set_fitted_pol_e_coeffs!(simulation::SimulationSystem,
     return;
 end
 
-function set_fitted_coeffs!(coeffs::EnergyCoefficients,
+function set_fitted_coeffs!(coeffs::PolarizationEnergyCoefficients,
     Z1::Int, Z2::Int, fitted_coeffs::Vector)
     # Store the 2B fitted coefficients
-    xc_a_2b_ind                            = 1;
-    xc_b_2b_ind                            = 1;
-    xc_c_2b_ind                            = 2;
-    xc_d_2b_ind                            = 2;
-    pol_morse_depth_ind                    = 3;
-    pol_morse_stiffness_parameter_ind      = 4;
-    pol_morse_equilibrium_distance_ind     = 5;
-    non_pol_morse_depth_ind                = 6;
-    non_pol_morse_stiffness_parameter_ind  = 7;
-    non_pol_morse_equilibrium_distance_ind = 8;
+    xc_a_2b_ind = 1;
+    xc_b_2b_ind = 2;
+    xc_c_2b_ind = 3;
+    xc_d_2b_ind = 4;
 
     coeffs.xc_coeffs.xc_a_2b[(Z1,Z2)] = fitted_coeffs[xc_a_2b_ind];
     coeffs.xc_coeffs.xc_b_2b[(Z1,Z2)] = fitted_coeffs[xc_b_2b_ind];
     coeffs.xc_coeffs.xc_c_2b[(Z1,Z2)] = fitted_coeffs[xc_c_2b_ind];
     coeffs.xc_coeffs.xc_d_2b[(Z1,Z2)] = fitted_coeffs[xc_d_2b_ind];
 
-    coeffs.polarizable_morse_coeffs.depth[(Z1,Z2)] = 
-        fitted_coeffs[pol_morse_depth_ind]^2;
-    coeffs.polarizable_morse_coeffs.stiffness_parameter[(Z1,Z2)] = 
-        fitted_coeffs[pol_morse_stiffness_parameter_ind]^2;
-    coeffs.polarizable_morse_coeffs.equilibrium_distance[(Z1,Z2)] = 
-        fitted_coeffs[pol_morse_equilibrium_distance_ind]^2;
+    return;
+end
 
-    coeffs.non_polarizable_morse_coeffs.depth[(Z1,Z2)] = 
+function set_fitted_coeffs!(coeffs::TotalEnergyCoefficients,
+    Z1::Int, Z2::Int, fitted_coeffs::Vector)
+    # Store the 2B fitted coefficients
+    xc_a_2b_ind                            = 1;
+    xc_b_2b_ind                            = 2;
+    xc_c_2b_ind                            = 3;
+    xc_d_2b_ind                            = 4;
+    non_pol_morse_depth_ind                = 5;
+    non_pol_morse_stiffness_parameter_ind  = 6;
+    non_pol_morse_equilibrium_distance_ind = 7;
+
+    coeffs.xc_coeffs.xc_a_2b[(Z1,Z2)] = fitted_coeffs[xc_a_2b_ind];
+    coeffs.xc_coeffs.xc_b_2b[(Z1,Z2)] = fitted_coeffs[xc_b_2b_ind];
+    coeffs.xc_coeffs.xc_c_2b[(Z1,Z2)] = fitted_coeffs[xc_c_2b_ind];
+    coeffs.xc_coeffs.xc_d_2b[(Z1,Z2)] = fitted_coeffs[xc_d_2b_ind];
+
+    coeffs.non_polarizable_coeffs.depth[(Z1,Z2)] = 
         fitted_coeffs[non_pol_morse_depth_ind]^2;
-    coeffs.non_polarizable_morse_coeffs.stiffness_parameter[(Z1,Z2)] = 
+    coeffs.non_polarizable_coeffs.stiffness_parameter[(Z1,Z2)] = 
         fitted_coeffs[non_pol_morse_stiffness_parameter_ind]^2;
-    coeffs.non_polarizable_morse_coeffs.equilibrium_distance[(Z1,Z2)] = 
+    coeffs.non_polarizable_coeffs.equilibrium_distance[(Z1,Z2)] = 
         fitted_coeffs[non_pol_morse_equilibrium_distance_ind]^2;
 
     return;
@@ -682,7 +709,25 @@ function convert_to_type!(coeffs::Dict{Tuple{Int,Int},Number}, which_type)
     return;
 end
 
-function cast_coeffs_to_type!(coeffs::EnergyCoefficients, which_type)
+function cast_coeffs_to_type!(
+    coeffs::PolarizationEnergyCoefficients, which_type)
+    convert_to_type!(coeffs.xc_coeffs.xc_a_1b,which_type);
+    convert_to_type!(coeffs.xc_coeffs.xc_b_1b,which_type);
+    convert_to_type!(coeffs.xc_coeffs.xc_c_1b,which_type);
+    convert_to_type!(coeffs.xc_coeffs.xc_d_1b,which_type);
+    convert_to_type!(coeffs.ke_coeffs.ke_e_1b,which_type);
+    convert_to_type!(coeffs.ke_coeffs.ke_f_1b,which_type);
+
+    convert_to_type!(coeffs.xc_coeffs.xc_a_2b,which_type);
+    convert_to_type!(coeffs.xc_coeffs.xc_b_2b,which_type);
+    convert_to_type!(coeffs.xc_coeffs.xc_c_2b,which_type);
+    convert_to_type!(coeffs.xc_coeffs.xc_d_2b,which_type);
+
+    return;
+end
+
+function cast_coeffs_to_type!(
+    coeffs::TotalEnergyCoefficients, which_type)
     convert_to_type!(coeffs.xc_coeffs.xc_a_1b,which_type);
     convert_to_type!(coeffs.xc_coeffs.xc_b_1b,which_type);
     convert_to_type!(coeffs.xc_coeffs.xc_c_1b,which_type);
@@ -696,19 +741,11 @@ function cast_coeffs_to_type!(coeffs::EnergyCoefficients, which_type)
     convert_to_type!(coeffs.xc_coeffs.xc_d_2b,which_type);
 
     convert_to_type!(
-        coeffs.polarizable_morse_coeffs.depth,which_type);
+        coeffs.non_polarizable_coeffs.depth,which_type);
     convert_to_type!(
-        coeffs.polarizable_morse_coeffs.stiffness_parameter,which_type);
+        coeffs.non_polarizable_coeffs.stiffness_parameter,which_type);
     convert_to_type!(
-        coeffs.polarizable_morse_coeffs.equilibrium_distance,which_type);
-
-    convert_to_type!(
-        coeffs.non_polarizable_morse_coeffs.depth,which_type);
-    convert_to_type!(
-        coeffs.non_polarizable_morse_coeffs.stiffness_parameter,which_type);
-    convert_to_type!(
-        coeffs.non_polarizable_morse_coeffs.equilibrium_distance,which_type);
-
+        coeffs.non_polarizable_coeffs.equilibrium_distance,which_type);
     return;
 end
 

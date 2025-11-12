@@ -58,17 +58,21 @@ mutable struct MolecularSystem
     chemical_potential::Number;
 end
 
-mutable struct EnergyCoefficients
+mutable struct TotalEnergyCoefficients
     xc_coeffs::EmpiricalXCCoefficients;
     ke_coeffs::EmpiricalKECoefficients;
-    polarizable_morse_coeffs::EmpiricalMorseCoefficients;
-    non_polarizable_morse_coeffs::EmpiricalMorseCoefficients;
+    non_polarizable_coeffs::EmpiricalMorseCoefficients;
+end
+
+mutable struct PolarizationEnergyCoefficients
+    xc_coeffs::EmpiricalXCCoefficients;
+    ke_coeffs::EmpiricalKECoefficients;
 end
 
 mutable struct SimulationSystem
     system::MolecularSystem;
-    tot_e_coeffs::EnergyCoefficients;
-    pol_e_coeffs::EnergyCoefficients;
+    tot_e_coeffs::TotalEnergyCoefficients;
+    pol_e_coeffs::PolarizationEnergyCoefficients;
     basis_set_settings::BasisSetSettings;
 end
 
