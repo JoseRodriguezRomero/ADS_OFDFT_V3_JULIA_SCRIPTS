@@ -1,6 +1,5 @@
 using Interpolations;
 using Base.Threads;
-using Plots;
 
 include("ForceField.jl")
 

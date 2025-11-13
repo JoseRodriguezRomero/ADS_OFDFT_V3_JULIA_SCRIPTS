@@ -717,7 +717,7 @@ function make_monoatomic_system(element::String,charge::Int)
 end
 
 function make_diatomic_molecule(
-    reference_atoms::Dict{Int,Atom}, Z1::Int,Z2::Int,d::Number,charge::Int)
+    reference_atoms::Dict{Int,Atom}, Z1::Int, Z2::Int, d::Number, charge::Int)
     # Makes a diatomic molecule with a diatomic separation d in Bohr with the 
     # specified charge.
     atom_1 = copy(reference_atoms[Z1]);
@@ -737,6 +737,38 @@ function make_diatomic_molecule(
 
     molecule = Molecule();
     molecule.atoms = [atom_1,atom_2];
+
+    return molecule;
+end
+
+function make_triatomic_molecule(
+    reference_atoms::Dict{Int,Atom}, Z1::Int, Z2::Int, Z3::Int, 
+    distance_12::Number, distance_13::Number, angle_123::Number)
+    # Makes a triatomic molecule with a diatomic separation distance_12 in Bohr 
+    # between atoms 1 and 2, distance_13 in Bohr between atoms 2 and 3, all of 
+    # them describing an angle angle_213 in degrees.
+    atom_1 = copy(reference_atoms[Z1]);
+    atom_2 = copy(reference_atoms[Z2]);
+    atom_3 = copy(reference_atoms[Z3]);
+
+    x1 = 0.0;
+    y1 = 0.0;
+    z1 = 0.0;
+
+    x2 = distance_12;
+    y2 = 0.0;
+    z2 = 0.0;
+
+    x3 = distance_13 * cos(angle_123 * (π / 180.0));
+    y3 = distance_13 * sin(angle_123 * (π / 180.0));
+    z3 = 0.0;
+
+    atom_1.coordinates = [x1, y1, z1];
+    atom_2.coordinates = [x2, y2, z2];
+    atom_3.coordinates = [x3, y3, z3];
+
+    molecule = Molecule();
+    molecule.atoms = [atom_1,atom_2,atom_3];
 
     return molecule;
 end

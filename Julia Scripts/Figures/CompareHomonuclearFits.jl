@@ -62,11 +62,11 @@ function test_result_ΔE(atomic_number::Int)
 
     Pts = [-100,100];
     p = plot(Pts,Pts,label=false, color=palette(:default)[4]);
-    scatter!(neutral_dft_ΔE, neutral_model_ΔE, 
+    scatter!(neutral_dft_ΔE, neutral_model_ΔE, markerstrokewidth=0.5,
         label=neutral_label, color=palette(:default)[1]);
-    scatter!(cation_dft_ΔE, cation_model_ΔE, 
+    scatter!(cation_dft_ΔE, cation_model_ΔE, markerstrokewidth=0.5,
         label=cation_label, color=palette(:default)[2]);
-    scatter!(anion_dft_ΔE, anion_model_ΔE, 
+    scatter!(anion_dft_ΔE, anion_model_ΔE, markerstrokewidth=0.5,
         label=anion_label, color=palette(:default)[3]);
     plot!(framestyle = :box);
     plot!(legend=:topleft);
@@ -129,11 +129,11 @@ function test_result_chemical_potential(atomic_number::Int)
 
     Pts = [-100,100];
     p = plot(Pts,Pts,label=false, color=palette(:default)[4]);
-    scatter!(neutral_dft_chem_μ, neutral_model_chem_μ, 
+    scatter!(neutral_dft_chem_μ, neutral_model_chem_μ, markerstrokewidth=0.5,
         label=neutral_label, color=palette(:default)[1]);
-    scatter!(cation_dft_chem_μ, cation_model_chem_μ, 
+    scatter!(cation_dft_chem_μ, cation_model_chem_μ, markerstrokewidth=0.5,
         label=cation_label, color=palette(:default)[2]);
-    scatter!(anion_dft_chem_μ, anion_model_chem_μ, 
+    scatter!(anion_dft_chem_μ, anion_model_chem_μ, markerstrokewidth=0.5,
         label=anion_label, color=palette(:default)[3]);
     plot!(framestyle = :box);
     plot!(legend=:topleft);
@@ -279,7 +279,7 @@ function compare_data()
 
     # Join all plots
     p = plot(eH2,eC2,eN2,eO2,pH2,pC2,pN2,pO2,
-        layout=(2,4), size = (1100,470));
+        layout=(2,4), size = (1100,430));
     savefig("Figures/HomonuclearFitComps.pdf");
 
     return p;
@@ -502,7 +502,7 @@ function comp_homonuclear_scan(Z1::Int, Z2::Int)
     plot!(xlims=[0.0,x_max],xticks=0:2:6);
     plot!(legend = :topright)
 
-    p = plot(p1,p2, layout=(2,1), size = (500,380));
+    p = plot(p1,p2, layout=(2,1), size = (500,340));
     savefig("Figures/HomonuclearScanComp.pdf");
 
     return p;

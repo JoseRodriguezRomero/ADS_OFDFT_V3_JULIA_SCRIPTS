@@ -71,13 +71,13 @@ function test_result_ΔE(Z1::Int, Z2::Int)
     cation_label = "("*elem_symbol1*" + "*elem_symbol2*")⁺";
     anion_label = "("*elem_symbol1*" + "*elem_symbol2*")⁻";
 
-    Pts = [-100,100];
+    Pts = [-3,3];
     p = plot(Pts,Pts,label=false, color=palette(:default)[4]);
-    scatter!(neutral_dft_ΔE, neutral_model_ΔE, 
+    scatter!(neutral_dft_ΔE, neutral_model_ΔE, markerstrokewidth=0.25,
         label=neutral_label, color=palette(:default)[1]);
-    scatter!(cation_dft_ΔE, cation_model_ΔE, 
+    scatter!(cation_dft_ΔE, cation_model_ΔE, markerstrokewidth=0.25,
         label=cation_label, color=palette(:default)[2]);
-    scatter!(anion_dft_ΔE, anion_model_ΔE, 
+    scatter!(anion_dft_ΔE, anion_model_ΔE, markerstrokewidth=0.25,
         label=anion_label, color=palette(:default)[3]);
     plot!(framestyle = :box);
     plot!(legend=:topleft);
@@ -141,11 +141,89 @@ function test_result_chemical_potential(Z1::Int, Z2::Int)
 
     Pts = [-2,2];
     p = plot(Pts,Pts,label=false, color=palette(:default)[4]);
-    scatter!(neutral_dft_chem_μ, neutral_model_chem_μ, 
+    scatter!(neutral_dft_chem_μ, neutral_model_chem_μ, markerstrokewidth=0.25,
         label=neutral_label, color=palette(:default)[1]);
-    scatter!(cation_dft_chem_μ, cation_model_chem_μ, 
+    scatter!(cation_dft_chem_μ, cation_model_chem_μ, markerstrokewidth=0.25,
         label=cation_label, color=palette(:default)[2]);
-    scatter!(anion_dft_chem_μ, anion_model_chem_μ, 
+    scatter!(anion_dft_chem_μ, anion_model_chem_μ, markerstrokewidth=0.25,
+        label=anion_label, color=palette(:default)[3]);
+    plot!(framestyle = :box);
+    plot!(legend=:topleft);
+
+    return p, R²;
+end
+
+function test_result_partial_charges(Z1::Int, Z2::Int)
+    neutral_data, cation_data, anion_data = 
+        read_all_sanitized_data(Z1,Z2,true);
+
+    function get_data(data::Vector{ParsedFile})
+        model_ρ = zeros(Float64,2,length(data));
+        dft_ρ = zeros(Float64,2,length(data));
+
+        n_threads = Threads.nthreads();
+        simulation = Vector{SimulationSystem}();
+        resize!(simulation,n_threads);
+        for thread_id in 1:n_threads
+            simulation[thread_id] = make_system_from_parsed_file(data[1]);
+        end
+
+        @threads for thread_id in 1:n_threads
+            for i in thread_id:n_threads:length(data)
+                dft_ρ1 = data[i].partial_charge_1;
+                dft_ρ2 = data[i].partial_charge_2;
+
+                set_diatomic_system_to_parsed_file!(
+                    simulation[thread_id],data[i]);
+                polarize_molecules!(simulation[thread_id]);
+
+                molecule = simulation[thread_id].system.molecules[1];
+                atom_1 = molecule.atoms[1];
+                atom_2 = molecule.atoms[2];
+
+                atom_1_zeff = atom_1.valence_electrons;
+                atom_2_zeff = atom_2.valence_electrons;
+                
+                model_ζ1 = atom_1.polarization_coefficient;
+                model_ζ2 = atom_2.polarization_coefficient;
+
+                model_ρ1 = atom_1_zeff * (1.0 - model_ζ1);
+                model_ρ2 = atom_2_zeff * (1.0 - model_ζ2);
+
+                model_ρ[:,i] = [model_ρ1,model_ρ2];
+                dft_ρ[:,i] = [dft_ρ1,dft_ρ2];
+            end
+        end
+
+        return model_ρ[:], dft_ρ[:];
+    end
+
+    neutral_model_ρ, neutral_dft_ρ = get_data(neutral_data);
+    cation_model_ρ, cation_dft_ρ = get_data(cation_data);
+    anion_model_ρ, anion_dft_ρ = get_data(anion_data);
+
+    model_ρ = vcat(neutral_model_ρ,cation_model_ρ,anion_model_ρ);
+    dft_ρ = vcat(neutral_dft_ρ,cation_dft_ρ,anion_dft_ρ);
+
+    mean_dft_ρ = sum(dft_ρ) / length(dft_ρ);
+    SS_res = sum((model_ρ - dft_ρ).^2.0);
+    SS_tot = sum((dft_ρ .- mean_dft_ρ).^2.0);
+    R² = 1.0 - SS_res / SS_tot;
+
+    elem_symbol1 = get_element_symbol(Z1);
+    elem_symbol2 = get_element_symbol(Z2);
+
+    neutral_label = elem_symbol1*" + "*elem_symbol2;
+    cation_label = "("*elem_symbol1*" + "*elem_symbol2*")⁺";
+    anion_label = "("*elem_symbol1*" + "*elem_symbol2*")⁻";
+
+    Pts = [-2,2];
+    p = plot(Pts,Pts,label=false, color=palette(:default)[4]);
+    scatter!(neutral_dft_ρ, neutral_model_ρ, markerstrokewidth=0.25,
+        label=neutral_label, color=palette(:default)[1]);
+    scatter!(cation_dft_ρ, cation_model_ρ, markerstrokewidth=0.25,
+        label=cation_label, color=palette(:default)[2]);
+    scatter!(anion_dft_ρ, anion_model_ρ, markerstrokewidth=0.25,
         label=anion_label, color=palette(:default)[3]);
     plot!(framestyle = :box);
     plot!(legend=:topleft);
@@ -289,8 +367,78 @@ function compare_data()
     R² = @sprintf "%.5lf" round(R²,digits=5);
     annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
 
+    # Partial Charges
+    y_label_all = L"$\rho \quad \mathrm{(This \ Work)}$";
+    x_label_all = L"$\rho \quad (\mathrm{KS{-}DFT})$";
+
+    # HC Plots
+    cHC, R² = test_result_partial_charges(1,6);
+    aux_lims = [-1.6,1.6];
+    aux_ticks = -1.6:0.8:1.6;
+    plot!(xlims=aux_lims);
+    plot!(ylims=aux_lims);
+    plot!(xticks=aux_ticks);
+    plot!(yticks=aux_ticks);
+    plot!(ylabel=y_label_all);
+    plot!(xlabel=x_label_all);
+    plot!(left_margin=6mm, bottom_margin=8mm);
+
+    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
+    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
+    R² = @sprintf "%.5lf" round(R²,digits=5);
+    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
+
+    # HO Plots
+    cHO, R² = test_result_partial_charges(1,8);
+    aux_lims = [-2.0,1.2];
+    aux_ticks = -2.0:0.8:1.2;
+    plot!(xlims=aux_lims);
+    plot!(ylims=aux_lims);
+    plot!(xticks=aux_ticks);
+    plot!(yticks=aux_ticks);
+    plot!(xlabel=x_label_all);
+    plot!(left_margin=6mm, bottom_margin=8mm);
+
+    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
+    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
+    R² = @sprintf "%.5lf" round(R²,digits=5);
+    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
+
+    # CO Plots
+    cCO, R² = test_result_partial_charges(6,8);
+    aux_lims = [-1.6,1.6];
+    aux_ticks = -1.6:0.8:1.6;
+    plot!(xlims=aux_lims);
+    plot!(ylims=aux_lims);
+    plot!(xticks=aux_ticks);
+    plot!(yticks=aux_ticks);
+    plot!(xlabel=x_label_all);
+    plot!(left_margin=6mm, bottom_margin=8mm);
+
+    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
+    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
+    R² = @sprintf "%.5lf" round(R²,digits=5);
+    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
+
+    # NO Plots
+    cNO, R² = test_result_partial_charges(7,8);
+    aux_lims = [-1.6,1.6];
+    aux_ticks = -1.6:0.8:1.6;
+    plot!(xlims=aux_lims);
+    plot!(ylims=aux_lims);
+    plot!(xticks=aux_ticks);
+    plot!(yticks=aux_ticks);
+    plot!(xlabel=x_label_all);
+    plot!(left_margin=6mm, bottom_margin=8mm);
+
+    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
+    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
+    R² = @sprintf "%.5lf" round(R²,digits=5);
+    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
+
     # Join all plots
-    p = plot(eHC,eHO,eCO,eNO,pHC,pHO,pCO,pNO,layout=(2,4), size=(1100,470));
+    p = plot(eHC,eHO,eCO,eNO, pHC,pHO,pCO,pNO, cHC,cHO,cCO,cNO,
+        layout=(3,4), size=(1100,650));
     savefig("Figures/HeteronuclearFitComps.pdf");
 
     return p;
@@ -413,7 +561,7 @@ function comp_heteronuclear_scan(pair1::Tuple{Int,Int}, pair2::Tuple{Int,Int})
     plot!(xlims=[0.0,x_max],xticks=0:2:6);
     plot!(legend = :topright)
 
-    p = plot(p1,p2, layout=(2,1), size = (500,380));
+    p = plot(p1,p2, layout=(2,1), size = (500,340));
     savefig("Figures/HeteronuclearScanComp.pdf");
 
     return p;
@@ -566,5 +714,5 @@ function plot_compare_partial_charges(Z1::Int, Z2::Int, Q::Int)
     return p;
 end
 
-comp_heteronuclear_scan((7,8),(6,8));
+comp_heteronuclear_scan((7,8),(6,8))
 compare_data()
