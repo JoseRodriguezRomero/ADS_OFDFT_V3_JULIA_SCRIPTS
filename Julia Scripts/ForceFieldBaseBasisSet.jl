@@ -91,7 +91,7 @@ function load_isolated_atoms_chemical_potential()
     cation_energies = read_energies("Atom Energies/Cation/elem_total_energy.txt");
     anion_energies = read_energies("Atom Energies/Anion/elem_total_energy.txt");
 
-    chemical_potentials = zeros(Float64,max_elements);
+    atoms_μ0 = Dict{Int,Float64}();
     for i in 1:max_elements
         e_neutral = neutral_energies[i];
         e_cation = cation_energies[i];
@@ -105,13 +105,14 @@ function load_isolated_atoms_chemical_potential()
         M[3,:] = [(-1.0)^2, (-1.0)^1, 1.0];
 
         Y[:] = [e_neutral, e_cation, e_anion];
-        X = (M \ Y)[:];
+        X = - (M \ Y)[:];
 
-        charge = 0.0;
-        chemical_potentials[i] = -(2*X[1]*charge + X[2]);
+        q_neutral = 0.0;
+        atom_μ0 = 2 * X[1] * q_neutral + X[2];
+        atoms_μ0[i] = atom_μ0;
     end
 
-    return chemical_potentials;
+    return atoms_μ0;
 end
 
 function load_basis_set(compute_ke::Bool = false)

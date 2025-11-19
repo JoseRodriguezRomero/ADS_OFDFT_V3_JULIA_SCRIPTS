@@ -340,8 +340,8 @@ function reset_fitted_coeffs()
     non_polarizable_coeffs = EmpiricalMorseCoefficients(morse_depth,
         morse_stiffness_parameter,morse_equilibrium_distance);
 
-    tot_e_coeffs = TotalEnergyCoefficients(xc_coeffs,ke_coeffs,
-        non_polarizable_coeffs);
+    tot_e_coeffs = TotalEnergyCoefficients(
+        xc_coeffs,ke_coeffs,non_polarizable_coeffs);
     pol_e_coeffs = PolarizationEnergyCoefficients(xc_coeffs,ke_coeffs);
     
     save_1b_coeffs(tot_e_coeffs,max_atomic_number);

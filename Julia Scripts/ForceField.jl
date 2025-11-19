@@ -13,6 +13,10 @@ function naive_coulomb_integral(λ::Real, d::Real)
         return 2*sqrt(λ/π);
     end
 
+    if λ == Inf
+        return 1.0/d;
+    end
+
     erf_arg = d*sqrt(λ);
     if erf_arg > erf_arg_cutoff()
         return 1.0/d;
@@ -52,6 +56,22 @@ function morse_u(depth::Real, stiffness_parameter::Real,
     return A * ((1 - exp(-B * (r - C)))^2 - 1);
 end
 
+function smear_comb(λ1::Number, λ2::Number)
+    if λ1 == Inf && λ2 == Inf
+        return ∞;
+    end
+
+    if λ1 == Inf
+        return λ2;
+    end
+
+    if λ2 == Inf
+        return λ1;
+    end
+
+    return (λ1 * λ2) / (λ1 + λ2);
+end
+
 function unpol_ee_energy(atom_1::Atom, atom_2::Atom)
     # Calculates the unpolarized electron-electron interactions between the 
     # valence electron shells of atoms atom_1 and atom_2.
@@ -76,7 +96,7 @@ function unpol_ee_energy(atom_1::Atom, atom_2::Atom)
             λ2 = atom_2_cloud.basis_function_decay[j];
 
             c = c1 * c2;
-            λ = (λ1 * λ2) / (λ1 + λ2);
+            λ = smear_comb(λ1,λ2);
 
             e_xc_sph += c*xc_sph(λ,d);
             e_xc_cyl += c*xc_cyl(λ,d);
@@ -235,10 +255,10 @@ function polarization_matrix_problem(simulation::SimulationSystem)
         atom_shift_index = tot_num_atoms + atom_index;
         μ0 = atoms_μ0[atom.atomic_number];
 
-        aux_M[atom_shift_index,end] -= 1.0;
-        aux_M[atom_shift_index,atom_shift_index] += 1.0;
+        aux_M[atom_shift_index,end] += atom.valence_electrons
+        aux_M[atom_shift_index,atom_shift_index] -= atom.valence_electrons;
         aux_M[atom_index,atom_shift_index] -= atom.valence_electrons;
-        aux_Y[atom_shift_index] -= μ0;
+        aux_Y[atom_shift_index] = -μ0;
 
         return;
     end
@@ -254,6 +274,7 @@ function polarization_matrix_problem(simulation::SimulationSystem)
         tf_fit_coeff_2 = aux_type(0.0);
         tf_fit_coeff_1 += (10.0/9.0)*ke_e_1b[z]*unpol_tf_ke;
         tf_fit_coeff_2 += (5.0/9.0)*ke_e_1b[z]*unpol_tf_ke;
+
         aux_M[atom_index,atom_index] += tf_fit_coeff_1;
         aux_Y[atom_index] -= tf_fit_coeff_2;
 
@@ -268,7 +289,7 @@ function polarization_matrix_problem(simulation::SimulationSystem)
         atom_index_1::Int, atom_index_2::Int)
         z1 = atom_1.atomic_number;
         z2 = atom_2.atomic_number;
-
+        
         e_naive, e_xc_sph, e_xc_cyl = unpol_en_energy(atom_1,atom_2);
 
         energy_sum_12 = e_naive;
@@ -276,7 +297,7 @@ function polarization_matrix_problem(simulation::SimulationSystem)
         energy_sum_12 += e_xc_cyl*xc_d_2b[(z1,z2)];
 
         e_naive, e_xc_sph, e_xc_cyl = unpol_en_energy(atom_2,atom_1);
-        
+            
         energy_sum_21 = e_naive;
         energy_sum_21 += e_xc_sph*xc_c_2b[(z2,z1)];
         energy_sum_21 += e_xc_cyl*xc_d_2b[(z2,z1)];
@@ -304,6 +325,7 @@ function polarization_matrix_problem(simulation::SimulationSystem)
         atom_index_1::Int, atom_index_2::Int)
         z1 = atom_1.atomic_number;
         z2 = atom_2.atomic_number;
+
         e_naive, e_xc_sph, e_xc_cyl = unpol_ee_energy(atom_1,atom_2);
 
         energy_sum = e_naive;
@@ -325,7 +347,7 @@ function polarization_matrix_problem(simulation::SimulationSystem)
         energy_sum += e_xc_cyl*xc_b_1b[z];
 
         aux_M[atom_index,atom_index] += energy_sum;
-
+        
         return;
     end
 
@@ -403,19 +425,22 @@ function polarization_matrix_problem(simulation::SimulationSystem)
 
         return;
     end
-
+    
     compute_one_body_terms();
     compute_two_body_terms();
 
     return aux_M, aux_Y;
 end
 
+function print_polarization_matrix_problem(simulation::SimulationSystem)
+    aux_m, aux_y = polarization_matrix_problem(simulation);
+    display(hcat(aux_m,aux_m \ aux_y,aux_y));
+end
+
 function polarize_molecules!(simulation::SimulationSystem)
     # Calculates and sets the polarization coefficients of the atoms.
     aux_m, aux_y = polarization_matrix_problem(simulation);
     minimizer = aux_m \ aux_y;
-
-    # display(hcat(aux_m,aux_y));
 
     molecules = simulation.system.molecules;
 
@@ -431,8 +456,7 @@ function polarize_molecules!(simulation::SimulationSystem)
         end
     end
 
-    simulation.system.chemical_potential = minimizer[end];
-
+    # Set the polarization coefficients
     for molecule_index in eachindex(molecules)
         molecule = molecules[molecule_index];
 
@@ -444,6 +468,8 @@ function polarize_molecules!(simulation::SimulationSystem)
         end
     end
 
+    # Set the chemical potential
+    simulation.system.chemical_potential = minimizer[end];
     return;
 end
 
@@ -479,11 +505,7 @@ function system_energies(simulation::SimulationSystem)
     non_polarizable_energy = aux_type(0.0);
 
     function compute_nn_energy(atom_1::Atom, atom_2::Atom)
-        d = norm(atom_1.coordinates - atom_2.coordinates);
-
-        if d > atoms_dist_cutoff()
-            naive_energy += nn_energy(atom_1,atom_2);
-        end
+        naive_energy += nn_energy(atom_1,atom_2);
 
         return;
     end
@@ -695,7 +717,7 @@ function initialize_simulation_environment()
     return simulation;
 end
 
-function make_monoatomic_system(Z::Int,charge::Number)
+function make_monoatomic_system(Z::Int, charge::Number)
     # Makes a molecule object with a single atom whose atomic number is Z.
     simulation = initialize_simulation_environment();
     simulation.system.charge = charge;
@@ -773,7 +795,7 @@ function make_triatomic_molecule(
     return molecule;
 end
 
-function make_diatomic_system(Z1::Int,Z2::Int,d::Number,charge::Int)
+function make_diatomic_system(Z1::Int, Z2::Int, d::Number, charge::Int)
     # Makes a simulation structure with a diatomic molecule with a diatomic 
     # separation d in Bohr with the specified charge.
     simulation = initialize_simulation_environment();

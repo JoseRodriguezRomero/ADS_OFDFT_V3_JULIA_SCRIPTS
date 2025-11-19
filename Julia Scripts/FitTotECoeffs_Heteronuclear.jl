@@ -4,8 +4,7 @@ using Base.Threads;
 
 include("FitCoeffs_General.jl")
 
-# which_atomic_numbers = [[1,6],[1,8],[6,8],[7,8]];
-which_atomic_numbers = [[7,8]];
+which_atomic_numbers = [[1,6],[1,8],[6,8],[7,8]];
 for atomic_numbers in which_atomic_numbers
     Z1 = atomic_numbers[1];
     Z2 = atomic_numbers[2];
@@ -72,11 +71,8 @@ for atomic_numbers in which_atomic_numbers
         set_fitted_coeffs!(simulation[1]);
         set_diatomic_system_to_parsed_file!(simulation[1],reference_system);
 
-        # dft_e0 = reference_system.total_energy;
-        # model_e0 = total_energy(simulation[1]);
-
-        dft_e0 = dft_neutral_at1_e + dft_neutral_at2_e;
-        model_e0 = model_at1_neutral_e + model_at2_neutral_e;
+        dft_e0 = reference_system.total_energy;
+        model_e0 = total_energy(simulation[1]);
 
         ret_val = zeros(aux_type,n_threads);
         @threads for thread_id in 1:n_threads

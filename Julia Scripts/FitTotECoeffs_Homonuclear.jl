@@ -4,8 +4,7 @@ using Base.Threads;
 
 include("FitCoeffs_General.jl")
 
-# which_atomic_numbers = [1,6,7,8];
-which_atomic_numbers = [8];
+which_atomic_numbers = [1,6,7,8];
 for atomic_number in which_atomic_numbers
     neutral_data, cation_data, anion_data = 
         read_all_sanitized_data(atomic_number);

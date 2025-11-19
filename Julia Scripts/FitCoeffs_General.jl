@@ -187,10 +187,10 @@ function set_fitted_coeffs!(coeffs::PolarizationEnergyCoefficients,
     coeffs.ke_coeffs.ke_f_1b[Z] = fitted_coeffs[ke_f_1b_ind];
 
     # Store the 2B fitted coefficients
-    xc_a_2b_ind =  7;
-    xc_b_2b_ind =  8;
-    xc_c_2b_ind =  9;
-    xc_d_2b_ind = 10;
+    xc_a_2b_ind         =  7;
+    xc_b_2b_ind         =  8;
+    xc_c_2b_ind         =  9;
+    xc_d_2b_ind         = 10;
 
     coeffs.xc_coeffs.xc_a_2b[(Z,Z)] = fitted_coeffs[xc_a_2b_ind];
     coeffs.xc_coeffs.xc_b_2b[(Z,Z)] = fitted_coeffs[xc_b_2b_ind];
@@ -256,10 +256,10 @@ end
 function set_fitted_coeffs!(coeffs::PolarizationEnergyCoefficients,
     Z1::Int, Z2::Int, fitted_coeffs::Vector)
     # Store the 2B fitted coefficients
-    xc_a_2b_ind = 1;
-    xc_b_2b_ind = 2;
-    xc_c_2b_ind = 3;
-    xc_d_2b_ind = 4;
+    xc_a_2b_ind         =  1;
+    xc_b_2b_ind         =  2;
+    xc_c_2b_ind         =  3;
+    xc_d_2b_ind         =  4;
 
     coeffs.xc_coeffs.xc_a_2b[(Z1,Z2)] = fitted_coeffs[xc_a_2b_ind];
     coeffs.xc_coeffs.xc_b_2b[(Z1,Z2)] = fitted_coeffs[xc_b_2b_ind];

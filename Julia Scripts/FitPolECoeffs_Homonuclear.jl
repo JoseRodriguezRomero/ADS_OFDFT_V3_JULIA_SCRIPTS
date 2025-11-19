@@ -4,10 +4,9 @@ using Base.Threads;
 
 include("FitCoeffs_General.jl")
 
-# which_atomic_numbers = [1,6,7,8];
-which_atomic_numbers = [8];
+which_atomic_numbers = [1,6,7,8];
 for atomic_number in which_atomic_numbers
-    neutral_data, cation_data, anion_data = 
+    local neutral_data, cation_data, anion_data = 
         read_all_sanitized_data(atomic_number,true);
     all_data = vcat(neutral_data, cation_data, anion_data);
 
@@ -27,6 +26,7 @@ for atomic_number in which_atomic_numbers
     at_anion.system.chemical_potential = anion_atom_chem_μ;
 
     all_atoms = [at_neutral, at_cation, at_anion];
+    atoms_μ = [neutral_atom_chem_μ, cation_atom_chem_μ, anion_atom_chem_μ];
 
     n_threads = Threads.nthreads();
     simulation = Vector{SimulationSystem}();
@@ -58,10 +58,6 @@ for atomic_number in which_atomic_numbers
             end
         end
 
-        set_fitted_coeffs!(at_neutral);
-        set_fitted_coeffs!(at_cation);
-        set_fitted_coeffs!(at_anion);
-
         ret_val = zeros(aux_type,n_threads);
         @threads for thread_id in 1:n_threads
             # Set the trial coefficients in the simulation structure.
@@ -72,23 +68,24 @@ for atomic_number in which_atomic_numbers
                 set_diatomic_system_to_parsed_file!(
                     simulation[thread_id],all_data[i]);
 
-                ζ1 = atom_polarization_coeff(
-                    simulation[thread_id].system.molecules[1],1);
-                ζ2 = atom_polarization_coeff(
-                    simulation[thread_id].system.molecules[1],2);
-                μ = simulation[thread_id].system.chemical_potential;
+                system = simulation[thread_id].system;
+                molecule = simulation[thread_id].system.molecules[1];
+                atom_1 = molecule.atoms[1];
+                atom_2 = molecule.atoms[2];
 
-                aux_m, aux_y = 
-                    polarization_matrix_problem(simulation[thread_id]);
+                ζ1 = atom_1.polarization_coefficient;
+                ζ2 = atom_2.polarization_coefficient;
+                μ = system.chemical_potential;
 
-                aux_x = zeros(aux_type,5);
-                aux_x[1] = ζ1;
-                aux_x[2] = ζ2;
-                aux_x[3] = μ - μ0;
-                aux_x[4] = μ - μ0;
-                aux_x[5] = μ;
+                polarize_molecules!(simulation[thread_id]);
+                ζ1_model = atom_1.polarization_coefficient;
+                ζ2_model = atom_2.polarization_coefficient;
+                μ_model = system.chemical_potential;
 
-                diff_vec = (aux_m \ aux_y) - aux_x;
+                diff_vec = zeros(aux_type,3);
+                diff_vec[1] = ζ1 - ζ1_model;
+                diff_vec[2] = ζ2 - ζ2_model;
+                diff_vec[3] = μ - μ_model;
                 ret_val[thread_id] += norm(diff_vec)^2;
 
                 if i > 1
@@ -103,23 +100,25 @@ for atomic_number in which_atomic_numbers
                     set_diatomic_system_to_parsed_file!(
                         simulation[thread_id],all_data[i-1]);
 
-                    ζ1_nxt = atom_polarization_coeff(
-                        simulation[thread_id].system.molecules[1],1);
-                    ζ2_nxt = atom_polarization_coeff(
-                        simulation[thread_id].system.molecules[1],2);
-                    μ_nxt = simulation[thread_id].system.chemical_potential;
+                    system = simulation[thread_id].system;
+                    molecule = system.molecules[1];
+                    atom_1 = molecule.atoms[1];
+                    atom_2 = molecule.atoms[2];
 
-                    aux_m_nxt, aux_y_nxt = 
-                        polarization_matrix_problem(simulation[thread_id]);
+                    ζ1_nxt = atom_1.polarization_coefficient;
+                    ζ2_nxt = atom_2.polarization_coefficient;
+                    μ_nxt = system.chemical_potential;
 
-                    aux_x_nxt = zeros(aux_type,5);
-                    aux_x_nxt[1] = ζ1_nxt;
-                    aux_x_nxt[2] = ζ2_nxt;
-                    aux_x_nxt[3] = μ_nxt - μ0;
-                    aux_x_nxt[4] = μ_nxt - μ0;
-                    aux_x_nxt[5] = μ_nxt;
+                    polarize_molecules!(simulation[thread_id]);
+                    ζ1_model_nxt = atom_1.polarization_coefficient;
+                    ζ2_model_nxt = atom_2.polarization_coefficient;
+                    μ_model_nxt = system.chemical_potential;
 
-                    diff_vec_nxt = (aux_m_nxt \ aux_y_nxt) - aux_x_nxt;
+                    diff_vec_nxt = zeros(aux_type,3)
+                    diff_vec_nxt[1] = ζ1_nxt - ζ1_model_nxt;
+                    diff_vec_nxt[2] = ζ2_nxt - ζ2_model_nxt;
+                    diff_vec_nxt[3] = μ_nxt - μ_model_nxt;
+
                     ret_val[thread_id] += 
                         (norm(diff_vec_nxt - diff_vec) / Δd)^2;
                 end
@@ -127,20 +126,15 @@ for atomic_number in which_atomic_numbers
         end
 
         ret_val = sum(ret_val) / length(all_data);
-        for atom in all_atoms
-            set_fitted_coeffs!(atom);
+        for i in eachindex(all_atoms)
 
-            aux_m, aux_y = polarization_matrix_problem(atom);
+            set_fitted_coeffs!(all_atoms[i]);
+            polarize_molecules!(all_atoms[i]);
 
-            ζ = atom_polarization_coeff(atom.system.molecules[1],1);
-            μ = copy(atom.system.chemical_potential);
+            μ = atoms_μ[i];
+            model_μ = all_atoms[i].system.chemical_potential;
 
-            aux_x = zeros(aux_type,3);
-            aux_x[1] = ζ;
-            aux_x[2] = μ - μ0;
-            aux_x[3] = μ;
-
-            ret_val += norm((aux_m \ aux_y) - aux_x)^2;
+            ret_val += 100.0 * (μ - model_μ)^2;
         end
 
         return ret_val;

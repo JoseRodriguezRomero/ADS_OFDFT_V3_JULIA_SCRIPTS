@@ -47,7 +47,7 @@ end
 mutable struct BasisSetSettings
     max_atomic_number::Int;
     reference_atoms::Dict{Int,Atom};
-    atoms_μ0::Vector{Number};
+    atoms_μ0::Dict{Int,Float64};
 end
 
 mutable struct MolecularSystem

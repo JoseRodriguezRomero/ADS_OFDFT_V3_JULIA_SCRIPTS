@@ -4,8 +4,7 @@ using Base.Threads;
 
 include("FitCoeffs_General.jl")
 
-# which_atomic_numbers = [[1,6],[1,8],[6,8],[7,8]];
-which_atomic_numbers = [[6,8]];
+which_atomic_numbers = [[1,6],[1,8],[6,8],[7,8]];
 for atomic_numbers in which_atomic_numbers
     Z1 = atomic_numbers[1];
     Z2 = atomic_numbers[2];
@@ -54,25 +53,24 @@ for atomic_numbers in which_atomic_numbers
                 set_diatomic_system_to_parsed_file!(
                     simulation[thread_id],all_data[i]);
 
-                ζ1 = atom_polarization_coeff(
-                    simulation[thread_id].system.molecules[1],1);
-                ζ2 = atom_polarization_coeff(
-                    simulation[thread_id].system.molecules[1],2);
-                μ = simulation[thread_id].system.chemical_potential;
+                system = simulation[thread_id].system;
+                molecule = system.molecules[1];
+                atom_1 = molecule.atoms[1];
+                atom_2 = molecule.atoms[2];
 
-                aux_m, aux_y = 
-                    polarization_matrix_problem(simulation[thread_id]);
+                ζ1 = copy(atom_1.polarization_coefficient);
+                ζ2 = copy(atom_2.polarization_coefficient);
+                μ = copy(system.chemical_potential);
+
+                polarize_molecules!(simulation[thread_id]);
+                ζ1_model = copy(atom_1.polarization_coefficient);
+                ζ2_model = copy(atom_2.polarization_coefficient);
+                μ_model = copy(system.chemical_potential);
                     
-                aux_x = zeros(aux_type,5);
-                aux_x[1] = ζ1;
-                aux_x[2] = ζ2;
-                aux_x[3] = μ - μ0_1;
-                aux_x[4] = μ - μ0_2;
-                aux_x[5] = μ;
-
-                diff_vec = ((aux_m \ aux_y) - aux_x);
-                diff_vec[1] *= z1_eff;
-                diff_vec[2] *= z2_eff;
+                diff_vec = zeros(aux_type,3);
+                diff_vec[1] = ζ1 - ζ1_model;
+                diff_vec[2] = ζ2 - ζ2_model;
+                diff_vec[3] = μ - μ_model;
 
                 ret_val[thread_id] += norm(diff_vec)^2;
 
@@ -88,26 +86,25 @@ for atomic_numbers in which_atomic_numbers
                     set_diatomic_system_to_parsed_file!(
                         simulation[thread_id],all_data[i-1]);
 
-                    ζ1_nxt = atom_polarization_coeff(
-                        simulation[thread_id].system.molecules[1],1);
-                    ζ2_nxt = atom_polarization_coeff(
-                        simulation[thread_id].system.molecules[1],2);
-                    μ_nxt = simulation[thread_id].system.chemical_potential;
+                    system = simulation[thread_id].system;
+                    molecule = system.molecules[1];
+                    atom_1 = molecule.atoms[1];
+                    atom_2 = molecule.atoms[2];
 
-                    aux_m_nxt, aux_y_nxt = 
-                        polarization_matrix_problem(simulation[thread_id]);
+                    ζ1_nxt = copy(atom_1.polarization_coefficient);
+                    ζ2_nxt = copy(atom_2.polarization_coefficient);
+                    μ_nxt = copy(system.chemical_potential);
 
-                    aux_x_nxt = zeros(aux_type,5);
-                    aux_x_nxt[1] = ζ1_nxt;
-                    aux_x_nxt[2] = ζ2_nxt;
-                    aux_x_nxt[3] = μ_nxt - μ0_1;
-                    aux_x_nxt[4] = μ_nxt - μ0_2;
-                    aux_x_nxt[5] = μ_nxt;
-
-                    diff_vec_nxt = ((aux_m_nxt \ aux_y_nxt) - aux_x_nxt);
-                    diff_vec_nxt[1] *= z1_eff;
-                    diff_vec_nxt[2] *= z2_eff;
-
+                    polarize_molecules!(simulation[thread_id]);
+                    ζ1_model_nxt = copy(atom_1.polarization_coefficient);
+                    ζ2_model_nxt = copy(atom_2.polarization_coefficient);
+                    μ_model_nxt = copy(system.chemical_potential);
+                        
+                    diff_vec_nxt = zeros(aux_type,3);
+                    diff_vec_nxt[1] = ζ1_nxt - ζ1_model_nxt;
+                    diff_vec_nxt[2] = ζ2_nxt - ζ2_model_nxt;
+                    diff_vec_nxt[3] = μ_nxt - μ_model_nxt;
+                    
                     ret_val[thread_id] += (norm(diff_vec_nxt-diff_vec) / Δd)^2;
                 end
             end
@@ -115,25 +112,30 @@ for atomic_numbers in which_atomic_numbers
 
         ret_val = sum(ret_val) / length(all_data);
 
-        det_cond_sum = zeros(aux_type,n_threads);
-        r = 0.1:((10.0-0.1)/200.0):10.0;
+        # This makes sure that the charges predicted outside of the calibration 
+        # dataset are still all positive.
+        charge_cond_sum = zeros(aux_type,n_threads);
+        r = 0.0:((6.0-0.0)/300.0):6.0;
         @threads for thread_id in 1:n_threads
             set_diatomic_system_to_parsed_file!(
                 simulation[thread_id],all_data[1]);
-                simulation[thread_id].system.molecules[1].atoms[1].coordinates .= 0.0;
-                simulation[thread_id].system.molecules[1].atoms[2].coordinates .= 0.0;
+                atom_1 = simulation[thread_id].system.molecules[1].atoms[1];
+                atom_2 = simulation[thread_id].system.molecules[1].atoms[2];
+                atom_1.coordinates .= 0.0;
+                atom_2.coordinates .= 0.0;
 
             for atomic_separation in r[thread_id:n_threads:end]
-                simulation[thread_id].system.molecules[1].atoms[1].coordinates[3] = 
-                    atomic_separation;
+                atom_1.coordinates[3] = atomic_separation;
 
-                aux_m, _ = polarization_matrix_problem(simulation[thread_id]);
-                det_aux_m = det(aux_m);
+                aux_m, aux_y = 
+                    polarization_matrix_problem(simulation[thread_id]);
+                aux_x = (aux_m \ aux_y)[1:2];
 
-                det_cond_sum[thread_id] += (det_aux_m - abs(det_aux_m))^2;
+                charge_cond_sum[thread_id] += 
+                    norm(sum(aux_x) - sum(abs.(aux_x)))^2;
             end
         end
-        ret_val += sum(det_cond_sum) / length(det_cond_sum);
+        ret_val += sum(charge_cond_sum) / length(charge_cond_sum);
 
         return ret_val;
     end

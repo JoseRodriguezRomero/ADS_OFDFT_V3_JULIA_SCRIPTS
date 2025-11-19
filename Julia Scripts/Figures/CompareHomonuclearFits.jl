@@ -143,7 +143,7 @@ end
 
 function compare_data()
     y_label_all = L"$\Delta E \quad \mathrm{(This \ Work)}$";
-    x_label_all = L"$\Delta E \quad (\mathrm{KS{-}DFT})$";
+    x_label_all = L"$\Delta E \quad (\mathrm{KSDFT})$";
 
     R²_rel_pos_x = (14.0/15.0);
     R²_rel_pos_y = (1.0/8.0);
@@ -212,8 +212,8 @@ function compare_data()
     annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
 
     # Chemical Potentials
-    y_label_all = L"$\tilde{\mu} \quad \mathrm{(This \ Work)}$";
-    x_label_all = L"$\tilde{\mu} \quad (\mathrm{KS{-}DFT})$";
+    y_label_all = L"$\mu \quad \mathrm{(This \ Work)}$";
+    x_label_all = L"$\mu \quad (\mathrm{KSDFT})$";
 
     # H₂ Plots
     pH2, R² = test_result_chemical_potential(1);
@@ -306,6 +306,8 @@ function test_result_ΔE2(atomic_number::Int)
 
         model_r = collect(r0:0.01:r1);
         model_ΔE = zeros(Float64,length(model_r));
+
+        model_r[1] = 1.0E-3;
 
         n_threads = Threads.nthreads();
         @threads for thread_id in 1:n_threads

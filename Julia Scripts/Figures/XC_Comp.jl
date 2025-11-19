@@ -1,6 +1,6 @@
 using Plots, LaTeXStrings, Measures;
 using Polynomials, SpecialPolynomials;
-using SpecialFunctions;
+using SpecialFunctions, ForwardDiff;
 
 function xc_sph_trunc(K::Integer, λ::Real, d::Real)
     # Old definition
@@ -68,10 +68,10 @@ e_cyl_exact = xc_cyl.(λ,r);
 
 p1 = plot(r, e_sphe_t10, label="Truncated Sum (K = 10)", linewidth = 2);
 plot!(r, e_sphe_t20, label="Truncated Sum (K = 20)", linewidth = 2);
-plot!(r, e_sphe_exact, label="Exact", linewidth = 2, linestyle = :dot);
+plot!(r, e_sphe_exact, label="Exact (K = ∞)", linewidth = 2, linestyle = :dot);
 
 plot!(xlims=[0,3], framestyle = :box);
-plot!(xticks=(0:1:3,[]));
+plot!(xlabel=L"d");
 plot!(ylims=[-2,4]);
 plot!(yticks=-2:2:4);
 plot!(ylabel=L"$\mathrm{XC}_\mathrm{Sph}^\mathrm{EN} (d)$");
@@ -80,10 +80,9 @@ l_x_pos = 2.5;
 l_y_pos = -2 + (4 - (-2)) * (1.0/6.0);
 annotate!(l_x_pos, l_y_pos, text(L"$\lambda = 7$", :center, 10));
 
-p2 = plot(r, e_cyl_t10_l8_λ8, label="Truncated Sum (K = 10)", linewidth = 2);
-plot!(r, e_cyl_t20_l8_λ8, label="Truncated Sum (K = 20)", linewidth = 2);
-plot!(r, e_cyl_exact_l8_λ8, label="Exact", linewidth = 2,
-    linestyle = :dot);
+p2 = plot(r, e_cyl_t10, label="Truncated Sum (K = 10)", linewidth = 2);
+plot!(r, e_cyl_t20, label="Truncated Sum (K = 20)", linewidth = 2);
+plot!(r, e_cyl_exact, label="Exact (K = ∞)", linewidth = 2, linestyle = :dot);
 
 plot!(xlims=[0.0,3], framestyle = :box);
 plot!(xlabel=L"d");
@@ -96,7 +95,8 @@ l_x_pos = 2.5;
 l_y_pos = -2 + (4 - (-2)) * (1.0/6.0);
 annotate!(l_x_pos, l_y_pos, text(L"$\lambda = 7$", :center, 10));
 
-plot(p1,p2,layout=(2,1), size = (500, 400))
+plot(p1,p2,layout=(1,2), size = (1100, 260), 
+    left_margin = [7mm 7mm], bottom_margin = [7mm 7mm])
 savefig("Figures/XC_exact_comp_old.pdf");
 
 function XC_Sph_Trunc(K::Integer, λ::Real, d::Real)
@@ -146,10 +146,11 @@ xc_sph_exact = -XC_Sph.(λ, r);
 
 p1 = plot(r, xc_sph_K10, label="Truncated Sum (K = 10)", linewidth = 2);
 plot!(r, xc_sph_K20, label="Truncated Sum (K = 20)", linewidth = 2);
-plot!(r, xc_sph_exact, label="Exact", linewidth = 2, linestyle=:dot);
+plot!(r, xc_sph_exact, label="Exact (K = ∞)", linewidth = 2, linestyle=:dot);
 
 plot!(ylims=[-3,6],yticks=-3:3:6,xlims=[0,3]);
-plot!(xticks=(0:1:3,[]), framestyle = :box);
+plot!(framestyle = :box);
+plot!(xlabel=L"d");
 plot!(ylabel=L"$- \mathrm{XC}_\mathrm{Sph}^\mathrm{EN} (d)$");
 
 l_x_pos = 2.5;
@@ -163,7 +164,7 @@ xc_cyl_exact = XC_Cyl.(λ, r);
 
 p2 = plot(r, xc_cyl_K10, label="Truncated Sum (K = 10)", linewidth = 2);
 plot!(r, xc_cyl_K20, label="Truncated Sum (K = 20)", linewidth = 2);
-plot!(r, xc_cyl_exact, label="Exact", linewidth = 2, linestyle=:dot);
+plot!(r, xc_cyl_exact, label="Exact (K = ∞)", linewidth = 2, linestyle=:dot);
 
 plot!(ylims=[-5,10],xlims=[0,3]);
 plot!(xticks=0:1:3, yticks=-5:5:10, framestyle = :box);
@@ -174,5 +175,6 @@ l_x_pos = 2.5;
 l_y_pos = -5 + (10 - (-5)) * (1.0/6.0);
 annotate!(l_x_pos, l_y_pos, text(L"$\lambda = 7$", :center, 10));
 
-plot(p1,p2,layout=(2,1), size = (500, 400))
+plot(p1,p2,layout=(1,2), size = (1100, 260), 
+    left_margin = [7mm 7mm], bottom_margin = [7mm 7mm])
 savefig("Figures/XC_exact_comp_new.pdf")
