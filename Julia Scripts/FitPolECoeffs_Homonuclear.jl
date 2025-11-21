@@ -21,9 +21,9 @@ for atomic_number in which_atomic_numbers
     cation_atom_chem_μ = cation_atom_chem_μ[atomic_number];
     anion_atom_chem_μ = anion_atom_chem_μ[atomic_number];
 
-    at_neutral.system.chemical_potential = neutral_atom_chem_μ;
-    at_cation.system.chemical_potential = cation_atom_chem_μ;
-    at_anion.system.chemical_potential = anion_atom_chem_μ;
+    at_neutral.system.chemical_potential = copy(neutral_atom_chem_μ);
+    at_cation.system.chemical_potential = copy(cation_atom_chem_μ);
+    at_anion.system.chemical_potential = copy(anion_atom_chem_μ);
 
     all_atoms = [at_neutral, at_cation, at_anion];
     atoms_μ = [neutral_atom_chem_μ, cation_atom_chem_μ, anion_atom_chem_μ];
@@ -73,14 +73,14 @@ for atomic_number in which_atomic_numbers
                 atom_1 = molecule.atoms[1];
                 atom_2 = molecule.atoms[2];
 
-                ζ1 = atom_1.polarization_coefficient;
-                ζ2 = atom_2.polarization_coefficient;
-                μ = system.chemical_potential;
+                ζ1 = copy(atom_1.polarization_coefficient);
+                ζ2 = copy(atom_2.polarization_coefficient);
+                μ = copy(system.chemical_potential);
 
                 polarize_molecules!(simulation[thread_id]);
-                ζ1_model = atom_1.polarization_coefficient;
-                ζ2_model = atom_2.polarization_coefficient;
-                μ_model = system.chemical_potential;
+                ζ1_model = copy(atom_1.polarization_coefficient);
+                ζ2_model = copy(atom_2.polarization_coefficient);
+                μ_model = copy(system.chemical_potential);
 
                 diff_vec = zeros(aux_type,3);
                 diff_vec[1] = ζ1 - ζ1_model;
@@ -105,14 +105,14 @@ for atomic_number in which_atomic_numbers
                     atom_1 = molecule.atoms[1];
                     atom_2 = molecule.atoms[2];
 
-                    ζ1_nxt = atom_1.polarization_coefficient;
-                    ζ2_nxt = atom_2.polarization_coefficient;
-                    μ_nxt = system.chemical_potential;
+                    ζ1_nxt = copy(atom_1.polarization_coefficient);
+                    ζ2_nxt = copy(atom_2.polarization_coefficient);
+                    μ_nxt = copy(system.chemical_potential);
 
                     polarize_molecules!(simulation[thread_id]);
-                    ζ1_model_nxt = atom_1.polarization_coefficient;
-                    ζ2_model_nxt = atom_2.polarization_coefficient;
-                    μ_model_nxt = system.chemical_potential;
+                    ζ1_model_nxt = copy(atom_1.polarization_coefficient);
+                    ζ2_model_nxt = copy(atom_2.polarization_coefficient);
+                    μ_model_nxt = copy(system.chemical_potential);
 
                     diff_vec_nxt = zeros(aux_type,3)
                     diff_vec_nxt[1] = ζ1_nxt - ζ1_model_nxt;
@@ -125,16 +125,15 @@ for atomic_number in which_atomic_numbers
             end
         end
 
-        ret_val = sum(ret_val) / length(all_data);
+        ret_val = sum(ret_val) / length(ret_val);
         for i in eachindex(all_atoms)
-
             set_fitted_coeffs!(all_atoms[i]);
             polarize_molecules!(all_atoms[i]);
 
             μ = atoms_μ[i];
             model_μ = all_atoms[i].system.chemical_potential;
 
-            ret_val += 100.0 * (μ - model_μ)^2;
+            ret_val += (μ - model_μ)^2;
         end
 
         return ret_val;

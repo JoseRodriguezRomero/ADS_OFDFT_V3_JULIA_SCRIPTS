@@ -9,7 +9,7 @@ for atomic_numbers in which_atomic_numbers
     Z1 = atomic_numbers[1];
     Z2 = atomic_numbers[2];
 
-    local neutral_data, cation_data, anion_data = 
+    local neutral_data, cation_data, anion_data =
         read_all_sanitized_data(Z1,Z2,true);
     all_data = vcat(neutral_data, cation_data, anion_data);
 

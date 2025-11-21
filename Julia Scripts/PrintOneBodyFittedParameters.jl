@@ -134,4 +134,3 @@ function print_pol_e_ke()
     println("   \\hline \\\\[-0.35cm] \\hline \\\\[-0.35cm]");
     println("\\end{tabular}")
 end
-

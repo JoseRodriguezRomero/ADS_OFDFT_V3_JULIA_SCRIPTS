@@ -564,10 +564,10 @@ function read_all_sanitized_data(Z1::Int, Z2::Int, clip_data::Bool = false)
             m[3,2] = (-1.0)^1;
             m[3,3] = 1.0;
 
-            m_coeffs = -(m \ y);
+            m_coeffs = (m \ y);
 
             function fitted_chemical_potential(charge::Number)
-                return 2*charge*m_coeffs[1] + m_coeffs[2];
+                return -(2*charge*m_coeffs[1] + m_coeffs[2]);
             end
 
             function set_to_fitted_chemical_potential(file::ParsedFile)
