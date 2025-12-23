@@ -17,6 +17,9 @@ else:
 
 for i in range(len(file_names)):
     fileID = open(file_names[i], "w")
+    
+    fileID.write("memory 8 Gb\n\n")
+
     fileID.write("molecule { \n")
     fileID.write("1 " + str(2*(i + 1) - s0) + "\n")
     fileID.write(sys.argv[1] + "   0.00000        0.60000        0.00000\n")

@@ -18,8 +18,10 @@ elif sum_rem == 0:
 
 for i in range(len(file_names)):
     fileID = open(file_names[i], "w")
-    fileID.write("molecule { \n")
     
+    fileID.write("memory 8 Gb\n\n")
+
+    fileID.write("molecule { \n")
     if sum_rem == 1:
         fileID.write("0 " + str(2*(i+1)) + "\n")
     elif sum_rem == 0:

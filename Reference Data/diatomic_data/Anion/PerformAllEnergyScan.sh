@@ -1,14 +1,14 @@
 #!/bin/bash
 
-sh PerformEnergyScan.sh H H
-sh PerformEnergyScan.sh O O
-sh PerformEnergyScan.sh C C
-sh PerformEnergyScan.sh N N
+bash PerformEnergyScan.sh H H $1
+bash PerformEnergyScan.sh O O $1
+bash PerformEnergyScan.sh C C $1
+bash PerformEnergyScan.sh N N $1
 
-sh PerformEnergyScan.sh H C
-sh PerformEnergyScan.sh H O
+bash PerformEnergyScan.sh H C $1
+bash PerformEnergyScan.sh H O $1
 
-sh PerformEnergyScan.sh C N
-sh PerformEnergyScan.sh C O
+bash PerformEnergyScan.sh C N $1
+bash PerformEnergyScan.sh C O $1
 
-sh PerformEnergyScan.sh N O
+bash PerformEnergyScan.sh N O $1

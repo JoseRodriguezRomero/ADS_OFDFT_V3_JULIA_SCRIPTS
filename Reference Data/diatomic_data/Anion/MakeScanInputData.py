@@ -24,7 +24,7 @@ def ReadOutputFile(file_name):
     for i in range(len(lines)):
         if "*** Psi4 exiting successfully." in lines[i]:
             is_valid = True
-            
+        
         if "Center              X                  Y" in lines[i]:
             at1_line = lines[i+2].split()
             at2_line = lines[i+3].split()
@@ -49,6 +49,9 @@ def MakeInputFile(elem1, elem2, bond_length, multiplicity, file_name, read_wfn):
     # Creates a Psi4 input file of a point-energy calculation of the diatomic
     # system with the interatomic distance being bond_length in angstrom.
     fileID = open(file_name, "w")
+
+    fileID.write("memory 8 Gb\n\n")
+
     fileID.write("molecule { \n")
     fileID.write("-1 " + str(multiplicity) + "\n")
     
@@ -77,7 +80,7 @@ def MakeInputFile(elem1, elem2, bond_length, multiplicity, file_name, read_wfn):
         # fileID.write("E, wfn = energy('b3lyp', restart_file='" + sys.argv[1] + sys.argv[2] + "_wfn', return_wfn=True)\n")
         fileID.write("E, wfn = energy('b3lyp', restart_file='last_wfn', return_wfn=True)\n")
     else:
-        fileID.write("guess              SAP\n")
+        # fileID.write("guess              SAP\n")
         fileID.write("}\n\n")
         fileID.write("E, wfn = energy('b3lyp', return_wfn=True)\n")
   

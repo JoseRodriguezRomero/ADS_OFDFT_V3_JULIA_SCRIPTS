@@ -1,7 +1,7 @@
 
     -----------------------------------------------------------------------
           Psi4: An Open-Source Ab Initio Electronic Structure Package
-                               Psi4 1.9.1 release
+                               Psi4 1.10 release
 
                          Git: Rev {} zzzzzzz 
 
@@ -20,28 +20,36 @@
     E. T. Seidl, C. L. Janssen, E. F. Valeev, M. L. Leininger,
     J. F. Gonthier, R. M. Richard, H. R. McAlexander, M. Saitow, X. Wang,
     P. Verma, M. H. Lechner, A. Jiang, S. Behnle, A. G. Heide,
-    M. F. Herbst, and D. L. Poole
+    M. F. Herbst, D. L. Poole, T. Győri, E. C. Mitchell, J. P. Pederson,
+    and A. M. Wallace
 
              Previous Authors, Complete List of Code Contributors,
                        and Citations for Specific Modules
     https://github.com/psi4/psi4/blob/master/codemeta.json
     https://github.com/psi4/psi4/graphs/contributors
-    http://psicode.org/psi4manual/master/introduction.html#citing-psifour
+    https://psicode.org/psi4manual/master/introduction.html#citing-psifour
 
     -----------------------------------------------------------------------
 
 
-    Psi4 started on: Tuesday, 26 August 2025 10:15PM
+    Psi4 started on: Tuesday, 23 December 2025 01:42PM
 
-    Process ID: 61085
-    Host:       Mac.lan
-    PSIDATADIR: /Users/joseantoniorodriguesromero/anaconda3/share/psi4
+    Process ID: 525256
+    Host:       cics-quant-001
+    PSIDATADIR: /home/jrodriguesro/psi4conda/share/psi4
     Memory:     500.0 MiB
-    Threads:    1
-    
+    Threads:    5
+    Addons:     adcc, a̶m̶b̶i̶t̶, b̶s̶e̶, c̶c̶t̶3̶, c̶f̶o̶u̶r̶, c̶h̶e̶m̶p̶s̶2̶, c̶p̶p̶e̶, ddx, dftd3, dftd4,
+                dkh, ecpint, einsums, f̶o̶r̶t̶e̶, g̶a̶u̶x̶c̶, gcp, g̶d̶m̶a̶, geometric,
+                g̶p̶u̶_̶d̶f̶c̶c̶, i̶n̶t̶e̶g̶r̶a̶t̶o̶r̶x̶x̶, i̶p̶i̶, libefp, m̶d̶i̶, m̶p̶2̶d̶,
+                m̶r̶c̶c̶, ooo, o̶p̶e̶n̶f̶e̶r̶m̶i̶o̶n̶p̶s̶i̶4̶, pcmsolver, p̶s̶i̶4̶f̶o̶c̶k̶c̶i̶,
+                p̶s̶i̶x̶a̶s̶, r̶e̶s̶p̶, s̶i̶m̶i̶n̶t̶, s̶n̶s̶m̶p̶2̶, v̶2̶r̶d̶m̶_̶c̶a̶s̶s̶c̶f̶
+
   ==> Input File <==
 
 --------------------------------------------------------------------------
+memory 8 Gb
+
 molecule { 
 0 2
 N           0.000000           0.000000           0.000000
@@ -57,13 +65,14 @@ E_CONVERGENCE      1.0E-8
 D_CONVERGENCE      1.0E-8
 DIIS_MAX_VECS      400
 MBIS_MAXITER       8000
-guess              SAP
 }
 
 E, wfn = energy('b3lyp', return_wfn=True)
 properties('b3lyp','MBIS_CHARGES', wfn=wfn)
 wfn.to_file('last_wfn')
 --------------------------------------------------------------------------
+
+  Memory set to   7.451 GiB by Python driver.
 
 Scratch directory: /tmp/
    => Libint2 <=
@@ -73,16 +82,16 @@ Scratch directory: /tmp/
     Onebody   basis highest AM E, G, H:  -, -, -
     Solid Harmonics ordering:            Gaussian
 
-*** tstart() called on Mac.lan
-*** at Tue Aug 26 22:15:33 2025
+*** tstart() called on cics-quant-001
+*** at Tue Dec 23 13:42:15 2025
 
    => Loading Basis Set <=
 
     Name: CC-PVTZ
     Role: ORBITAL
     Keyword: BASIS
-    atoms 1 entry N          line   224 file /Users/joseantoniorodriguesromero/anaconda3/share/psi4/basis/cc-pvtz.gbs 
-    atoms 2 entry C          line   186 file /Users/joseantoniorodriguesromero/anaconda3/share/psi4/basis/cc-pvtz.gbs 
+    atoms 1 entry N          line   224 file /home/jrodriguesro/psi4conda/share/psi4/basis/cc-pvtz.gbs 
+    atoms 2 entry C          line   186 file /home/jrodriguesro/psi4conda/share/psi4/basis/cc-pvtz.gbs 
 
 
          ---------------------------------------------------------
@@ -90,7 +99,7 @@ Scratch directory: /tmp/
                by Justin Turney, Rob Parrish, Andy Simmonett
                           and Daniel G. A. Smith
                               UKS Reference
-                        1 Threads,    500 MiB Core
+                        5 Threads,   7629 MiB Core
          ---------------------------------------------------------
 
   ==> Geometry <==
@@ -123,7 +132,7 @@ Scratch directory: /tmp/
   DIIS enabled.
   MOM disabled.
   Fractional occupation disabled.
-  Guess Type is SAP.
+  Guess Type is SAD.
   Energy threshold   = 1.00e-08
   Density threshold  = 1.00e-08
   Integral threshold = 1.00e-12
@@ -142,7 +151,7 @@ Scratch directory: /tmp/
 
    => LibXC <=
 
-    Version 6.2.2
+    Version 7.0.0
     S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
 
    => Composite Functional: B3LYP <= 
@@ -198,12 +207,13 @@ Scratch directory: /tmp/
     Name: (CC-PVTZ AUX)
     Role: JKFIT
     Keyword: DF_BASIS_SCF
-    atoms 1 entry N          line   177 file /Users/joseantoniorodriguesromero/anaconda3/share/psi4/basis/cc-pvtz-jkfit.gbs 
-    atoms 2 entry C          line   125 file /Users/joseantoniorodriguesromero/anaconda3/share/psi4/basis/cc-pvtz-jkfit.gbs 
+    atoms 1 entry N          line   177 file /home/jrodriguesro/psi4conda/share/psi4/basis/cc-pvtz-jkfit.gbs 
+    atoms 2 entry C          line   125 file /home/jrodriguesro/psi4conda/share/psi4/basis/cc-pvtz-jkfit.gbs 
 
   ==> Integral Setup <==
 
-  DFHelper Memory: AOs need 0.005 GiB; user supplied 0.294 GiB. 
+  DFHelper Memory: AOs need 0.005 GiB; user supplied 5.516 GiB. 
+  SCF_SUBTYPE=INCORE selected. In-core MEM_DF algorithm will be used.
   Using in-core AOs.
 
   ==> MemDFJK: Density-Fitted J/K Matrices <==
@@ -211,8 +221,8 @@ Scratch directory: /tmp/
     J tasked:                   Yes
     K tasked:                   Yes
     wK tasked:                   No
-    OpenMP threads:               1
-    Memory [MiB]:               301
+    OpenMP threads:               5
+    Memory [MiB]:              5648
     Algorithm:                 Core
     Schwarz Cutoff:           1E-12
     Mask sparsity (%):       0.0000
@@ -236,72 +246,65 @@ Scratch directory: /tmp/
 
   ==> Pre-Iterations <==
 
-  SCF Guess: Superposition of Atomic Potentials (doi:10.1021/acs.jctc.8b01089).
+  SCF Guess: Superposition of Atomic Densities via on-the-fly atomic UHF (no occupation information).
 
-  ==> SAP guess <==
-
-   => Molecular Quadrature <=
-
-    Radial Scheme          =       TREUTLER
-    Pruning Scheme         =           NONE
-    Nuclear Scheme         =       TREUTLER
-
-    Blocking Scheme        =         OCTREE
-    BS radius alpha        =              1
-    Pruning alpha          =              1
-    Radial Points          =             75
-    Spherical Points       =            302
-    Total Points           =          43264
-    Total Blocks           =            392
-    Max Points             =            255
-    Max Functions          =             60
-    Weights Tolerance      =       1.00E-15
-
-   -------------------------------------------------------
-    Irrep   Nso     Nmo     Nalpha   Nbeta   Ndocc  Nsocc
-   -------------------------------------------------------
-     A1        26      26       5       4       4       1
-     A2         6       6       0       0       0       0
-     B1        14      14       1       1       1       0
-     B2        14      14       1       1       1       0
-   -------------------------------------------------------
-    Total      60      60       7       6       6       1
-   -------------------------------------------------------
+   -------------------------
+    Irrep   Nso     Nmo    
+   -------------------------
+     A1        26      26 
+     A2         6       6 
+     B1        14      14 
+     B2        14      14 
+   -------------------------
+    Total      60      60
+   -------------------------
 
   ==> Iterations <==
 
                            Total Energy        Delta E     RMS |[F,P]|
 
-   @DF-UKS iter   1:   -92.42384386441518   -9.24238e+01   2.17641e-02 ADIIS/DIIS
-   @DF-UKS iter   2:   -90.19231273381165    2.23153e+00   5.87852e-02 ADIIS/DIIS/DAMP=1%
-   @DF-UKS iter   3:   -92.60521916921302   -2.41291e+00   8.82796e-03 ADIIS/DIIS/DAMP=1%
-   @DF-UKS iter   4:   -92.65219212206966   -4.69730e-02   1.38641e-03 ADIIS/DIIS/DAMP=1%
-   @DF-UKS iter   5:   -92.66165415705736   -9.46203e-03   1.11575e-03 ADIIS/DIIS/DAMP=1%
-   @DF-UKS iter   6:   -92.66075648937010    8.97668e-04   2.35061e-04 ADIIS/DIIS/DAMP=1%
-   @DF-UKS iter   7:   -92.66093312631047   -1.76637e-04   3.05831e-05 DIIS/DAMP=1%
-   @DF-UKS iter   8:   -92.66107388919616   -1.40763e-04   1.29781e-05 DIIS/DAMP=1%
-   @DF-UKS iter   9:   -92.66107650466765   -2.61547e-06   2.87870e-06 DIIS/DAMP=1%
-   @DF-UKS iter  10:   -92.66107579859531    7.06072e-07   2.85254e-06 DIIS/DAMP=1%
-   @DF-UKS iter  11:   -92.66107391519266    1.88340e-06   2.72011e-06 DIIS/DAMP=1%
-   @DF-UKS iter  12:   -92.66107625642043   -2.34123e-06   1.06958e-06 DIIS/DAMP=1%
-   @DF-UKS iter  13:   -92.66107502716375    1.22926e-06   2.34410e-07 DIIS/DAMP=1%
-   @DF-UKS iter  14:   -92.66107482705995    2.00104e-07   4.98557e-08 DIIS/DAMP=1%
-   @DF-UKS iter  15:   -92.66107488734660   -6.02867e-08   5.33720e-09 DIIS/DAMP=1%
-   @DF-UKS iter  16:   -92.66107490729846   -1.99519e-08   2.12957e-09 DIIS/DAMP=1%
-   @DF-UKS iter  17:   -92.66107490513593    2.16252e-09   2.97446e-10 DIIS/DAMP=1%
+   @DF-UKS iter SAD:   -91.99460168131861   -9.19946e+01   0.00000e+00 
+    Occupation by irrep:
+             A1    A2    B1    B2 
+    DOCC [     4,    0,    1,    1 ]
+    SOCC [     1,    0,    0,    0 ]
+    NA   [     5,    0,    1,    1 ]
+    NB   [     4,    0,    1,    1 ]
+
+   @DF-UKS iter   1:   -92.27603015065363   -2.81428e-01   2.27993e-02 ADIIS/DIIS
+    Occupation by irrep:
+             A1    A2    B1    B2 
+    DOCC [     5,    0,    0,    1 ]
+    SOCC [     0,    0,    1,    0 ]
+    NA   [     5,    0,    1,    1 ]
+    NB   [     5,    0,    0,    1 ]
+
+   @DF-UKS iter   2:   -91.08619650961073    1.18983e+00   5.55914e-02 ADIIS/DIIS/DAMP=1%
+   @DF-UKS iter   3:   -92.56979338709124   -1.48360e+00   1.49349e-02 ADIIS/DIIS/DAMP=1%
+   @DF-UKS iter   4:   -92.64153054491214   -7.17372e-02   7.41076e-03 ADIIS/DIIS/DAMP=1%
+   @DF-UKS iter   5:   -92.67022024171455   -2.86897e-02   3.62892e-04 ADIIS/DIIS/DAMP=1%
+   @DF-UKS iter   6:   -92.66913569781950    1.08454e-03   1.55876e-04 ADIIS/DIIS/DAMP=1%
+   @DF-UKS iter   7:   -92.66921457194758   -7.88741e-05   8.67243e-05 DIIS/DAMP=1%
+   @DF-UKS iter   8:   -92.66923281566342   -1.82437e-05   4.78565e-05 DIIS/DAMP=1%
+   @DF-UKS iter   9:   -92.66926968917834   -3.68735e-05   2.19430e-05 DIIS/DAMP=1%
+   @DF-UKS iter  10:   -92.66926929113008    3.98048e-07   3.35651e-06 DIIS/DAMP=1%
+   @DF-UKS iter  11:   -92.66927080947060   -1.51834e-06   9.73501e-07 DIIS/DAMP=1%
+   @DF-UKS iter  12:   -92.66927090027946   -9.08089e-08   7.34432e-08 DIIS/DAMP=1%
+   @DF-UKS iter  13:   -92.66927108666374   -1.86384e-07   2.07835e-08 DIIS/DAMP=1%
+   @DF-UKS iter  14:   -92.66927108221324    4.45050e-09   2.22516e-09 DIIS/DAMP=1%
   Energy and wave function converged.
 
 
   ==> Post-Iterations <==
 
    Electrons on quadrature grid:
-      Nalpha   =    7.0000001637 ; deviation = 1.637e-07
-      Nbeta    =    6.0000001979 ; deviation = 1.979e-07
-      Ntotal   =   13.0000003615 ; deviation = 3.615e-07 
+      Nalpha   =    7.0000001991 ; deviation = 1.991e-07
+      Nbeta    =    6.0000000837 ; deviation = 8.370e-08
+      Ntotal   =   13.0000002828 ; deviation = 2.828e-07 
 
-   @Spin Contamination Metric:   1.062025380E-02
+   @Spin Contamination Metric:   7.060768002E-03
    @S^2 Expected:                7.500000000E-01
-   @S^2 Observed:                7.606202538E-01
+   @S^2 Observed:                7.570607680E-01
    @S   Expected:                5.000000000E-01
    @S   Observed:                5.000000000E-01
 
@@ -310,84 +313,84 @@ Scratch directory: /tmp/
 
     Alpha Occupied:                                                       
 
-       1A1   -14.443601     2A1   -10.358282     3A1    -0.877542  
-       4A1    -0.553392     5A1    -0.409364     1B2    -0.349564  
-       1B1    -0.349564  
+       1A1   -14.443006     2A1   -10.339756     3A1    -0.905483  
+       4A1    -0.528531     1B1    -0.401050     1B2    -0.362285  
+       5A1    -0.356261  
 
     Alpha Virtual:                                                        
 
-       2B2    -0.099018     2B1    -0.099018     6A1     0.140315  
-       3B2     0.290588     3B1     0.290588     7A1     0.291976  
-       8A1     0.319333     9A1     0.434663     4B2     0.500331  
-       4B1     0.500331     1A2     0.626698    10A1     0.626698  
-       5B1     0.731195     5B2     0.731195    11A1     0.872109  
-      12A1     1.050003     2A2     1.094975    13A1     1.094975  
-       6B2     1.392678     6B1     1.392678    14A1     1.602157  
-       7B2     1.953892     7B1     1.953892    15A1     2.127927  
-       8B2     2.620210     8B1     2.620210     3A2     2.622802  
-      16A1     2.622803     9B1     2.626899     9B2     2.626899  
-      17A1     2.847139     4A2     2.897111    18A1     2.897113  
-      10B2     2.900696    10B1     2.900696    19A1     2.956682  
-      11B1     3.217496    11B2     3.217496    20A1     3.280879  
-      12B2     3.873600    12B1     3.873600    21A1     4.077265  
-       5A2     4.077265    22A1     4.372936    23A1     4.452216  
-       6A2     4.452231    13B2     4.501181    13B1     4.501181  
-      24A1     4.871128    14B2     4.963434    14B1     4.963434  
-      25A1     5.425806    26A1     8.310724  
+       2B1    -0.117508     2B2    -0.089595     6A1     0.143072  
+       3B1     0.283205     3B2     0.295421     7A1     0.311652  
+       8A1     0.332642     9A1     0.442751     4B1     0.470550  
+       4B2     0.490720     1A2     0.613084    10A1     0.613413  
+       5B1     0.727900     5B2     0.749720    11A1     0.857394  
+       2A2     1.060796    12A1     1.061005    13A1     1.077925  
+       6B1     1.386099     6B2     1.408676    14A1     1.613239  
+       7B1     1.945022     7B2     1.964894    15A1     2.159638  
+       8B1     2.599296     8B2     2.617411     9B1     2.617918  
+       3A2     2.622481    16A1     2.622593     9B2     2.627351  
+      17A1     2.874307    10B1     2.887071     4A2     2.903636  
+      18A1     2.905247    10B2     2.916026    19A1     2.991758  
+      11B1     3.228695    11B2     3.252448    20A1     3.306293  
+      12B1     3.822037    12B2     3.822156    21A1     4.049506  
+       5A2     4.049855    22A1     4.377642     6A2     4.411681  
+      23A1     4.411841    13B1     4.475668    13B2     4.509912  
+      24A1     4.891741    14B1     4.960283    14B2     4.988866  
+      25A1     5.430476    26A1     8.310133  
 
     Beta Occupied:                                                        
 
-       1A1   -14.435920     2A1   -10.346423     3A1    -0.849473  
-       4A1    -0.487052     1B2    -0.342236     1B1    -0.342236  
+       1A1   -14.427762     2A1   -10.337208     3A1    -0.858737  
+       4A1    -0.504520     5A1    -0.347452     1B2    -0.346711  
 
     Beta Virtual:                                                         
 
-       5A1    -0.254061     2B2    -0.082047     2B1    -0.082047  
-       6A1     0.155650     3B2     0.297282     3B1     0.297282  
-       7A1     0.324442     8A1     0.357982     9A1     0.462668  
-       4B2     0.501646     4B1     0.501646     1A2     0.633696  
-      10A1     0.633696     5B1     0.758954     5B2     0.758954  
-      11A1     0.884262    12A1     1.086101    13A1     1.095737  
-       2A2     1.095738     6B2     1.416048     6B1     1.416048  
-      14A1     1.632201     7B2     1.965356     7B1     1.965356  
-      15A1     2.175539     8B1     2.636960     8B2     2.636960  
-       9B2     2.641554     9B1     2.641554     3A2     2.645439  
-      16A1     2.645439    17A1     2.903211     4A2     2.916370  
-      18A1     2.916372    10B2     2.930658    10B1     2.930658  
-      19A1     3.001376    11B1     3.257551    11B2     3.257551  
-      20A1     3.331358    12B2     3.868792    12B1     3.868792  
-      21A1     4.089508     5A2     4.089509    22A1     4.410846  
-      23A1     4.452969     6A2     4.452985    13B2     4.533241  
-      13B1     4.533241    24A1     4.924834    14B2     4.999402  
-      14B1     4.999402    25A1     5.448795    26A1     8.330627  
+       1B1    -0.247285     2B2    -0.082837     2B1    -0.050864  
+       6A1     0.153893     3B2     0.293753     3B1     0.300219  
+       7A1     0.321174     8A1     0.340357     9A1     0.449937  
+       4B2     0.499865     4B1     0.512041     1A2     0.627857  
+      10A1     0.629447     5B2     0.751059     5B1     0.754363  
+      11A1     0.877628    12A1     1.084184     2A2     1.095243  
+      13A1     1.097829     6B2     1.412929     6B1     1.416483  
+      14A1     1.628396     7B2     1.962726     7B1     1.970651  
+      15A1     2.165638     8B2     2.632120     8B1     2.632549  
+       9B2     2.632789     3A2     2.637328    16A1     2.638938  
+       9B1     2.644319    17A1     2.884965     4A2     2.918346  
+      18A1     2.921580    10B2     2.923150    10B1     2.935037  
+      19A1     3.002367    11B2     3.255404    11B1     3.259974  
+      20A1     3.321913    12B2     3.874793    12B1     3.875835  
+       5A2     4.088064    21A1     4.090878    22A1     4.396513  
+       6A2     4.473208    23A1     4.478812    13B2     4.521407  
+      13B1     4.535428    24A1     4.907285    14B2     4.995223  
+      14B1     5.000891    25A1     5.454971    26A1     8.329700  
 
     Final Occupation by Irrep:
              A1    A2    B1    B2 
-    DOCC [     4,    0,    1,    1 ]
-    SOCC [     1,    0,    0,    0 ]
+    DOCC [     5,    0,    0,    1 ]
+    SOCC [     0,    0,    1,    0 ]
     NA   [     5,    0,    1,    1 ]
-    NB   [     4,    0,    1,    1 ]
+    NB   [     5,    0,    0,    1 ]
 
-  @DF-UKS Final Energy:   -92.66107490513593
+  @DF-UKS Final Energy:   -92.66927108221324
 
    => Energetics <=
 
     Nuclear Repulsion Energy =             15.4807668612595766
-    One-Electron Energy =                -155.1736910494036294
-    Two-Electron Energy =                  56.6952306139931892
-    DFT Exchange-Correlation Energy =      -9.6633813309850733
+    One-Electron Energy =                -155.1493451367403509
+    Two-Electron Energy =                  56.6988325998707197
+    DFT Exchange-Correlation Energy =      -9.6995254066031880
     Empirical Dispersion Energy =           0.0000000000000000
     VV10 Nonlocal Energy =                  0.0000000000000000
-    Total Energy =                        -92.6610749051359335
+    Total Energy =                        -92.6692710822132426
 
   UHF NO Occupations:
-  HONO-2 :    1 B1 1.9988305
-  HONO-1 :    4 A1 1.9972288
-  HONO-0 :    5 A1 1.0000000
-  LUNO+0 :    6 A1 0.0027712
-  LUNO+1 :    2 B2 0.0011695
-  LUNO+2 :    2 B1 0.0011695
-  LUNO+3 :    7 A1 0.0002047
+  HONO-2 :    5 A1 1.9993853
+  HONO-1 :    1 B2 1.9973462
+  HONO-0 :    1 B1 1.0000000
+  LUNO+0 :    2 B2 0.0026538
+  LUNO+1 :    6 A1 0.0006147
+  LUNO+2 :    7 A1 0.0001836
+  LUNO+3 :    8 A1 0.0000816
 
 
 Computation Completed
@@ -407,23 +410,23 @@ Properties computed using the SCF density matrix
  L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
  Dipole X            :          0.0000000            0.0000000            0.0000000
  Dipole Y            :          0.0000000            0.0000000            0.0000000
- Dipole Z            :          0.4015600            0.0019244            0.4034844
- Magnitude           :                                                    0.4034844
+ Dipole Z            :          0.1199712            0.0019244            0.1218955
+ Magnitude           :                                                    0.1218955
 
  ------------------------------------------------------------------------------------
 
-*** tstop() called on Mac.lan at Tue Aug 26 22:15:36 2025
+*** tstop() called on cics-quant-001 at Tue Dec 23 13:42:15 2025
 Module time:
-	user time   =      26.43 seconds =       0.44 minutes
-	system time =       2.36 seconds =       0.04 minutes
-	total time  =          3 seconds =       0.05 minutes
+	user time   =       1.60 seconds =       0.03 minutes
+	system time =       0.08 seconds =       0.00 minutes
+	total time  =          0 seconds =       0.00 minutes
 Total time:
-	user time   =      26.43 seconds =       0.44 minutes
-	system time =       2.36 seconds =       0.04 minutes
-	total time  =          3 seconds =       0.05 minutes
+	user time   =       1.60 seconds =       0.03 minutes
+	system time =       0.08 seconds =       0.00 minutes
+	total time  =          0 seconds =       0.00 minutes
 
-*** tstart() called on Mac.lan
-*** at Tue Aug 26 22:15:36 2025
+*** tstart() called on cics-quant-001
+*** at Tue Dec 23 13:42:15 2025
 
    => Libint2 <=
 
@@ -436,8 +439,8 @@ Total time:
     Name: CC-PVTZ
     Role: ORBITAL
     Keyword: BASIS
-    atoms 1 entry N          line   224 file /Users/joseantoniorodriguesromero/anaconda3/share/psi4/basis/cc-pvtz.gbs 
-    atoms 2 entry C          line   186 file /Users/joseantoniorodriguesromero/anaconda3/share/psi4/basis/cc-pvtz.gbs 
+    atoms 1 entry N          line   224 file /home/jrodriguesro/psi4conda/share/psi4/basis/cc-pvtz.gbs 
+    atoms 2 entry C          line   186 file /home/jrodriguesro/psi4conda/share/psi4/basis/cc-pvtz.gbs 
 
 
          ---------------------------------------------------------
@@ -445,7 +448,7 @@ Total time:
                by Justin Turney, Rob Parrish, Andy Simmonett
                           and Daniel G. A. Smith
                               UKS Reference
-                        1 Threads,    500 MiB Core
+                        5 Threads,   7629 MiB Core
          ---------------------------------------------------------
 
   ==> Geometry <==
@@ -478,7 +481,7 @@ Total time:
   DIIS enabled.
   MOM disabled.
   Fractional occupation disabled.
-  Guess Type is SAP.
+  Guess Type is SAD.
   Energy threshold   = 1.00e-08
   Density threshold  = 1.00e-08
   Integral threshold = 1.00e-12
@@ -497,7 +500,7 @@ Total time:
 
    => LibXC <=
 
-    Version 6.2.2
+    Version 7.0.0
     S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
 
    => Composite Functional: B3LYP <= 
@@ -553,12 +556,13 @@ Total time:
     Name: (CC-PVTZ AUX)
     Role: JKFIT
     Keyword: DF_BASIS_SCF
-    atoms 1 entry N          line   177 file /Users/joseantoniorodriguesromero/anaconda3/share/psi4/basis/cc-pvtz-jkfit.gbs 
-    atoms 2 entry C          line   125 file /Users/joseantoniorodriguesromero/anaconda3/share/psi4/basis/cc-pvtz-jkfit.gbs 
+    atoms 1 entry N          line   177 file /home/jrodriguesro/psi4conda/share/psi4/basis/cc-pvtz-jkfit.gbs 
+    atoms 2 entry C          line   125 file /home/jrodriguesro/psi4conda/share/psi4/basis/cc-pvtz-jkfit.gbs 
 
   ==> Integral Setup <==
 
-  DFHelper Memory: AOs need 0.005 GiB; user supplied 0.294 GiB. 
+  DFHelper Memory: AOs need 0.005 GiB; user supplied 5.516 GiB. 
+  SCF_SUBTYPE=INCORE selected. In-core MEM_DF algorithm will be used.
   Using in-core AOs.
 
   ==> MemDFJK: Density-Fitted J/K Matrices <==
@@ -566,8 +570,8 @@ Total time:
     J tasked:                   Yes
     K tasked:                   Yes
     wK tasked:                   No
-    OpenMP threads:               1
-    Memory [MiB]:               301
+    OpenMP threads:               5
+    Memory [MiB]:              5648
     Algorithm:                 Core
     Schwarz Cutoff:           1E-12
     Mask sparsity (%):       0.0000
@@ -591,72 +595,65 @@ Total time:
 
   ==> Pre-Iterations <==
 
-  SCF Guess: Superposition of Atomic Potentials (doi:10.1021/acs.jctc.8b01089).
+  SCF Guess: Superposition of Atomic Densities via on-the-fly atomic UHF (no occupation information).
 
-  ==> SAP guess <==
-
-   => Molecular Quadrature <=
-
-    Radial Scheme          =       TREUTLER
-    Pruning Scheme         =           NONE
-    Nuclear Scheme         =       TREUTLER
-
-    Blocking Scheme        =         OCTREE
-    BS radius alpha        =              1
-    Pruning alpha          =              1
-    Radial Points          =             75
-    Spherical Points       =            302
-    Total Points           =          43264
-    Total Blocks           =            392
-    Max Points             =            255
-    Max Functions          =             60
-    Weights Tolerance      =       1.00E-15
-
-   -------------------------------------------------------
-    Irrep   Nso     Nmo     Nalpha   Nbeta   Ndocc  Nsocc
-   -------------------------------------------------------
-     A1        26      26       5       4       4       1
-     A2         6       6       0       0       0       0
-     B1        14      14       1       1       1       0
-     B2        14      14       1       1       1       0
-   -------------------------------------------------------
-    Total      60      60       7       6       6       1
-   -------------------------------------------------------
+   -------------------------
+    Irrep   Nso     Nmo    
+   -------------------------
+     A1        26      26 
+     A2         6       6 
+     B1        14      14 
+     B2        14      14 
+   -------------------------
+    Total      60      60
+   -------------------------
 
   ==> Iterations <==
 
                            Total Energy        Delta E     RMS |[F,P]|
 
-   @DF-UKS iter   1:   -92.42384386441518   -9.24238e+01   2.17641e-02 ADIIS/DIIS
-   @DF-UKS iter   2:   -90.19231273381165    2.23153e+00   5.87852e-02 ADIIS/DIIS/DAMP=1%
-   @DF-UKS iter   3:   -92.60521916921302   -2.41291e+00   8.82796e-03 ADIIS/DIIS/DAMP=1%
-   @DF-UKS iter   4:   -92.65219212206966   -4.69730e-02   1.38641e-03 ADIIS/DIIS/DAMP=1%
-   @DF-UKS iter   5:   -92.66165415705736   -9.46203e-03   1.11575e-03 ADIIS/DIIS/DAMP=1%
-   @DF-UKS iter   6:   -92.66075648937010    8.97668e-04   2.35061e-04 ADIIS/DIIS/DAMP=1%
-   @DF-UKS iter   7:   -92.66093312631047   -1.76637e-04   3.05831e-05 DIIS/DAMP=1%
-   @DF-UKS iter   8:   -92.66107388919616   -1.40763e-04   1.29781e-05 DIIS/DAMP=1%
-   @DF-UKS iter   9:   -92.66107650466765   -2.61547e-06   2.87870e-06 DIIS/DAMP=1%
-   @DF-UKS iter  10:   -92.66107579859531    7.06072e-07   2.85254e-06 DIIS/DAMP=1%
-   @DF-UKS iter  11:   -92.66107391519266    1.88340e-06   2.72011e-06 DIIS/DAMP=1%
-   @DF-UKS iter  12:   -92.66107625642043   -2.34123e-06   1.06958e-06 DIIS/DAMP=1%
-   @DF-UKS iter  13:   -92.66107502716375    1.22926e-06   2.34410e-07 DIIS/DAMP=1%
-   @DF-UKS iter  14:   -92.66107482705995    2.00104e-07   4.98557e-08 DIIS/DAMP=1%
-   @DF-UKS iter  15:   -92.66107488734660   -6.02867e-08   5.33720e-09 DIIS/DAMP=1%
-   @DF-UKS iter  16:   -92.66107490729846   -1.99519e-08   2.12957e-09 DIIS/DAMP=1%
-   @DF-UKS iter  17:   -92.66107490513593    2.16252e-09   2.97446e-10 DIIS/DAMP=1%
+   @DF-UKS iter SAD:   -91.99460168131857   -9.19946e+01   0.00000e+00 
+    Occupation by irrep:
+             A1    A2    B1    B2 
+    DOCC [     4,    0,    1,    1 ]
+    SOCC [     1,    0,    0,    0 ]
+    NA   [     5,    0,    1,    1 ]
+    NB   [     4,    0,    1,    1 ]
+
+   @DF-UKS iter   1:   -92.27603015065360   -2.81428e-01   2.27993e-02 ADIIS/DIIS
+    Occupation by irrep:
+             A1    A2    B1    B2 
+    DOCC [     5,    0,    0,    1 ]
+    SOCC [     0,    0,    1,    0 ]
+    NA   [     5,    0,    1,    1 ]
+    NB   [     5,    0,    0,    1 ]
+
+   @DF-UKS iter   2:   -91.08619650961070    1.18983e+00   5.55914e-02 ADIIS/DIIS/DAMP=1%
+   @DF-UKS iter   3:   -92.56979338709128   -1.48360e+00   1.49349e-02 ADIIS/DIIS/DAMP=1%
+   @DF-UKS iter   4:   -92.64153054491203   -7.17372e-02   7.41076e-03 ADIIS/DIIS/DAMP=1%
+   @DF-UKS iter   5:   -92.67022024171459   -2.86897e-02   3.62892e-04 ADIIS/DIIS/DAMP=1%
+   @DF-UKS iter   6:   -92.66913569781951    1.08454e-03   1.55876e-04 ADIIS/DIIS/DAMP=1%
+   @DF-UKS iter   7:   -92.66921457194758   -7.88741e-05   8.67243e-05 DIIS/DAMP=1%
+   @DF-UKS iter   8:   -92.66923281566343   -1.82437e-05   4.78565e-05 DIIS/DAMP=1%
+   @DF-UKS iter   9:   -92.66926968917836   -3.68735e-05   2.19430e-05 DIIS/DAMP=1%
+   @DF-UKS iter  10:   -92.66926929113015    3.98048e-07   3.35651e-06 DIIS/DAMP=1%
+   @DF-UKS iter  11:   -92.66927080947056   -1.51834e-06   9.73501e-07 DIIS/DAMP=1%
+   @DF-UKS iter  12:   -92.66927090027944   -9.08089e-08   7.34432e-08 DIIS/DAMP=1%
+   @DF-UKS iter  13:   -92.66927108666374   -1.86384e-07   2.07835e-08 DIIS/DAMP=1%
+   @DF-UKS iter  14:   -92.66927108221316    4.45058e-09   2.22516e-09 DIIS/DAMP=1%
   Energy and wave function converged.
 
 
   ==> Post-Iterations <==
 
    Electrons on quadrature grid:
-      Nalpha   =    7.0000001637 ; deviation = 1.637e-07
-      Nbeta    =    6.0000001979 ; deviation = 1.979e-07
-      Ntotal   =   13.0000003615 ; deviation = 3.615e-07 
+      Nalpha   =    7.0000001991 ; deviation = 1.991e-07
+      Nbeta    =    6.0000000837 ; deviation = 8.370e-08
+      Ntotal   =   13.0000002828 ; deviation = 2.828e-07 
 
-   @Spin Contamination Metric:   1.062025380E-02
+   @Spin Contamination Metric:   7.060768002E-03
    @S^2 Expected:                7.500000000E-01
-   @S^2 Observed:                7.606202538E-01
+   @S^2 Observed:                7.570607680E-01
    @S   Expected:                5.000000000E-01
    @S   Observed:                5.000000000E-01
 
@@ -665,84 +662,84 @@ Total time:
 
     Alpha Occupied:                                                       
 
-       1A1   -14.443601     2A1   -10.358282     3A1    -0.877542  
-       4A1    -0.553392     5A1    -0.409364     1B2    -0.349564  
-       1B1    -0.349564  
+       1A1   -14.443006     2A1   -10.339756     3A1    -0.905483  
+       4A1    -0.528531     1B1    -0.401050     1B2    -0.362285  
+       5A1    -0.356261  
 
     Alpha Virtual:                                                        
 
-       2B2    -0.099018     2B1    -0.099018     6A1     0.140315  
-       3B2     0.290588     3B1     0.290588     7A1     0.291976  
-       8A1     0.319333     9A1     0.434663     4B2     0.500331  
-       4B1     0.500331     1A2     0.626698    10A1     0.626698  
-       5B1     0.731195     5B2     0.731195    11A1     0.872109  
-      12A1     1.050003     2A2     1.094975    13A1     1.094975  
-       6B2     1.392678     6B1     1.392678    14A1     1.602157  
-       7B2     1.953892     7B1     1.953892    15A1     2.127927  
-       8B2     2.620210     8B1     2.620210     3A2     2.622802  
-      16A1     2.622803     9B1     2.626899     9B2     2.626899  
-      17A1     2.847139     4A2     2.897111    18A1     2.897113  
-      10B2     2.900696    10B1     2.900696    19A1     2.956682  
-      11B1     3.217496    11B2     3.217496    20A1     3.280879  
-      12B2     3.873600    12B1     3.873600    21A1     4.077265  
-       5A2     4.077265    22A1     4.372936    23A1     4.452216  
-       6A2     4.452231    13B2     4.501181    13B1     4.501181  
-      24A1     4.871128    14B2     4.963434    14B1     4.963434  
-      25A1     5.425806    26A1     8.310724  
+       2B1    -0.117508     2B2    -0.089595     6A1     0.143072  
+       3B1     0.283205     3B2     0.295421     7A1     0.311652  
+       8A1     0.332642     9A1     0.442751     4B1     0.470550  
+       4B2     0.490720     1A2     0.613084    10A1     0.613413  
+       5B1     0.727900     5B2     0.749720    11A1     0.857394  
+       2A2     1.060796    12A1     1.061005    13A1     1.077925  
+       6B1     1.386099     6B2     1.408676    14A1     1.613239  
+       7B1     1.945022     7B2     1.964894    15A1     2.159638  
+       8B1     2.599296     8B2     2.617411     9B1     2.617918  
+       3A2     2.622481    16A1     2.622593     9B2     2.627351  
+      17A1     2.874307    10B1     2.887071     4A2     2.903636  
+      18A1     2.905247    10B2     2.916026    19A1     2.991758  
+      11B1     3.228695    11B2     3.252448    20A1     3.306293  
+      12B1     3.822037    12B2     3.822156    21A1     4.049506  
+       5A2     4.049855    22A1     4.377642     6A2     4.411681  
+      23A1     4.411841    13B1     4.475668    13B2     4.509912  
+      24A1     4.891741    14B1     4.960283    14B2     4.988866  
+      25A1     5.430476    26A1     8.310133  
 
     Beta Occupied:                                                        
 
-       1A1   -14.435920     2A1   -10.346423     3A1    -0.849473  
-       4A1    -0.487052     1B2    -0.342236     1B1    -0.342236  
+       1A1   -14.427762     2A1   -10.337208     3A1    -0.858737  
+       4A1    -0.504520     5A1    -0.347452     1B2    -0.346711  
 
     Beta Virtual:                                                         
 
-       5A1    -0.254061     2B2    -0.082047     2B1    -0.082047  
-       6A1     0.155650     3B2     0.297282     3B1     0.297282  
-       7A1     0.324442     8A1     0.357982     9A1     0.462668  
-       4B2     0.501646     4B1     0.501646     1A2     0.633696  
-      10A1     0.633696     5B1     0.758954     5B2     0.758954  
-      11A1     0.884262    12A1     1.086101    13A1     1.095737  
-       2A2     1.095738     6B2     1.416048     6B1     1.416048  
-      14A1     1.632201     7B2     1.965356     7B1     1.965356  
-      15A1     2.175539     8B1     2.636960     8B2     2.636960  
-       9B2     2.641554     9B1     2.641554     3A2     2.645439  
-      16A1     2.645439    17A1     2.903211     4A2     2.916370  
-      18A1     2.916372    10B2     2.930658    10B1     2.930658  
-      19A1     3.001376    11B1     3.257551    11B2     3.257551  
-      20A1     3.331358    12B2     3.868792    12B1     3.868792  
-      21A1     4.089508     5A2     4.089509    22A1     4.410846  
-      23A1     4.452969     6A2     4.452985    13B2     4.533241  
-      13B1     4.533241    24A1     4.924834    14B2     4.999402  
-      14B1     4.999402    25A1     5.448795    26A1     8.330627  
+       1B1    -0.247285     2B2    -0.082837     2B1    -0.050864  
+       6A1     0.153893     3B2     0.293753     3B1     0.300219  
+       7A1     0.321174     8A1     0.340357     9A1     0.449937  
+       4B2     0.499865     4B1     0.512041     1A2     0.627857  
+      10A1     0.629447     5B2     0.751059     5B1     0.754363  
+      11A1     0.877628    12A1     1.084184     2A2     1.095243  
+      13A1     1.097829     6B2     1.412929     6B1     1.416483  
+      14A1     1.628396     7B2     1.962726     7B1     1.970651  
+      15A1     2.165638     8B2     2.632120     8B1     2.632549  
+       9B2     2.632789     3A2     2.637328    16A1     2.638938  
+       9B1     2.644319    17A1     2.884965     4A2     2.918346  
+      18A1     2.921580    10B2     2.923150    10B1     2.935037  
+      19A1     3.002367    11B2     3.255404    11B1     3.259974  
+      20A1     3.321913    12B2     3.874793    12B1     3.875835  
+       5A2     4.088064    21A1     4.090878    22A1     4.396513  
+       6A2     4.473208    23A1     4.478812    13B2     4.521407  
+      13B1     4.535428    24A1     4.907285    14B2     4.995223  
+      14B1     5.000891    25A1     5.454971    26A1     8.329700  
 
     Final Occupation by Irrep:
              A1    A2    B1    B2 
-    DOCC [     4,    0,    1,    1 ]
-    SOCC [     1,    0,    0,    0 ]
+    DOCC [     5,    0,    0,    1 ]
+    SOCC [     0,    0,    1,    0 ]
     NA   [     5,    0,    1,    1 ]
-    NB   [     4,    0,    1,    1 ]
+    NB   [     5,    0,    0,    1 ]
 
-  @DF-UKS Final Energy:   -92.66107490513593
+  @DF-UKS Final Energy:   -92.66927108221316
 
    => Energetics <=
 
     Nuclear Repulsion Energy =             15.4807668612595766
-    One-Electron Energy =                -155.1736910494036294
-    Two-Electron Energy =                  56.6952306139931892
-    DFT Exchange-Correlation Energy =      -9.6633813309850733
+    One-Electron Energy =                -155.1493451367401804
+    Two-Electron Energy =                  56.6988325998706131
+    DFT Exchange-Correlation Energy =      -9.6995254066031755
     Empirical Dispersion Energy =           0.0000000000000000
     VV10 Nonlocal Energy =                  0.0000000000000000
-    Total Energy =                        -92.6610749051359335
+    Total Energy =                        -92.6692710822131573
 
   UHF NO Occupations:
-  HONO-2 :    1 B1 1.9988305
-  HONO-1 :    4 A1 1.9972288
-  HONO-0 :    5 A1 1.0000000
-  LUNO+0 :    6 A1 0.0027712
-  LUNO+1 :    2 B2 0.0011695
-  LUNO+2 :    2 B1 0.0011695
-  LUNO+3 :    7 A1 0.0002047
+  HONO-2 :    5 A1 1.9993853
+  HONO-1 :    1 B2 1.9973462
+  HONO-0 :    1 B1 1.0000000
+  LUNO+0 :    2 B2 0.0026538
+  LUNO+1 :    6 A1 0.0006147
+  LUNO+2 :    7 A1 0.0001836
+  LUNO+3 :    8 A1 0.0000816
 
 
 Computation Completed
@@ -762,19 +759,19 @@ Properties computed using the B3LYP density matrix
  L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
  Dipole X            :          0.0000000            0.0000000            0.0000000
  Dipole Y            :          0.0000000            0.0000000            0.0000000
- Dipole Z            :          0.4015600            0.0019244            0.4034844
- Magnitude           :                                                    0.4034844
+ Dipole Z            :          0.1199712            0.0019244            0.1218955
+ Magnitude           :                                                    0.1218955
 
  L = 2.  Multiply by 1.3450342976 to convert [e a0^2] to [Debye ang]
- Quadrupole XX       :         -8.7465194            0.0000000           -8.7465194
+ Quadrupole XX       :         -7.5576407            0.0000000           -7.5576407
  Quadrupole XY       :          0.0000000            0.0000000            0.0000000
  Quadrupole XZ       :          0.0000000            0.0000000            0.0000000
- Quadrupole YY       :         -8.7465194            0.0000000           -8.7465194
+ Quadrupole YY       :         -8.8491563            0.0000000           -8.8491563
  Quadrupole YZ       :          0.0000000            0.0000000            0.0000000
- Quadrupole ZZ       :        -31.3272224           23.7804234           -7.5467989
- Traceless XX        :          7.5269010           -7.9268078           -0.3999068
- Traceless YY        :          7.5269010           -7.9268078           -0.3999068
- Traceless ZZ        :        -15.0538020           15.8536156            0.7998137
+ Quadrupole ZZ       :        -33.9255190           23.7804234          -10.1450955
+ Traceless XX        :          9.2197980           -7.9268078            1.2929901
+ Traceless YY        :          7.9282823           -7.9268078            0.0014745
+ Traceless ZZ        :        -17.1480803           15.8536156           -1.2944647
 
  ------------------------------------------------------------------------------------
   ==> Computing MBIS Charges <==
@@ -784,45 +781,51 @@ Properties computed using the B3LYP density matrix
 
   MBIS Charges: (a.u.)
    Center  Symbol  Z      Pop.       Charge
-      1       N    7    7.182914   -0.182914
-      2       C    6    5.817087    0.182913
+      1       N    7    7.120646   -0.120646
+      2       C    6    5.879354    0.120646
 
   MBIS Dipoles: [e a0]
    Center  Symbol  Z        X           Y           Z
-      1       N    7   -0.000000    0.000000   -0.253450
-      2       C    6   -0.000000   -0.000000    0.160682
+      1       N    7   -0.000000   -0.000000    0.035978
+      2       C    6    0.000000    0.000000   -0.241400
 
   MBIS Quadrupoles: [e a0^2]
    Center  Symbol  Z      XX        XY        XZ        YY        YZ        ZZ
-      1       N    7   -4.4756   -0.0000   -0.0000   -4.4756    0.0000   -4.4179
-      2       C    6   -4.2709    0.0000   -0.0000   -4.2709    0.0000   -4.3368
+      1       N    7   -3.7731    0.0000    0.0000   -4.4182   -0.0000   -4.5446
+      2       C    6   -3.7846    0.0000   -0.0000   -4.4310    0.0000   -4.8735
 
   MBIS Octupoles: [e a0^3]
    Center  Symbol  Z      XXX       XXY       XXZ       XYY       XYZ       XZZ       YYY       YYZ       YZZ       ZZZ
-      1       N    7   -0.0000   -0.0000   -0.3844   -0.0000    0.0000   -0.0000   -0.0000   -0.3844   -0.0000   -0.9864
-      2       C    6   -0.0000   -0.0000    0.3621   -0.0000   -0.0000   -0.0000    0.0000    0.3621    0.0000    0.7589
+      1       N    7   -0.0000   -0.0000    0.1097   -0.0000   -0.0000   -0.0000   -0.0000   -0.0463    0.0000    0.0377
+      2       C    6   -0.0000   -0.0000   -0.3169   -0.0000   -0.0000   -0.0000    0.0000   -0.0629   -0.0000   -0.5042
 
   MBIS Radial Moments:
    Center  Symbol  Z      [a0^2]      [a0^3]      [a0^4]      
-      1       N    7   13.369153   28.973443   74.797227
-      2       C    6   12.878570   31.231006   89.981405
+      1       N    7   12.735790   27.050161   68.607595
+      2       C    6   13.089039   31.746012   91.504018
 
   MBIS Valence Widths: [a0]
    Center  Symbol  Z     Width
-      1       N    7    0.452497
-      2       C    6    0.514206
+      1       N    7    0.443800
+      2       C    6    0.514331
 
-*** tstop() called on Mac.lan at Tue Aug 26 22:15:38 2025
+
+  MBIS Valence Charges: (a.u.)
+   Center  Symbol  Z     Charge
+      1       N    7   -5.479682
+      2       C    6   -4.207136
+
+*** tstop() called on cics-quant-001 at Tue Dec 23 13:42:16 2025
 Module time:
-	user time   =      22.97 seconds =       0.38 minutes
-	system time =       1.76 seconds =       0.03 minutes
-	total time  =          2 seconds =       0.03 minutes
+	user time   =       1.79 seconds =       0.03 minutes
+	system time =       0.05 seconds =       0.00 minutes
+	total time  =          1 seconds =       0.02 minutes
 Total time:
-	user time   =      49.43 seconds =       0.82 minutes
-	system time =       4.28 seconds =       0.07 minutes
-	total time  =          5 seconds =       0.08 minutes
+	user time   =       3.40 seconds =       0.06 minutes
+	system time =       0.13 seconds =       0.00 minutes
+	total time  =          1 seconds =       0.02 minutes
 
-    Psi4 stopped on: Tuesday, 26 August 2025 10:15PM
-    Psi4 wall time for execution: 0:00:05.19
+    Psi4 stopped on: Tuesday, 23 December 2025 01:42PM
+    Psi4 wall time for execution: 0:00:01.24
 
 *** Psi4 exiting successfully. Buy a developer a beer!

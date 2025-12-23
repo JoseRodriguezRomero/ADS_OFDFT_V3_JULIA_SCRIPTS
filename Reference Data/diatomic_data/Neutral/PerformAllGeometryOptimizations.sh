@@ -13,15 +13,15 @@ for i in {1..18}; do
         python MakeUnoptimizedInitialInput.py $e1 $e2 $sum_rem
         
         if ((sum_rem == 0)); then
-            psi4 "GeometryOptimizations/singlet_$e1$e2.in"
-            psi4 "GeometryOptimizations/triplet_$e1$e2.in"
-            psi4 "GeometryOptimizations/quintet_$e1$e2.in"
+            psi4 "GeometryOptimizations/singlet_$e1$e2.in" -n $1
+            psi4 "GeometryOptimizations/triplet_$e1$e2.in" -n $1
+            psi4 "GeometryOptimizations/quintet_$e1$e2.in" -n $1
         fi
         
         if ((sum_rem == 1)); then
-            psi4 "GeometryOptimizations/doublet_$e1$e2.in"
-            psi4 "GeometryOptimizations/quartet_$e1$e2.in"
-            psi4 "GeometryOptimizations/sextet_$e1$e2.in"
+            psi4 "GeometryOptimizations/doublet_$e1$e2.in" -n $1
+            psi4 "GeometryOptimizations/quartet_$e1$e2.in" -n $1
+            psi4 "GeometryOptimizations/sextet_$e1$e2.in" -n $1
         fi
   done
 done

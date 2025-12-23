@@ -86,7 +86,6 @@ file_is_valid, bond_length, old_energy = ReadOutputFile(output_files[0])
 old_energy = old_energy + 1.0
 
 for i in range(len(output_files)):
-    print(output_files[i])
     multiplicity = i + 1
     output_file = output_files[i]
     file_is_valid, bond_length, energy = ReadOutputFile(output_file)

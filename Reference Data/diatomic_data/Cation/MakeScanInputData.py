@@ -77,7 +77,7 @@ def MakeInputFile(elem1, elem2, bond_length, multiplicity, file_name, read_wfn):
         # fileID.write("E, wfn = energy('b3lyp', restart_file='" + sys.argv[1] + sys.argv[2] + "_wfn', return_wfn=True)\n")
         fileID.write("E, wfn = energy('b3lyp', restart_file='last_wfn', return_wfn=True)\n")
     else:
-        fileID.write("guess              SAP\n")
+        # fileID.write("guess              SAP\n")
         fileID.write("}\n\n")
         fileID.write("E, wfn = energy('b3lyp', return_wfn=True)\n")
   
