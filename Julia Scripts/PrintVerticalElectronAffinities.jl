@@ -2,9 +2,9 @@ include("FitCoeffs_General.jl")
 
 function print_table()
     println("\\begin{table}[b]");
-    println("\\begin{tabular}{p{0.2\\columnwidth}lp{0.1\\columnwidth}l}");
-    println("\\hline \\\\[-0.25cm] \\hline");
-    println("& \\multicolumn{1}{c}{KS-DFT} & & ");
+    println("\\begin{ruledtabular}");
+    println("\\begin{tabular}{lll}");
+    println("& \\multicolumn{1}{c}{KS-DFT} & ");
     println("  \\multicolumn{1}{c}{ADS OF-DFT} \\\\ \\hline \\\\[-0.275cm]");
     
     atomic_numbers = [1,6,7,8];
@@ -31,7 +31,8 @@ function print_table()
         dft_vea *= hartree_to_ev;
 
         print(@sprintf "}\$   & ");
-        print(@sprintf "\\multicolumn{1}{r}{%8.4lf} & & " dft_vea);
+        print(@sprintf "\\multicolumn{1}{r}{%8.4lf} & " dft_vea);
+        print(@sprintf "\n        ");
         print(@sprintf "\\multicolumn{1}{r}{%8.4lf} \\\\[0.1cm]" model_vea);
         print("\n");
     end
@@ -54,13 +55,14 @@ function print_table()
         dft_vea *= hartree_to_ev;
 
         print(@sprintf "}^+\$ & ");
-        print(@sprintf "\\multicolumn{1}{r}{%8.4lf} & & " dft_vea);
+        print(@sprintf "\\multicolumn{1}{r}{%8.4lf} & " dft_vea);
+        print(@sprintf "\n        ");
         print(@sprintf "\\multicolumn{1}{r}{%8.4lf} \\\\[0.1cm]" model_vea);
         print("\n");
     end
 
-    println("\\hline \\\\[-0.25cm] \\hline"); 
     println("\\end{tabular}");
+    println("\\end{ruledtabular}");
     println("\\end{table}");      
 end
 
