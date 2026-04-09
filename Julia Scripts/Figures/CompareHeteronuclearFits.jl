@@ -1,5 +1,5 @@
 using LaTeXStrings, Latexify, Measures
-using Base.Threads
+using Base.Threads, StatsBase
 using Plots
 
 include("../FitCoeffs_General.jl")
