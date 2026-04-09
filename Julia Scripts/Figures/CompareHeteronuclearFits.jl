@@ -1,721 +1,775 @@
-using LaTeXStrings, Latexify, Measures;
-using Base.Threads;
-using Plots;
+using LaTeXStrings, Latexify, Measures
+using Base.Threads
+using Plots
 
 include("../FitCoeffs_General.jl")
 
 function test_result_ΔE(Z1::Int, Z2::Int)
     neutral_data, cation_data, anion_data = 
-        read_all_sanitized_data(Z1,Z2);
+        read_all_sanitized_data(Z1,Z2)
 
     function get_data(data::Vector{ParsedFile})
-        at1 = make_monoatomic_system(Z1,0);
-        at2 = make_monoatomic_system(Z2,0);
+        at1 = make_monoatomic_system(Z1,0)
+        at2 = make_monoatomic_system(Z2,0)
 
-        dft_atom_energies, _, _ = get_reference_atom_total_energy();
+        dft_atom_energies, _, _ = get_reference_atom_total_energy()
 
-        at1_dft_energy = dft_atom_energies[Z1];
-        at2_dft_energy = dft_atom_energies[Z2];
-        dft_ref_energy = at1_dft_energy + at2_dft_energy;
+        at1_dft_energy = dft_atom_energies[Z1]
+        at2_dft_energy = dft_atom_energies[Z2]
+        dft_ref_energy = at1_dft_energy + at2_dft_energy
 
-        model_ref_energy = total_energy(at1) + total_energy(at2);
+        model_ref_energy = total_energy(at1) + total_energy(at2)
 
-        dft_ΔE = zeros(Float64,length(data));
-        model_ΔE = zeros(Float64,length(data));
+        dft_ΔE = zeros(Float64,length(data))
+        model_ΔE = zeros(Float64,length(data))
 
-        n_threads = Threads.nthreads();
+        n_threads = Threads.nthreads()
         @threads for thread_id in 1:n_threads
-            simulation = make_system_from_parsed_file(data[1]);
+            simulation = make_system_from_parsed_file(data[1])
 
             for i in thread_id:n_threads:length(data)
-                set_diatomic_system_to_parsed_file!(simulation,data[i]);
+                set_diatomic_system_to_parsed_file!(simulation,data[i])
 
-                dft_ΔE[i] = data[i].total_energy;
-                dft_ΔE[i] -= dft_ref_energy;
+                dft_ΔE[i] = data[i].total_energy
+                dft_ΔE[i] -= dft_ref_energy
 
-                polarize_molecules!(simulation);
-                model_ΔE[i] = total_energy(simulation);
-                model_ΔE[i] -= model_ref_energy;
+                polarize_molecules!(simulation)
+                model_ΔE[i] = total_energy(simulation)
+                model_ΔE[i] -= model_ref_energy
             end
         end
 
-        return dft_ΔE, model_ΔE;
+        return dft_ΔE, model_ΔE
     end
 
-    neutral_dft_ΔE, neutral_model_ΔE = get_data(neutral_data);
-    cation_dft_ΔE, cation_model_ΔE = get_data(cation_data);
-    anion_dft_ΔE, anion_model_ΔE = get_data(anion_data);
+    neutral_dft_ΔE, neutral_model_ΔE = get_data(neutral_data)
+    cation_dft_ΔE, cation_model_ΔE = get_data(cation_data)
+    anion_dft_ΔE, anion_model_ΔE = get_data(anion_data)
 
-    model_ref_E = minimum(neutral_model_ΔE);
-    neutral_model_ΔE .-= model_ref_E;
-    cation_model_ΔE .-= model_ref_E;
-    anion_model_ΔE .-= model_ref_E;
+    model_ref_E = minimum(neutral_model_ΔE)
+    neutral_model_ΔE .-= model_ref_E
+    cation_model_ΔE .-= model_ref_E
+    anion_model_ΔE .-= model_ref_E
 
-    dft_ref_E = minimum(neutral_dft_ΔE);
-    neutral_dft_ΔE .-= dft_ref_E;
-    cation_dft_ΔE .-= dft_ref_E;
-    anion_dft_ΔE .-= dft_ref_E;
+    dft_ref_E = minimum(neutral_dft_ΔE)
+    neutral_dft_ΔE .-= dft_ref_E
+    cation_dft_ΔE .-= dft_ref_E
+    anion_dft_ΔE .-= dft_ref_E
 
-    model_ΔE = vcat(neutral_model_ΔE,cation_model_ΔE,anion_model_ΔE);
-    dft_ΔE = vcat(neutral_dft_ΔE,cation_dft_ΔE,anion_dft_ΔE);
+    model_ΔE = vcat(neutral_model_ΔE,cation_model_ΔE,anion_model_ΔE)
+    dft_ΔE = vcat(neutral_dft_ΔE,cation_dft_ΔE,anion_dft_ΔE)
 
-    mean_dft_ΔE = sum(dft_ΔE) / length(dft_ΔE);
-    SS_res = sum((model_ΔE - dft_ΔE).^2.0);
-    SS_tot = sum((dft_ΔE .- mean_dft_ΔE).^2.0);
-    R² = 1.0 - SS_res / SS_tot;
+    mean_dft_ΔE = sum(dft_ΔE) / length(dft_ΔE)
+    SS_res = sum((model_ΔE - dft_ΔE).^2.0)
+    SS_tot = sum((dft_ΔE .- mean_dft_ΔE).^2.0)
+    R² = 1.0 - SS_res / SS_tot
 
-    elem_symbol1 = get_element_symbol(Z1);
-    elem_symbol2 = get_element_symbol(Z2);
+    τ = StatsBase.corkendall(model_ΔE,dft_ΔE)
 
-    neutral_label = elem_symbol1*" + "*elem_symbol2;
-    cation_label = "("*elem_symbol1*" + "*elem_symbol2*")⁺";
-    anion_label = "("*elem_symbol1*" + "*elem_symbol2*")⁻";
+    elem_symbol1 = get_element_symbol(Z1)
+    elem_symbol2 = get_element_symbol(Z2)
 
-    Pts = [-3,3];
-    p = plot(Pts,Pts,label=false, color=palette(:default)[4]);
+    neutral_label = elem_symbol1*" + "*elem_symbol2
+    cation_label = "("*elem_symbol1*" + "*elem_symbol2*")⁺"
+    anion_label = "("*elem_symbol1*" + "*elem_symbol2*")⁻"
+
+    Pts = [-3,3]
+    p = plot(Pts,Pts,label=false, color=palette(:default)[4])
     scatter!(neutral_dft_ΔE, neutral_model_ΔE, markerstrokewidth=0.25,
-        label=neutral_label, color=palette(:default)[1]);
+        label=neutral_label, color=palette(:default)[1])
     scatter!(cation_dft_ΔE, cation_model_ΔE, markerstrokewidth=0.25,
-        label=cation_label, color=palette(:default)[2]);
+        label=cation_label, color=palette(:default)[2])
     scatter!(anion_dft_ΔE, anion_model_ΔE, markerstrokewidth=0.25,
-        label=anion_label, color=palette(:default)[3]);
-    plot!(framestyle = :box);
-    plot!(legend=:topleft);
+        label=anion_label, color=palette(:default)[3])
+    plot!(framestyle = :box)
+    plot!(legend=:topleft)
 
-    return p, R²;
+    return p, R², τ
 end
 
 function test_result_chemical_potential(Z1::Int, Z2::Int)
     neutral_data, cation_data, anion_data = 
-        read_all_sanitized_data(Z1,Z2,true);
+        read_all_sanitized_data(Z1,Z2,true)
 
     function get_data(data::Vector{ParsedFile})
-        model_chem_μ = zeros(Float64,length(data));
-        dft_chem_μ = zeros(Float64,length(data));
+        model_chem_μ = zeros(Float64,length(data))
+        dft_chem_μ = zeros(Float64,length(data))
 
-        n_threads = Threads.nthreads();
-        simulation = Vector{SimulationSystem}();
-        resize!(simulation,n_threads);
+        n_threads = Threads.nthreads()
+        simulation = Vector{SimulationSystem}()
+        resize!(simulation,n_threads)
         for thread_id in 1:n_threads
-            simulation[thread_id] = make_system_from_parsed_file(data[1]);
+            simulation[thread_id] = make_system_from_parsed_file(data[1])
         end
 
         @threads for thread_id in 1:n_threads
             for i in thread_id:n_threads:length(data)
-                # dft_μ = (data[i].HOMO_energy + data[i].LUMO_energy)/2.0;
-                dft_μ = data[i].chemical_potential;
+                # dft_μ = (data[i].HOMO_energy + data[i].LUMO_energy)/2.0
+                dft_μ = data[i].chemical_potential
 
                 set_diatomic_system_to_parsed_file!(
-                    simulation[thread_id],data[i]);
-                polarize_molecules!(simulation[thread_id]);
-                model_μ = simulation[thread_id].system.chemical_potential;
+                    simulation[thread_id],data[i])
+                polarize_molecules!(simulation[thread_id])
+                model_μ = simulation[thread_id].system.chemical_potential
 
-                model_chem_μ[i] = model_μ;
-                dft_chem_μ[i] = dft_μ;
+                model_chem_μ[i] = model_μ
+                dft_chem_μ[i] = dft_μ
             end
         end
 
-        return model_chem_μ, dft_chem_μ;
+        return model_chem_μ, dft_chem_μ
     end
 
-    neutral_model_chem_μ, neutral_dft_chem_μ = get_data(neutral_data);
-    cation_model_chem_μ, cation_dft_chem_μ = get_data(cation_data);
-    anion_model_chem_μ, anion_dft_chem_μ = get_data(anion_data);
+    neutral_model_chem_μ, neutral_dft_chem_μ = get_data(neutral_data)
+    cation_model_chem_μ, cation_dft_chem_μ = get_data(cation_data)
+    anion_model_chem_μ, anion_dft_chem_μ = get_data(anion_data)
 
     model_chem_μ = vcat(
-            neutral_model_chem_μ,cation_model_chem_μ,anion_model_chem_μ);
+            neutral_model_chem_μ,cation_model_chem_μ,anion_model_chem_μ)
     dft_chem_μ = vcat(
-            neutral_dft_chem_μ,cation_dft_chem_μ,anion_dft_chem_μ);
+            neutral_dft_chem_μ,cation_dft_chem_μ,anion_dft_chem_μ)
 
-    mean_dft_chem_μ = sum(dft_chem_μ) / length(dft_chem_μ);
-    SS_res = sum((model_chem_μ - dft_chem_μ).^2.0);
-    SS_tot = sum((dft_chem_μ .- mean_dft_chem_μ).^2.0);
-    R² = 1.0 - SS_res / SS_tot;
+    mean_dft_chem_μ = sum(dft_chem_μ) / length(dft_chem_μ)
+    SS_res = sum((model_chem_μ - dft_chem_μ).^2.0)
+    SS_tot = sum((dft_chem_μ .- mean_dft_chem_μ).^2.0)
+    R² = 1.0 - SS_res / SS_tot
 
-    elem_symbol1 = get_element_symbol(Z1);
-    elem_symbol2 = get_element_symbol(Z2);
+    τ = StatsBase.corkendall(model_chem_μ,dft_chem_μ)
 
-    neutral_label = elem_symbol1*" + "*elem_symbol2;
-    cation_label = "("*elem_symbol1*" + "*elem_symbol2*")⁺";
-    anion_label = "("*elem_symbol1*" + "*elem_symbol2*")⁻";
+    elem_symbol1 = get_element_symbol(Z1)
+    elem_symbol2 = get_element_symbol(Z2)
 
-    Pts = [-2,2];
-    p = plot(Pts,Pts,label=false, color=palette(:default)[4]);
+    neutral_label = elem_symbol1*" + "*elem_symbol2
+    cation_label = "("*elem_symbol1*" + "*elem_symbol2*")⁺"
+    anion_label = "("*elem_symbol1*" + "*elem_symbol2*")⁻"
+
+    Pts = [-2,2]
+    p = plot(Pts,Pts,label=false, color=palette(:default)[4])
     scatter!(neutral_dft_chem_μ, neutral_model_chem_μ, markerstrokewidth=0.25,
-        label=neutral_label, color=palette(:default)[1]);
+        label=neutral_label, color=palette(:default)[1])
     scatter!(cation_dft_chem_μ, cation_model_chem_μ, markerstrokewidth=0.25,
-        label=cation_label, color=palette(:default)[2]);
+        label=cation_label, color=palette(:default)[2])
     scatter!(anion_dft_chem_μ, anion_model_chem_μ, markerstrokewidth=0.25,
-        label=anion_label, color=palette(:default)[3]);
-    plot!(framestyle = :box);
-    plot!(legend=:topleft);
+        label=anion_label, color=palette(:default)[3])
+    plot!(framestyle = :box)
+    plot!(legend=:topleft)
 
-    return p, R²;
+    return p, R²,τ
 end
 
 function test_result_partial_charges(Z1::Int, Z2::Int)
     neutral_data, cation_data, anion_data = 
-        read_all_sanitized_data(Z1,Z2,true);
+        read_all_sanitized_data(Z1,Z2,true)
 
     function get_data(data::Vector{ParsedFile})
-        model_ρ = zeros(Float64,2,length(data));
-        dft_ρ = zeros(Float64,2,length(data));
+        model_ρ = zeros(Float64,2,length(data))
+        dft_ρ = zeros(Float64,2,length(data))
 
-        n_threads = Threads.nthreads();
-        simulation = Vector{SimulationSystem}();
-        resize!(simulation,n_threads);
+        n_threads = Threads.nthreads()
+        simulation = Vector{SimulationSystem}()
+        resize!(simulation,n_threads)
         for thread_id in 1:n_threads
-            simulation[thread_id] = make_system_from_parsed_file(data[1]);
+            simulation[thread_id] = make_system_from_parsed_file(data[1])
         end
 
         @threads for thread_id in 1:n_threads
             for i in thread_id:n_threads:length(data)
-                dft_ρ1 = data[i].partial_charge_1;
-                dft_ρ2 = data[i].partial_charge_2;
+                dft_ρ1 = data[i].partial_charge_1
+                dft_ρ2 = data[i].partial_charge_2
 
                 set_diatomic_system_to_parsed_file!(
-                    simulation[thread_id],data[i]);
-                polarize_molecules!(simulation[thread_id]);
+                    simulation[thread_id],data[i])
+                polarize_molecules!(simulation[thread_id])
 
-                molecule = simulation[thread_id].system.molecules[1];
-                atom_1 = molecule.atoms[1];
-                atom_2 = molecule.atoms[2];
+                molecule = simulation[thread_id].system.molecules[1]
+                atom_1 = molecule.atoms[1]
+                atom_2 = molecule.atoms[2]
 
-                atom_1_zeff = atom_1.valence_electrons;
-                atom_2_zeff = atom_2.valence_electrons;
+                atom_1_zeff = atom_1.valence_electrons
+                atom_2_zeff = atom_2.valence_electrons
                 
-                model_ζ1 = atom_1.polarization_coefficient;
-                model_ζ2 = atom_2.polarization_coefficient;
+                model_ζ1 = atom_1.polarization_coefficient
+                model_ζ2 = atom_2.polarization_coefficient
 
-                model_ρ1 = atom_1_zeff * (1.0 - model_ζ1);
-                model_ρ2 = atom_2_zeff * (1.0 - model_ζ2);
+                model_ρ1 = atom_1_zeff * (1.0 - model_ζ1)
+                model_ρ2 = atom_2_zeff * (1.0 - model_ζ2)
 
-                model_ρ[:,i] = [model_ρ1,model_ρ2];
-                dft_ρ[:,i] = [dft_ρ1,dft_ρ2];
+                model_ρ[:,i] = [model_ρ1,model_ρ2]
+                dft_ρ[:,i] = [dft_ρ1,dft_ρ2]
             end
         end
 
-        return model_ρ[:], dft_ρ[:];
+        return model_ρ[:], dft_ρ[:]
     end
 
-    neutral_model_ρ, neutral_dft_ρ = get_data(neutral_data);
-    cation_model_ρ, cation_dft_ρ = get_data(cation_data);
-    anion_model_ρ, anion_dft_ρ = get_data(anion_data);
+    neutral_model_ρ, neutral_dft_ρ = get_data(neutral_data)
+    cation_model_ρ, cation_dft_ρ = get_data(cation_data)
+    anion_model_ρ, anion_dft_ρ = get_data(anion_data)
 
-    model_ρ = vcat(neutral_model_ρ,cation_model_ρ,anion_model_ρ);
-    dft_ρ = vcat(neutral_dft_ρ,cation_dft_ρ,anion_dft_ρ);
+    model_ρ = vcat(neutral_model_ρ,cation_model_ρ,anion_model_ρ)
+    dft_ρ = vcat(neutral_dft_ρ,cation_dft_ρ,anion_dft_ρ)
 
-    mean_dft_ρ = sum(dft_ρ) / length(dft_ρ);
-    SS_res = sum((model_ρ - dft_ρ).^2.0);
-    SS_tot = sum((dft_ρ .- mean_dft_ρ).^2.0);
-    R² = 1.0 - SS_res / SS_tot;
+    mean_dft_ρ = sum(dft_ρ) / length(dft_ρ)
+    SS_res = sum((model_ρ - dft_ρ).^2.0)
+    SS_tot = sum((dft_ρ .- mean_dft_ρ).^2.0)
+    R² = 1.0 - SS_res / SS_tot
 
-    elem_symbol1 = get_element_symbol(Z1);
-    elem_symbol2 = get_element_symbol(Z2);
+    τ = StatsBase.corkendall(model_ρ,dft_ρ)
 
-    neutral_label = elem_symbol1*" + "*elem_symbol2;
-    cation_label = "("*elem_symbol1*" + "*elem_symbol2*")⁺";
-    anion_label = "("*elem_symbol1*" + "*elem_symbol2*")⁻";
+    elem_symbol1 = get_element_symbol(Z1)
+    elem_symbol2 = get_element_symbol(Z2)
 
-    Pts = [-2,2];
-    p = plot(Pts,Pts,label=false, color=palette(:default)[4]);
+    neutral_label = elem_symbol1*" + "*elem_symbol2
+    cation_label = "("*elem_symbol1*" + "*elem_symbol2*")⁺"
+    anion_label = "("*elem_symbol1*" + "*elem_symbol2*")⁻"
+
+    Pts = [-2,2]
+    p = plot(Pts,Pts,label=false, color=palette(:default)[4])
     scatter!(neutral_dft_ρ, neutral_model_ρ, markerstrokewidth=0.25,
-        label=neutral_label, color=palette(:default)[1]);
+        label=neutral_label, color=palette(:default)[1])
     scatter!(cation_dft_ρ, cation_model_ρ, markerstrokewidth=0.25,
-        label=cation_label, color=palette(:default)[2]);
+        label=cation_label, color=palette(:default)[2])
     scatter!(anion_dft_ρ, anion_model_ρ, markerstrokewidth=0.25,
-        label=anion_label, color=palette(:default)[3]);
-    plot!(framestyle = :box);
-    plot!(legend=:topleft);
+        label=anion_label, color=palette(:default)[3])
+    plot!(framestyle = :box)
+    plot!(legend=:topleft)
 
-    return p, R²;
+    return p, R², τ
 end
 
 function compare_data()
-    y_label_all = L"$\Delta E \quad \mathrm{(This \ Work)}$";
-    x_label_all = L"$\Delta E \quad (\mathrm{KSDFT})$";
+    y_label_all = L"$\Delta E \quad \mathrm{(This \ Work)}$"
+    x_label_all = L"$\Delta E \quad (\mathrm{KSDFT})$"
 
-    R²_rel_pos_x = (14.0/15.0);
-    R²_rel_pos_y = (1.0/8.0);
+    R²_rel_pos_x = (14.0/15.0)
+    R²_rel_pos_y = (1.5/8.0)
 
     # Energy Differences
     # HC Plots
-    eHC, R² = test_result_ΔE(1,6);
-    aux_lims = [-0.3,1.7];
-    aux_ticks = -0.3:0.5:1.7;
-    plot!(xlims=aux_lims);
-    plot!(ylims=aux_lims);
-    plot!(xticks=aux_ticks);
-    plot!(yticks=aux_ticks);
-    plot!(ylabel=y_label_all);
-    plot!(xlabel=x_label_all);
-    plot!(left_margin=6mm, bottom_margin=8mm);
+    eHC, R²,τ = test_result_ΔE(1,6)
+    aux_lims = [-0.3,1.7]
+    aux_ticks = -0.3:0.5:1.7
+    plot!(xlims=aux_lims)
+    plot!(ylims=aux_lims)
+    plot!(xticks=aux_ticks)
+    plot!(yticks=aux_ticks)
+    plot!(ylabel=y_label_all)
+    plot!(xlabel=x_label_all)
+    plot!(left_margin=6mm, bottom_margin=8mm)
 
-    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
-    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = @sprintf "%.5lf" round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
+    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1])
+    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1])
+    R²_label = @sprintf "%.5lf" round(R²,digits=5)
+    R²_label = "R² = " * R²_label
+    τ_label = @sprintf "%.5lf" round(τ,digits=5)
+    τ_label = "τ = " * τ_label
+    err_label = R²_label * "\n" * τ_label
+    annotate!(l_x_pos, l_y_pos, text(err_label, :right, 10))
 
     # HO Plots
-    eHO, R² = test_result_ΔE(1,8);
-    aux_lims = [-0.3,1.7];
-    aux_ticks = -0.3:0.5:1.7;
-    plot!(xlims=aux_lims);
-    plot!(ylims=aux_lims);
-    plot!(xticks=aux_ticks);
-    plot!(xlabel=x_label_all);
-    plot!(yticks=aux_ticks);
+    eHO, R²,τ = test_result_ΔE(1,8)
+    aux_lims = [-0.3,1.7]
+    aux_ticks = -0.3:0.5:1.7
+    plot!(xlims=aux_lims)
+    plot!(ylims=aux_lims)
+    plot!(xticks=aux_ticks)
+    plot!(xlabel=x_label_all)
+    plot!(yticks=aux_ticks)
 
-    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
-    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = @sprintf "%.5lf" round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
+    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1])
+    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1])
+    R²_label = @sprintf "%.5lf" round(R²,digits=5)
+    R²_label = "R² = " * R²_label
+    τ_label = @sprintf "%.5lf" round(τ,digits=5)
+    τ_label = "τ = " * τ_label
+    err_label = R²_label * "\n" * τ_label
+    annotate!(l_x_pos, l_y_pos, text(err_label, :right, 10))
 
     # CO Plots
-    eCO, R² = test_result_ΔE(6,8);  
-    aux_lims = [-0.4,2.4];
-    aux_ticks = -0.4:0.7:2.4;
-    plot!(xlims=aux_lims);
-    plot!(ylims=aux_lims);
-    plot!(xticks=aux_ticks);
-    plot!(xlabel=x_label_all);
-    plot!(yticks=aux_ticks);
+    eCO, R²,τ = test_result_ΔE(6,8)  
+    aux_lims = [-0.4,2.4]
+    aux_ticks = -0.4:0.7:2.4
+    plot!(xlims=aux_lims)
+    plot!(ylims=aux_lims)
+    plot!(xticks=aux_ticks)
+    plot!(xlabel=x_label_all)
+    plot!(yticks=aux_ticks)
 
-    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
-    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = @sprintf "%.5lf" round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
+    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1])
+    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1])
+    R²_label = @sprintf "%.5lf" round(R²,digits=5)
+    R²_label = "R² = " * R²_label
+    τ_label = @sprintf "%.5lf" round(τ,digits=5)
+    τ_label = "τ = " * τ_label
+    err_label = R²_label * "\n" * τ_label
+    annotate!(l_x_pos, l_y_pos, text(err_label, :right, 10))
 
     # NO Plots
-    eNO, R² = test_result_ΔE(7,8);
-    aux_lims = [-0.2,1.0];
-    aux_ticks = -0.2:0.3:1.0;
-    plot!(xlims=aux_lims);
-    plot!(ylims=aux_lims);
-    plot!(xticks=aux_ticks);
-    plot!(xlabel=x_label_all);
-    plot!(yticks=aux_ticks);
+    eNO, R²,τ = test_result_ΔE(7,8)
+    aux_lims = [-0.2,1.0]
+    aux_ticks = -0.2:0.3:1.0
+    plot!(xlims=aux_lims)
+    plot!(ylims=aux_lims)
+    plot!(xticks=aux_ticks)
+    plot!(xlabel=x_label_all)
+    plot!(yticks=aux_ticks)
 
-    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
-    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = @sprintf "%.5lf" round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
+    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1])
+    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1])
+    R²_label = @sprintf "%.5lf" round(R²,digits=5)
+    R²_label = "R² = " * R²_label
+    τ_label = @sprintf "%.5lf" round(τ,digits=5)
+    τ_label = "τ = " * τ_label
+    err_label = R²_label * "\n" * τ_label
+    annotate!(l_x_pos, l_y_pos, text(err_label, :right, 10))
 
     # Chemical Potentials
-    y_label_all = L"$\mu \quad \mathrm{(This \ Work)}$";
-    x_label_all = L"$\mu \quad (\mathrm{KSDFT})$";
+    y_label_all = L"$\mu \quad \mathrm{(This \ Work)}$"
+    x_label_all = L"$\mu \quad (\mathrm{KSDFT})$"
 
     # HC Plots
-    pHC, R² = test_result_chemical_potential(1,6);
-    aux_lims = [-1.0,0.6];
-    aux_ticks = -1.0:0.4:0.6;
-    plot!(xlims=aux_lims);
-    plot!(ylims=aux_lims);
-    plot!(xticks=aux_ticks);
-    plot!(yticks=aux_ticks);
-    plot!(ylabel=y_label_all);
-    plot!(xlabel=x_label_all);
-    plot!(left_margin=6mm, bottom_margin=8mm);
+    pHC, R²,τ = test_result_chemical_potential(1,6)
+    aux_lims = [-1.0,0.6]
+    aux_ticks = -1.0:0.4:0.6
+    plot!(xlims=aux_lims)
+    plot!(ylims=aux_lims)
+    plot!(xticks=aux_ticks)
+    plot!(yticks=aux_ticks)
+    plot!(ylabel=y_label_all)
+    plot!(xlabel=x_label_all)
+    plot!(left_margin=6mm, bottom_margin=8mm)
 
-    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
-    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = @sprintf "%.5lf" round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
+    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1])
+    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1])
+    R²_label = @sprintf "%.5lf" round(R²,digits=5)
+    R²_label = "R² = " * R²_label
+    τ_label = @sprintf "%.5lf" round(τ,digits=5)
+    τ_label = "τ = " * τ_label
+    err_label = R²_label * "\n" * τ_label
+    annotate!(l_x_pos, l_y_pos, text(err_label, :right, 10))
 
     # HO Plots
-    pHO, R² = test_result_chemical_potential(1,8);
-    aux_lims = [-1.2,0.4];
-    aux_ticks = -1.2:0.4:0.4;
-    plot!(xlims=aux_lims);
-    plot!(ylims=aux_lims);
-    plot!(xticks=aux_ticks);
-    plot!(yticks=aux_ticks);
-    plot!(xlabel=x_label_all);
+    pHO, R²,τ = test_result_chemical_potential(1,8)
+    aux_lims = [-1.2,0.4]
+    aux_ticks = -1.2:0.4:0.4
+    plot!(xlims=aux_lims)
+    plot!(ylims=aux_lims)
+    plot!(xticks=aux_ticks)
+    plot!(yticks=aux_ticks)
+    plot!(xlabel=x_label_all)
 
-    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
-    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = @sprintf "%.5lf" round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
+    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1])
+    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1])
+    R²_label = @sprintf "%.5lf" round(R²,digits=5)
+    R²_label = "R² = " * R²_label
+    τ_label = @sprintf "%.5lf" round(τ,digits=5)
+    τ_label = "τ = " * τ_label
+    err_label = R²_label * "\n" * τ_label
+    annotate!(l_x_pos, l_y_pos, text(err_label, :right, 10))
 
     # CO Plots
-    pCO, R² = test_result_chemical_potential(6,8);
-    aux_lims = [-1.0,0.6];
-    aux_ticks = -1.0:0.4:0.6;
-    plot!(xlims=aux_lims);
-    plot!(ylims=aux_lims);
-    plot!(xticks=aux_ticks);
-    plot!(yticks=aux_ticks);
-    plot!(xlabel=x_label_all);
+    pCO, R²,τ = test_result_chemical_potential(6,8)
+    aux_lims = [-1.0,0.6]
+    aux_ticks = -1.0:0.4:0.6
+    plot!(xlims=aux_lims)
+    plot!(ylims=aux_lims)
+    plot!(xticks=aux_ticks)
+    plot!(yticks=aux_ticks)
+    plot!(xlabel=x_label_all)
 
-    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
-    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = @sprintf "%.5lf" round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
+    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1])
+    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1])
+    R²_label = @sprintf "%.5lf" round(R²,digits=5)
+    R²_label = "R² = " * R²_label
+    τ_label = @sprintf "%.5lf" round(τ,digits=5)
+    τ_label = "τ = " * τ_label
+    err_label = R²_label * "\n" * τ_label
+    annotate!(l_x_pos, l_y_pos, text(err_label, :right, 10))
 
     # NO Plots
-    pNO, R² = test_result_chemical_potential(7,8);
-    aux_lims = [-1.0,0.6];
-    aux_ticks = -1.0:0.4:0.6;
-    plot!(xlims=aux_lims);
-    plot!(ylims=aux_lims);
-    plot!(xticks=aux_ticks);
-    plot!(yticks=aux_ticks);
-    plot!(xlabel=x_label_all);
+    pNO, R²,τ = test_result_chemical_potential(7,8)
+    aux_lims = [-1.0,0.6]
+    aux_ticks = -1.0:0.4:0.6
+    plot!(xlims=aux_lims)
+    plot!(ylims=aux_lims)
+    plot!(xticks=aux_ticks)
+    plot!(yticks=aux_ticks)
+    plot!(xlabel=x_label_all)
 
-    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
-    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = @sprintf "%.5lf" round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
+    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1])
+    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1])
+    R²_label = @sprintf "%.5lf" round(R²,digits=5)
+    R²_label = "R² = " * R²_label
+    τ_label = @sprintf "%.5lf" round(τ,digits=5)
+    τ_label = "τ = " * τ_label
+    err_label = R²_label * "\n" * τ_label
+    annotate!(l_x_pos, l_y_pos, text(err_label, :right, 10))
 
     # Partial Charges
-    y_label_all = L"$\rho \quad \mathrm{(This \ Work)}$";
-    x_label_all = L"$\rho \quad (\mathrm{KSDFT})$";
+    y_label_all = L"$\rho \quad \mathrm{(This \ Work)}$"
+    x_label_all = L"$\rho \quad (\mathrm{KSDFT})$"
 
     # HC Plots
-    cHC, R² = test_result_partial_charges(1,6);
-    aux_lims = [-1.6,1.6];
-    aux_ticks = -1.6:0.8:1.6;
-    plot!(xlims=aux_lims);
-    plot!(ylims=aux_lims);
-    plot!(xticks=aux_ticks);
-    plot!(yticks=aux_ticks);
-    plot!(ylabel=y_label_all);
-    plot!(xlabel=x_label_all);
-    plot!(left_margin=6mm, bottom_margin=8mm);
+    cHC, R²,τ = test_result_partial_charges(1,6)
+    aux_lims = [-2.0,1.6]
+    aux_ticks = -2.0:1.2:1.6
+    plot!(xlims=aux_lims)
+    plot!(ylims=aux_lims)
+    plot!(xticks=aux_ticks)
+    plot!(yticks=aux_ticks)
+    plot!(ylabel=y_label_all)
+    plot!(xlabel=x_label_all)
+    plot!(left_margin=6mm, bottom_margin=8mm)
 
-    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
-    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = @sprintf "%.5lf" round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
+    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1])
+    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1])
+    R²_label = @sprintf "%.5lf" round(R²,digits=5)
+    R²_label = "R² = " * R²_label
+    τ_label = @sprintf "%.5lf" round(τ,digits=5)
+    τ_label = "τ = " * τ_label
+    err_label = R²_label * "\n" * τ_label
+    annotate!(l_x_pos, l_y_pos, text(err_label, :right, 10))
 
     # HO Plots
-    cHO, R² = test_result_partial_charges(1,8);
-    aux_lims = [-2.0,1.2];
-    aux_ticks = -2.0:0.8:1.2;
-    plot!(xlims=aux_lims);
-    plot!(ylims=aux_lims);
-    plot!(xticks=aux_ticks);
-    plot!(yticks=aux_ticks);
-    plot!(xlabel=x_label_all);
-    plot!(left_margin=6mm, bottom_margin=8mm);
+    cHO, R²,τ = test_result_partial_charges(1,8)
+    aux_lims = [-2.0,1.2]
+    aux_ticks = -2.0:0.8:1.2
+    plot!(xlims=aux_lims)
+    plot!(ylims=aux_lims)
+    plot!(xticks=aux_ticks)
+    plot!(yticks=aux_ticks)
+    plot!(xlabel=x_label_all)
+    plot!(left_margin=6mm, bottom_margin=8mm)
 
-    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
-    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = @sprintf "%.5lf" round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
+    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1])
+    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1])
+    R²_label = @sprintf "%.5lf" round(R²,digits=5)
+    R²_label = "R² = " * R²_label
+    τ_label = @sprintf "%.5lf" round(τ,digits=5)
+    τ_label = "τ = " * τ_label
+    err_label = R²_label * "\n" * τ_label
+    annotate!(l_x_pos, l_y_pos, text(err_label, :right, 10))
 
     # CO Plots
-    cCO, R² = test_result_partial_charges(6,8);
-    aux_lims = [-1.6,1.6];
-    aux_ticks = -1.6:0.8:1.6;
-    plot!(xlims=aux_lims);
-    plot!(ylims=aux_lims);
-    plot!(xticks=aux_ticks);
-    plot!(yticks=aux_ticks);
-    plot!(xlabel=x_label_all);
-    plot!(left_margin=6mm, bottom_margin=8mm);
+    cCO, R²,τ = test_result_partial_charges(6,8)
+    aux_lims = [-2.0,1.6]
+    aux_ticks = -2.0:1.2:1.6
+    plot!(xlims=aux_lims)
+    plot!(ylims=aux_lims)
+    plot!(xticks=aux_ticks)
+    plot!(yticks=aux_ticks)
+    plot!(xlabel=x_label_all)
+    plot!(left_margin=6mm, bottom_margin=8mm)
 
-    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
-    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = @sprintf "%.5lf" round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
+    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1])
+    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1])
+    R²_label = @sprintf "%.5lf" round(R²,digits=5)
+    R²_label = "R² = " * R²_label
+    τ_label = @sprintf "%.5lf" round(τ,digits=5)
+    τ_label = "τ = " * τ_label
+    err_label = R²_label * "\n" * τ_label
+    annotate!(l_x_pos, l_y_pos, text(err_label, :right, 10))
 
     # NO Plots
-    cNO, R² = test_result_partial_charges(7,8);
-    aux_lims = [-1.6,1.6];
-    aux_ticks = -1.6:0.8:1.6;
-    plot!(xlims=aux_lims);
-    plot!(ylims=aux_lims);
-    plot!(xticks=aux_ticks);
-    plot!(yticks=aux_ticks);
-    plot!(xlabel=x_label_all);
-    plot!(left_margin=6mm, bottom_margin=8mm);
+    cNO, R²,τ = test_result_partial_charges(7,8)
+    aux_lims = [-2.0,1.6]
+    aux_ticks = -2.0:1.2:1.6
+    plot!(xlims=aux_lims)
+    plot!(ylims=aux_lims)
+    plot!(xticks=aux_ticks)
+    plot!(yticks=aux_ticks)
+    plot!(xlabel=x_label_all)
+    plot!(left_margin=6mm, bottom_margin=8mm)
 
-    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1]);
-    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1]);
-    R² = @sprintf "%.5lf" round(R²,digits=5);
-    annotate!(l_x_pos, l_y_pos, text("R² = "*R², :right, 10));
+    l_x_pos = aux_lims[1] + R²_rel_pos_x*(aux_lims[2] - aux_lims[1])
+    l_y_pos = aux_lims[1] + R²_rel_pos_y*(aux_lims[2] - aux_lims[1])
+    R²_label = @sprintf "%.5lf" round(R²,digits=5)
+    R²_label = "R² = " * R²_label
+    τ_label = @sprintf "%.5lf" round(τ,digits=5)
+    τ_label = "τ = " * τ_label
+    err_label = R²_label * "\n" * τ_label
+    annotate!(l_x_pos, l_y_pos, text(err_label, :right, 10))
 
     # Join all plots
     p = plot(eHC,eHO,eCO,eNO, pHC,pHO,pCO,pNO, cHC,cHO,cCO,cNO,
-        layout=(3,4), size=(1100,650));
-    savefig("Figures/HeteronuclearFitComps.pdf");
+        layout=(3,4), size=(1100,650))
+    savefig("Figures/HeteronuclearFitComps.pdf")
 
-    return p;
+    return p
 end
 
 function test_result_ΔE2(Z1::Int, Z2::Int)
     neutral_data, cation_data, anion_data = 
-        read_all_sanitized_data(Z1,Z2);
+        read_all_sanitized_data(Z1,Z2)
 
     function get_data(data::Vector{ParsedFile})
-        dft_r = zeros(Float64,length(data));
-        dft_ΔE = zeros(Float64,length(data));
+        dft_r = zeros(Float64,length(data))
+        dft_ΔE = zeros(Float64,length(data))
 
-        bohr_to_angstrom = 0.529177;
-        angstrom_to_bohr = 1.88973;
+        bohr_to_angstrom = 0.529177
+        angstrom_to_bohr = 1.88973
 
         for i in eachindex(data)
-            dft_ΔE[i] = data[i].total_energy;
-            dft_r[i] = bohr_to_angstrom*data[i].atomic_separation;
+            dft_ΔE[i] = data[i].total_energy
+            dft_r[i] = bohr_to_angstrom*data[i].atomic_separation
         end
 
-        r0 = 0.0;
-        r1 = angstrom_to_bohr*6.5;
+        r0 = 0.0
+        r1 = angstrom_to_bohr*6.5
 
-        model_r = collect(r0:0.01:r1);
-        model_ΔE = zeros(Float64,length(model_r));
+        model_r = collect(r0:0.01:r1)
+        model_ΔE = zeros(Float64,length(model_r))
 
-        model_r[1] = 1.0E-3;
+        model_r[1] = 1.0E-3
 
-        n_threads = Threads.nthreads();
+        n_threads = Threads.nthreads()
         @threads for thread_id in 1:n_threads
-            simulation = make_system_from_parsed_file(data[end]);
-            r1 = zeros(Float64,3);
-            r2 = zeros(Float64,3);
-            set_atom_coordinates!(simulation.system.molecules[1],r1,1);
-            set_atom_coordinates!(simulation.system.molecules[1],r2,2);
+            simulation = make_system_from_parsed_file(data[end])
+            r1 = zeros(Float64,3)
+            r2 = zeros(Float64,3)
+            set_atom_coordinates!(simulation.system.molecules[1],r1,1)
+            set_atom_coordinates!(simulation.system.molecules[1],r2,2)
 
             for i in thread_id:n_threads:length(model_r)
-                d = angstrom_to_bohr * model_r[i];
-                r2[3] = d;
+                d = angstrom_to_bohr * model_r[i]
+                r2[3] = d
 
-                set_atom_coordinates!(simulation.system.molecules[1],r1,1);
-                set_atom_coordinates!(simulation.system.molecules[1],r2,2);
-                polarize_molecules!(simulation);
+                set_atom_coordinates!(simulation.system.molecules[1],r1,1)
+                set_atom_coordinates!(simulation.system.molecules[1],r2,2)
+                polarize_molecules!(simulation)
 
-                model_ΔE[i] = total_energy(simulation);
+                model_ΔE[i] = total_energy(simulation)
             end
         end
 
-        hartree_to_ev = 27.2114;
-        model_ΔE .*= hartree_to_ev;
-        dft_ΔE .*= hartree_to_ev;
+        hartree_to_ev = 27.2114
+        model_ΔE .*= hartree_to_ev
+        dft_ΔE .*= hartree_to_ev
 
-        return dft_ΔE, model_ΔE, dft_r, model_r;
+        return dft_ΔE, model_ΔE, dft_r, model_r
     end
 
     neutral_dft_ΔE, neutral_model_ΔE, neutral_dft_r, neutral_model_r = 
-        get_data(neutral_data);
+        get_data(neutral_data)
     cation_dft_ΔE, cation_model_ΔE, cation_dft_r, cation_model_r = 
-        get_data(cation_data);
+        get_data(cation_data)
     anion_dft_ΔE, anion_model_ΔE, anion_dft_r, anion_model_r = 
-        get_data(anion_data);
+        get_data(anion_data)
 
     i_min_dft_e = argmin(neutral_dft_ΔE)
-    min_dft_e = neutral_dft_ΔE[i_min_dft_e];
-    min_dft_r = neutral_dft_r[i_min_dft_e];
-    neutral_dft_ΔE .-= min_dft_e;
-    cation_dft_ΔE .-= min_dft_e;
-    anion_dft_ΔE .-= min_dft_e;
+    min_dft_e = neutral_dft_ΔE[i_min_dft_e]
+    min_dft_r = neutral_dft_r[i_min_dft_e]
+    neutral_dft_ΔE .-= min_dft_e
+    cation_dft_ΔE .-= min_dft_e
+    anion_dft_ΔE .-= min_dft_e
 
-    hartree_to_ev = 27.2114;
-    # neutral_mol = make_system_from_parsed_file(neutral_data[i_min_dft_e]);
-    # min_model_e = total_energy(neutral_mol);
-    # min_model_e *= hartree_to_ev;
-    min_model_e = minimum(neutral_model_ΔE);
+    hartree_to_ev = 27.2114
+    # neutral_mol = make_system_from_parsed_file(neutral_data[i_min_dft_e])
+    # min_model_e = total_energy(neutral_mol)
+    # min_model_e *= hartree_to_ev
+    min_model_e = minimum(neutral_model_ΔE)
     
-    neutral_model_ΔE .-= min_model_e;
-    cation_model_ΔE .-= min_model_e;
-    anion_model_ΔE .-= min_model_e;
+    neutral_model_ΔE .-= min_model_e
+    cation_model_ΔE .-= min_model_e
+    anion_model_ΔE .-= min_model_e
 
-    elem_symbol1 = get_element_symbol(Z1);
-    elem_symbol2 = get_element_symbol(Z2);
-    neutral_label = elem_symbol1*" + "*elem_symbol2;
-    cation_label = "("*elem_symbol1*" + "*elem_symbol2*")⁺";
-    anion_label = "("*elem_symbol1*" + "*elem_symbol2*")⁻";
+    elem_symbol1 = get_element_symbol(Z1)
+    elem_symbol2 = get_element_symbol(Z2)
+    neutral_label = elem_symbol1*" + "*elem_symbol2
+    cation_label = "("*elem_symbol1*" + "*elem_symbol2*")⁺"
+    anion_label = "("*elem_symbol1*" + "*elem_symbol2*")⁻"
 
-    neutral_color = palette(:default)[1];
-    cation_color = palette(:default)[2];
-    anion_color = palette(:default)[3];
+    neutral_color = palette(:default)[1]
+    cation_color = palette(:default)[2]
+    anion_color = palette(:default)[3]
 
     p = plot(neutral_model_r, neutral_model_ΔE, color = neutral_color,
-        label=neutral_label, linewidth = 2);
+        label=neutral_label, linewidth = 2)
     scatter!(neutral_dft_r, neutral_dft_ΔE, color = neutral_color,
-        label=false, markersize=3);
+        label=false, markersize=3)
 
     plot!(cation_model_r, cation_model_ΔE, color = cation_color,
-        label = cation_label, linewidth = 2);
+        label = cation_label, linewidth = 2)
     scatter!(cation_dft_r, cation_dft_ΔE, color = cation_color, 
-        label=false, markersize=3);
+        label=false, markersize=3)
 
     plot!(anion_model_r, anion_model_ΔE, color = anion_color,
-        label = anion_label, linewidth = 2);
+        label = anion_label, linewidth = 2)
     scatter!(anion_dft_r, anion_dft_ΔE, color = anion_color, 
-        label=false, markersize=3);
+        label=false, markersize=3)
 
-    plot!(framestyle = :box);
-    return p;
+    plot!(framestyle = :box)
+    return p
 end
 
 function comp_heteronuclear_scan(pair1::Tuple{Int,Int}, pair2::Tuple{Int,Int})
-    x_max = 6;
+    x_max = 6
 
-    p1 = test_result_ΔE2(pair1[1],pair1[2]);
-    plot!(ylabel=L"$\Delta E \quad \mathrm{[eV]}$");
-    plot!(ylims=[-5,55],yticks=-5:15:55);
-    plot!(xlims=[0.0,x_max],xticks=(0:2:6,[]));
+    p1 = test_result_ΔE2(pair1[1],pair1[2])
+    plot!(ylabel=L"$\Delta E \quad \mathrm{[eV]}$")
+    plot!(ylims=[-5,55],yticks=-5:15:55)
+    plot!(xlims=[0.0,x_max],xticks=(0:2:6,[]))
     plot!(legend = :topright)
 
-    p2 = test_result_ΔE2(pair2[1],pair2[2]);
-    plot!(xlabel=L"$d \quad \mathrm{[\AA ngstrom]}$");
-    plot!(ylabel=L"$\Delta E \quad \mathrm{[eV]}$");
-    plot!(ylims=[-5,55],yticks=-5:15:55);
-    plot!(xlims=[0.0,x_max],xticks=0:2:6);
+    p2 = test_result_ΔE2(pair2[1],pair2[2])
+    plot!(xlabel=L"$d \quad \mathrm{[\AA ngstrom]}$")
+    plot!(ylabel=L"$\Delta E \quad \mathrm{[eV]}$")
+    plot!(ylims=[-5,55],yticks=-5:15:55)
+    plot!(xlims=[0.0,x_max],xticks=0:2:6)
     plot!(legend = :topright)
 
-    p = plot(p1,p2, layout=(2,1), size = (500,340));
-    savefig("Figures/HeteronuclearScanComp.pdf");
+    p = plot(p1,p2, layout=(2,1), size = (500,340))
+    savefig("Figures/HeteronuclearScanComp.pdf")
 
-    return p;
+    return p
 end
 
 function plot_chemical_potential_scan(Z1::Int, Z2::Int, Q::Int)
-    sim = make_diatomic_system(Z1,Z2,0.0,Q);
+    sim = make_diatomic_system(Z1,Z2,0.0,Q)
 
-    r = collect(0.0:0.01:5);
-    u = zeros(Float64,length(r));
+    r = collect(0.0:0.01:5)
+    u = zeros(Float64,length(r))
 
     for i in eachindex(r)
-        sim.system.molecules[1].atoms[1].coordinates[3] = r[i];
-        aux_m, aux_y = polarization_matrix_problem(sim);
-        polarize_molecules!(sim);
+        sim.system.molecules[1].atoms[1].coordinates[3] = r[i]
+        aux_m, aux_y = polarization_matrix_problem(sim)
+        polarize_molecules!(sim)
     
-        u[i] = sim.system.chemical_potential;
+        u[i] = sim.system.chemical_potential
     end
 
-    bohr_to_angstrom = 0.529177;
-    r .*= bohr_to_angstrom;
+    bohr_to_angstrom = 0.529177
+    r .*= bohr_to_angstrom
 
-    p = plot(r,u,label=false);
-    plot!(xlabel="Atomic Separation [Å]");
-    plot!(ylabel="Chemical Potential [Hartree]");
-    plot!(framestyle = :box);
-    plot!(xlims=[r[1],r[end]]);
+    p = plot(r,u,label=false)
+    plot!(xlabel="Atomic Separation [Å]")
+    plot!(ylabel="Chemical Potential [Hartree]")
+    plot!(framestyle = :box)
+    plot!(xlims=[r[1],r[end]])
 
-    return p;
+    return p
 end
 
 function plot_partial_charges(Z1::Int, Z2::Int, Q::Int)
-    sim = make_diatomic_system(Z1,Z2,0.0,Q);
+    sim = make_diatomic_system(Z1,Z2,0.0,Q)
 
-    ref_data = Vector{ParsedFile}();
+    ref_data = Vector{ParsedFile}()
     neutral_data, cation_data, anion_data = 
-        read_all_sanitized_data(Z1,Z2);
+        read_all_sanitized_data(Z1,Z2)
     if Q == 0
-        ref_data = neutral_data;
+        ref_data = neutral_data
     elseif Q == 1
-        ref_data = cation_data;
+        ref_data = cation_data
     else
-        ref_data = anion_data;
+        ref_data = anion_data
     end
 
-    r0 = ref_data[1].atomic_separation * 0.95;
-    r1 = ref_data[end].atomic_separation * 1.05;
+    r0 = ref_data[1].atomic_separation * 0.95
+    r1 = ref_data[end].atomic_separation * 1.05
 
-    r = collect(r0:0.01:r1);
-    q1 = zeros(Float64,length(r));
-    q2 = zeros(Float64,length(r));
+    r = collect(r0:0.01:r1)
+    q1 = zeros(Float64,length(r))
+    q2 = zeros(Float64,length(r))
 
-    r_dft = zeros(Float64,length(ref_data));
-    q1_dft = zeros(Float64,length(ref_data));
-    q2_dft = zeros(Float64,length(ref_data));
+    r_dft = zeros(Float64,length(ref_data))
+    q1_dft = zeros(Float64,length(ref_data))
+    q2_dft = zeros(Float64,length(ref_data))
 
     for i in eachindex(r)
-        sim.system.molecules[1].atoms[1].coordinates[3] = r[i];
-        aux_m, aux_y = polarization_matrix_problem(sim);
+        sim.system.molecules[1].atoms[1].coordinates[3] = r[i]
+        aux_m, aux_y = polarization_matrix_problem(sim)
     
-        aux_x = aux_m \ aux_y;
+        aux_x = aux_m \ aux_y
 
-        q1[i] = aux_x[1];
-        q2[i] = aux_x[2];
+        q1[i] = aux_x[1]
+        q2[i] = aux_x[2]
     end
 
     for i in eachindex(ref_data)
-        r_dft[i] = ref_data[i].atomic_separation;
-        q1_dft[i] = ref_data[i].partial_charge_1;
-        q2_dft[i] = ref_data[i].partial_charge_2;
+        r_dft[i] = ref_data[i].atomic_separation
+        q1_dft[i] = ref_data[i].partial_charge_1
+        q2_dft[i] = ref_data[i].partial_charge_2
     end
 
-    z1_eff = sim.system.molecules[1].atoms[1].valence_electrons;
-    z2_eff = sim.system.molecules[1].atoms[2].valence_electrons;
+    z1_eff = sim.system.molecules[1].atoms[1].valence_electrons
+    z2_eff = sim.system.molecules[1].atoms[2].valence_electrons
 
-    q1 = (1.0 .- q1) .* z1_eff;
-    q2 = (1.0 .- q2) .* z2_eff;
+    q1 = (1.0 .- q1) .* z1_eff
+    q2 = (1.0 .- q2) .* z2_eff
 
-    bohr_to_angstrom = 0.529177;
-    r .*= bohr_to_angstrom;
-    r_dft .*= bohr_to_angstrom;
+    bohr_to_angstrom = 0.529177
+    r .*= bohr_to_angstrom
+    r_dft .*= bohr_to_angstrom
 
     p = plot(r,q1,label=get_element_symbol(Z1),
-        color=palette(:auto)[1]);
+        color=palette(:auto)[1])
     plot!(r,q2,label=get_element_symbol(Z2),
-        color=palette(:auto)[2]);
-    plot!(xlabel="Atomic Separation [Å]");
-    plot!(ylabel="Partial Charge");
-    plot!(framestyle = :box);
-    plot!(xlims=[r[1],r[end]]);
+        color=palette(:auto)[2])
+    plot!(xlabel="Atomic Separation [Å]")
+    plot!(ylabel="Partial Charge")
+    plot!(framestyle = :box)
+    plot!(xlims=[r[1],r[end]])
 
-    scatter!(r_dft,q1_dft,label=false,color=palette(:auto)[1]);
-    scatter!(r_dft,q2_dft,label=false,color=palette(:auto)[2]);
+    scatter!(r_dft,q1_dft,label=false,color=palette(:auto)[1])
+    scatter!(r_dft,q2_dft,label=false,color=palette(:auto)[2])
 
-    return p;
+    return p
 end
 
 function plot_compare_partial_charges(Z1::Int, Z2::Int, Q::Int)
-    sim = make_diatomic_system(Z1,Z2,0.0,Q);
+    sim = make_diatomic_system(Z1,Z2,0.0,Q)
 
-    ref_data = Vector{ParsedFile}();
+    ref_data = Vector{ParsedFile}()
     neutral_data, cation_data, anion_data = 
-        read_all_sanitized_data(Z1,Z2);
+        read_all_sanitized_data(Z1,Z2)
     if Q == 0
-        ref_data = neutral_data;
+        ref_data = neutral_data
     elseif Q == 1
-        ref_data = cation_data;
+        ref_data = cation_data
     else
-        ref_data = anion_data;
+        ref_data = anion_data
     end
 
-    q1 = zeros(Float64,length(ref_data));
-    q2 = zeros(Float64,length(ref_data));
+    q1 = zeros(Float64,length(ref_data))
+    q2 = zeros(Float64,length(ref_data))
 
-    q1_dft = zeros(Float64,length(ref_data));
-    q2_dft = zeros(Float64,length(ref_data));
+    q1_dft = zeros(Float64,length(ref_data))
+    q2_dft = zeros(Float64,length(ref_data))
 
     for i in eachindex(ref_data)
-        set_diatomic_system_to_parsed_file!(sim,ref_data[i]);
-        polarize_molecules!(sim);
+        set_diatomic_system_to_parsed_file!(sim,ref_data[i])
+        polarize_molecules!(sim)
 
 
-        q1_dft[i] = ref_data[i].partial_charge_1;
-        q2_dft[i] = ref_data[i].partial_charge_2;
+        q1_dft[i] = ref_data[i].partial_charge_1
+        q2_dft[i] = ref_data[i].partial_charge_2
 
-        q1[i] = sim.system.molecules[1].atoms[1].polarization_coefficient;
-        q2[i] = sim.system.molecules[1].atoms[2].polarization_coefficient;
+        q1[i] = sim.system.molecules[1].atoms[1].polarization_coefficient
+        q2[i] = sim.system.molecules[1].atoms[2].polarization_coefficient
     end
 
-    z1_eff = sim.system.molecules[1].atoms[1].valence_electrons;
-    z2_eff = sim.system.molecules[1].atoms[2].valence_electrons;
+    z1_eff = sim.system.molecules[1].atoms[1].valence_electrons
+    z2_eff = sim.system.molecules[1].atoms[2].valence_electrons
 
-    # q1 = (1.0 .- q1) .* z1_eff;
-    # q2 = (1.0 .- q2) .* z2_eff;
+    # q1 = (1.0 .- q1) .* z1_eff
+    # q2 = (1.0 .- q2) .* z2_eff
 
-    q1 *= z1_eff;
-    q2 *= z2_eff;
+    q1 *= z1_eff
+    q2 *= z2_eff
 
-    q1_dft = z1_eff .- q1_dft;
-    q2_dft = z2_eff .- q2_dft;
+    q1_dft = z1_eff .- q1_dft
+    q2_dft = z2_eff .- q2_dft
 
-    q12_dft = vcat(q1_dft,q2_dft);
-    q12_model = vcat(q1,q2);
+    q12_dft = vcat(q1_dft,q2_dft)
+    q12_model = vcat(q1,q2)
 
-    min_x = minimum(vcat(q12_dft,q12_model));
-    max_x = maximum(vcat(q12_dft,q12_model));
+    min_x = minimum(vcat(q12_dft,q12_model))
+    max_x = maximum(vcat(q12_dft,q12_model))
 
     p = plot([min_x,max_x],[min_x,max_x],label=false)
-    scatter!(q12_dft,q12_model);
+    scatter!(q12_dft,q12_model)
 
-    return p;
+    return p
 end
 
 comp_heteronuclear_scan((7,8),(6,8))
