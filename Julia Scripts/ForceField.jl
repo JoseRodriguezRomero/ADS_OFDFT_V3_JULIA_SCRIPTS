@@ -13,7 +13,7 @@ function naive_coulomb_integral(λ::Real, d::Real)
         return 2*sqrt(λ/π)
     end
 
-    if λ == Inf
+    if isinf(λ)
         return 1.0/d
     end
 
@@ -57,24 +57,28 @@ function morse_u(depth::Real, stiffness_parameter::Real,
 end
 
 function smear_comb(λ1::Number, λ2::Number)
-    if λ1 == Inf && λ2 == Inf
+    if isinf(λ1) && isinf(λ2)
         return ∞
     end
 
-    if λ1 == Inf
+    if isinf(λ1)
         return λ2
     end
 
-    if λ2 == Inf
+    if isinf(λ2)
         return λ1
     end
 
     return (λ1 * λ2) / (λ1 + λ2)
 end
 
+"""
+    unpol_ee_energy(atom_1::Atom, atom_2::Atom) → (e_naive::Real, e_xc_sph::Real, e_xc_cyl::Real)
+
+Calculates the unpolarized electron-electron interactions between the valence 
+electron shells of atoms atom_1 and atom_2.
+"""
 function unpol_ee_energy(atom_1::Atom, atom_2::Atom)
-    # Calculates the unpolarized electron-electron interactions between the 
-    # valence electron shells of atoms atom_1 and atom_2.
     atom_1_cloud = atom_1.electron_cloud_shells[end]
     atom_1_basis_size = length(atom_1_cloud.basis_function_amplitude)
 
@@ -83,9 +87,9 @@ function unpol_ee_energy(atom_1::Atom, atom_2::Atom)
 
     d = norm(atom_1.coordinates - atom_2.coordinates)
 
-    e_naive = 0
-    e_xc_sph = 0
-    e_xc_cyl = 0
+    e_naive = 0.0
+    e_xc_sph = 0.0
+    e_xc_cyl = 0.0
 
     for i in 1:atom_1_basis_size
         for j in 1:atom_2_basis_size
@@ -107,9 +111,13 @@ function unpol_ee_energy(atom_1::Atom, atom_2::Atom)
     return e_naive, e_xc_sph, e_xc_cyl
 end
 
+"""
+    ee_energy(atom_1::Atom, atom_2::Atom) → (e_naive::Real, e_xc_sph::Real, e_xc_cyl::Real)
+
+Calculates the polarized electron-electron interactions between the electron 
+shells of atoms atom_1 and atom_2.
+"""
 function ee_energy(atom_1::Atom, atom_2::Atom)
-    # Calculates the polarized electron-electron interactions between the 
-    # electron shells of atoms atom_1 and atom_2.
     ζ1 = atom_1.polarization_coefficient
     ζ2 = atom_2.polarization_coefficient
 
@@ -122,10 +130,14 @@ function ee_energy(atom_1::Atom, atom_2::Atom)
     return e_naive, e_xc_sph, e_xc_cyl
 end
 
+"""
+    unpol_en_energy(atom_1::Atom, atom_2::Atom) → (e_naive::Real, e_xc_sph::Real, e_xc_cyl::Real)
+
+Calculates the unpolarized interactions between the valence electron shell of 
+atom atom_1 and the nuclei of atom atom_2. The charge of the nuclei of atom_2 is 
+replaced with its number of valence electrons.
+"""
 function unpol_en_energy(atom_1::Atom, atom_2::Atom)
-    # Calculates the unpolarized interactions between the valence electron shell 
-    # of atom atom_1 and the nuclei of atom atom_2. The charge of the nuclei of 
-    # atom_2 is replaced with its number of valence electrons.
     atom_1_cloud = atom_1.electron_cloud_shells[end]
     atom_1_basis_size = length(atom_1_cloud.basis_function_amplitude)
 
@@ -152,17 +164,25 @@ function unpol_en_energy(atom_1::Atom, atom_2::Atom)
     return e_naive, e_xc_sph, e_xc_cyl
 end
 
+"""
+    unpol_ne_energy(atom_1::Atom, atom_2::Atom) → (e_naive::Real, e_xc_sph::Real, e_xc_cyl::Real)
+
+Calculates the unpolarized interactions between the valence electron shell of 
+atom atom_2 and the nuclei of atom atom_1. The charge of the nuclei of atom_1 is 
+replaced with its number of valence electrons.
+"""
 function unpol_ne_energy(atom_1::Atom, atom_2::Atom)
-    # Calculates the unpolarized interactions between the valence electron shell 
-    # of atom atom_2 and the nuclei of atom atom_1. The charge of the nuclei of 
-    # atom_1 is replaced with its number of valence electrons.
     e_naive, e_xc_sph, e_xc_cyl = unpol_en_energy(atom_2,atom_1)
     return e_naive, e_xc_sph, e_xc_cyl
 end
 
+"""
+    en_energy(atom_1::Atom, atom_2::Atom) → (e_naive::Real, e_xc_sph::Real, e_xc_cyl::Real)
+
+Calculates the polarized interactions between the electron shells of atom atom_1 
+and the nuclei of atom atom_2.
+"""
 function en_energy(atom_1::Atom, atom_2::Atom)
-    # Calculates the polarized interactions between the electron shells of atom 
-    # atom_1 and the nuclei of atom atom_2.
     ζ1 = atom_1.polarization_coefficient
 
     e_naive, e_xc_sph, e_xc_cyl = unpol_en_energy(atom_1,atom_2)
@@ -174,17 +194,24 @@ function en_energy(atom_1::Atom, atom_2::Atom)
     return e_naive, e_xc_sph, e_xc_cyl
 end
 
+"""
+    ne_energy(atom_1::Atom, atom_2::Atom) → (e_naive::Real, e_xc_sph::Real, e_xc_cyl::Real)
+
+Calculates the polarized interactions between the nuclei of atom atom_1 and the 
+electron shells of atom atom_2.
+"""
 function ne_energy(atom_1::Atom, atom_2::Atom)
-    # Calculates the polarized interactions between the nuclei of atom atom_1 
-    # and the electron shells of atom atom_2.
     e_naive, e_xc_sph, e_xc_cyl = en_energy(atom_2,atom_1)
     return e_naive, e_xc_sph, e_xc_cyl
 end
 
+"""
+    nn_energy(atom_1::Atom, atom_2::Atom) → e_naive::Real
+
+Calculates the Couloumb interaction between the nuclei of atoms atom_1 and 
+atom_2. The atomic numbers are replaced with the number of valence electrons.
+"""
 function nn_energy(atom_1::Atom, atom_2::Atom)
-    # Calculates the Couloumb interaction between the nuclei of atoms atom_1 and 
-    # atom_2. The atomic numbers are replaced with the number of valence 
-    # electrons.
     q1 = atom_1.valence_electrons
     q2 = atom_2.valence_electrons
 
@@ -194,8 +221,12 @@ function nn_energy(atom_1::Atom, atom_2::Atom)
     return e_naive
 end
 
+"""
+    rotate_molecule!(molecule::Molecule, Δθ::Matrix{Number})
+
+Rotates the whole molecule by the rotation matrix Δθ.
+"""
 function rotate_molecule!(molecule::Molecule, Δθ::Matrix{Number})
-    # Rotates the whole molecule by the rotation matrix Δθ.
     for i in eachindex(molecule.atoms)
         molecule.atoms[i].position = Δθ*(molecule.atoms[i].position)
     end
@@ -203,9 +234,13 @@ function rotate_molecule!(molecule::Molecule, Δθ::Matrix{Number})
     return
 end
 
+"""
+    polarization_matrix_problem(simulation::SimulationSystem) → (aux_M::Matrix{Real}, aux_Y::Matrix{Real})
+
+Calculates the matrix problem that needs to be solved for the polarization 
+Lagrangian to be stationary.
+"""
 function polarization_matrix_problem(simulation::SimulationSystem)
-    # Calculates the matrix problem that needs to be solved for the 
-    # polarization lagrangian to be stationary.
     molecules = simulation.system.molecules
     charge = simulation.system.charge
 
@@ -382,10 +417,8 @@ function polarization_matrix_problem(simulation::SimulationSystem)
                     atom_index_1 = atom_ind_base[molecule_index] + i - 1
                     atom_index_2 = atom_ind_base[molecule_index] + j - 1
 
-                    compute_en_energies(
-                        atom_1,atom_2,atom_index_1,atom_index_2)
-                    compute_ee_energies(
-                        atom_1,atom_2,atom_index_1,atom_index_2)
+                    compute_en_energies(atom_1,atom_2,atom_index_1,atom_index_2)
+                    compute_ee_energies(atom_1,atom_2,atom_index_1,atom_index_2)
                 end
             end
         end
@@ -407,10 +440,8 @@ function polarization_matrix_problem(simulation::SimulationSystem)
                         atom_index_1 = atom_ind_base[molecule_index_1] + i - 1
                         atom_index_2 = atom_ind_base[molecule_index_2] + j - 1
 
-                        compute_en_energies(
-                            atom_1,atom_2,atom_index_1,atom_index_2)
-                        compute_ee_energies(
-                            atom_1,atom_2,atom_index_1,atom_index_2)
+                        compute_en_energies(atom_1,atom_2,atom_index_1,atom_index_2)
+                        compute_ee_energies(atom_1,atom_2,atom_index_1,atom_index_2)
                     end
                 end
             end
@@ -432,13 +463,12 @@ function polarization_matrix_problem(simulation::SimulationSystem)
     return aux_M, aux_Y
 end
 
-function print_polarization_matrix_problem(simulation::SimulationSystem)
-    aux_m, aux_y = polarization_matrix_problem(simulation)
-    display(hcat(aux_m,aux_m \ aux_y,aux_y))
-end
+"""
+    polarize_molecules!(simulation::SimulationSystem)
 
+Calculates and sets the polarization coefficients of the atoms.
+"""
 function polarize_molecules!(simulation::SimulationSystem)
-    # Calculates and sets the polarization coefficients of the atoms.
     aux_m, aux_y = polarization_matrix_problem(simulation)
     minimizer = aux_m \ aux_y
 
@@ -473,9 +503,12 @@ function polarize_molecules!(simulation::SimulationSystem)
     return
 end
 
+"""
+    system_energies(simulation::SimulationSystem) → (naive_energy::Real, kinetic_energy::Real, xc_energy::Real, non_polarizable_energy::Real)
+
+Returns the kinetic, naive and xc energy contributions of our simplified model.
+"""
 function system_energies(simulation::SimulationSystem)
-    # Returns the kinetic, naive and xc energy contributions of our simplified 
-    # model.
     molecules = simulation.system.molecules
 
     coeffs = simulation.tot_e_coeffs
@@ -493,10 +526,8 @@ function system_energies(simulation::SimulationSystem)
     xc_d_2b = coeffs.xc_coeffs.xc_d_2b
 
     morse_depth = coeffs.non_polarizable_coeffs.depth
-    morse_stiffness_parameter = 
-        coeffs.non_polarizable_coeffs.stiffness_parameter
-    morse_equilibrium_distance = 
-        coeffs.non_polarizable_coeffs.equilibrium_distance
+    morse_stiffness_parameter = coeffs.non_polarizable_coeffs.stiffness_parameter
+    morse_equilibrium_distance = coeffs.non_polarizable_coeffs.equilibrium_distance
     
     aux_type = typeof(xc_a_1b[1])
     xc_energy = aux_type(0.0)
@@ -661,10 +692,13 @@ function system_energies(simulation::SimulationSystem)
     return naive_energy, kinetic_energy, xc_energy, non_polarizable_energy
 end
 
+"""
+    total_energy(simulation::SimulationSystem) → total_energy::Real
+
+Returns the sum of all three energy contributions.
+"""
 function total_energy(simulation::SimulationSystem)
-    # Returns the sum of all three energy contributions.
-    naive_energy, kinetic_energy, xc_energy, non_polarizable_energy = 
-        system_energies(simulation)
+    naive_energy, kinetic_energy, xc_energy, non_polarizable_energy = system_energies(simulation)
     return naive_energy + kinetic_energy + xc_energy + non_polarizable_energy
 end
 
@@ -697,28 +731,28 @@ function initialize_simulation_environment()
     morse_stiffness_parameter = Dict{Tuple{Int,Int},Number}()
     morse_equilibrium_distance = Dict{Tuple{Int,Int},Number}()
 
-    xc_coeffs = EmpiricalXCCoefficients(
-        xc_a_1b,xc_b_1b,xc_c_1b,xc_d_1b,xc_a_2b,xc_b_2b,xc_c_2b,xc_d_2b)
+    xc_coeffs = EmpiricalXCCoefficients(xc_a_1b,xc_b_1b,xc_c_1b,xc_d_1b,xc_a_2b,xc_b_2b,xc_c_2b,xc_d_2b)
     ke_coeffs = EmpiricalKECoefficients(ke_e_1b,ke_f_1b)
-    non_polarizable_coeffs = EmpiricalMorseCoefficients(morse_depth,
-        morse_stiffness_parameter,morse_equilibrium_distance)
+    non_polarizable_coeffs = EmpiricalMorseCoefficients(morse_depth,morse_stiffness_parameter,morse_equilibrium_distance)
 
-    tot_e_coeffs = deepcopy(TotalEnergyCoefficients(xc_coeffs,ke_coeffs,
-        non_polarizable_coeffs))
-    pol_e_coeffs = deepcopy(PolarizationEnergyCoefficients(
-        xc_coeffs,ke_coeffs))
+    tot_e_coeffs = deepcopy(TotalEnergyCoefficients(xc_coeffs,ke_coeffs,non_polarizable_coeffs))
+    pol_e_coeffs = deepcopy(PolarizationEnergyCoefficients(xc_coeffs,ke_coeffs))
 
     system = MolecularSystem()
-    simulation = SimulationSystem(system,tot_e_coeffs,pol_e_coeffs,
-        basis_set_settings)
+    simulation = SimulationSystem(system,tot_e_coeffs,pol_e_coeffs,basis_set_settings)
 
     load_fitted_coeffs!(simulation)
 
     return simulation
 end
 
+"""
+    make_monoatomic_system(Z::Int, charge::Number) → simulation::SimulationSystem
+    make_monoatomic_system(element::String,charge::Int) → simulation::SimulationSystem
+
+Makes a molecule object with a single atom whose atomic number is Z.
+"""
 function make_monoatomic_system(Z::Int, charge::Number)
-    # Makes a molecule object with a single atom whose atomic number is Z.
     simulation = initialize_simulation_environment()
     simulation.system.charge = charge
     reference_atoms = simulation.basis_set_settings.reference_atoms
@@ -738,10 +772,13 @@ function make_monoatomic_system(element::String,charge::Int)
     return make_monoatomic_system(Z,charge)
 end
 
-function make_diatomic_molecule(
-    reference_atoms::Dict{Int,Atom}, Z1::Int, Z2::Int, d::Number, charge::Int)
-    # Makes a diatomic molecule with a diatomic separation d in Bohr with the 
-    # specified charge.
+"""
+    make_diatomic_molecule(reference_atoms::Dict{Int,Atom}, Z1::Int, Z2::Int, d::Number, charge::Int) → molecule::Molecule
+
+Makes a diatomic molecule with a diatomic separation d in Bohr with the 
+specified charge.
+"""
+function make_diatomic_molecule(reference_atoms::Dict{Int,Atom}, Z1::Int, Z2::Int, d::Number, charge::Int)
     atom_1 = copy(reference_atoms[Z1])
     atom_2 = copy(reference_atoms[Z2])
 
@@ -763,12 +800,14 @@ function make_diatomic_molecule(
     return molecule
 end
 
-function make_triatomic_molecule(
-    reference_atoms::Dict{Int,Atom}, Z1::Int, Z2::Int, Z3::Int, 
-    distance_12::Number, distance_13::Number, angle_123::Number)
-    # Makes a triatomic molecule with a diatomic separation distance_12 in Bohr 
-    # between atoms 1 and 2, distance_13 in Bohr between atoms 2 and 3, all of 
-    # them describing an angle angle_213 in degrees.
+"""
+    make_triatomic_molecule(reference_atoms::Dict{Int,Atom}, Z1::Int, Z2::Int, Z3::Int, distance_12::Number, distance_13::Number, angle_123::Number) → molecule::Molecule
+
+Makes a triatomic molecule with a diatomic separation distance_12 in Bohr 
+between atoms 1 and 2, distance_13 in Bohr between atoms 2 and 3, all of them 
+describing an angle angle_213 in degrees.
+"""
+function make_triatomic_molecule(reference_atoms::Dict{Int,Atom}, Z1::Int, Z2::Int, Z3::Int, distance_12::Number, distance_13::Number, angle_123::Number)
     atom_1 = copy(reference_atoms[Z1])
     atom_2 = copy(reference_atoms[Z2])
     atom_3 = copy(reference_atoms[Z3])
@@ -795,9 +834,16 @@ function make_triatomic_molecule(
     return molecule
 end
 
+"""
+    make_diatomic_system(Z1::Int, Z2::Int, d::Number, charge::Int) → simulation::SimulationSystem
+    make_diatomic_system(element1::String, element2::String,d::Number,charge::Int) → simulation::SimulationSystem
+    make_diatomic_system(Z::Int,d::Number,charge::Int) → simulation::SimulationSystem
+    make_diatomic_system(element::String,d::Number,charge::Int) → simulation::SimulationSystem
+
+Makes a simulation structure with a diatomic molecule with a diatomic separation 
+d in Bohr with the specified charge.
+"""
 function make_diatomic_system(Z1::Int, Z2::Int, d::Number, charge::Int)
-    # Makes a simulation structure with a diatomic molecule with a diatomic 
-    # separation d in Bohr with the specified charge.
     simulation = initialize_simulation_environment()
     simulation.system.charge = charge
     reference_atoms = simulation.basis_set_settings.reference_atoms
@@ -810,29 +856,38 @@ end
 
 function make_diatomic_system(
     element1::String, element2::String,d::Number,charge::Int)
-    # Makes a diatomic molecule with a diatomic separation d in Bohr with the 
-    # specified charge.
     Z1 = get_atomic_number(element1)
     Z2 = get_atomic_number(element2)
     return make_diatomic_system(Z1,Z2,d,charge)
 end
 
+"""
+    make_diatomic_system(Z::Int,d::Number,charge::Int) → simulation::SimulationSystem
+
+Makes a homonuclear diatomic molecule with a diatomic separation d in Bohr with 
+the specified charge.
+"""
 function make_diatomic_system(Z::Int,d::Number,charge::Int)
-    # Makes a homonuclear diatomic molecule with a diatomic separation d in 
-    # Bohr with the specified charge.
     return make_diatomic_system(Z,Z,d,charge)
 end
 
+"""
+    make_diatomic_system(element::String,d::Number,charge::Int) → simulation::SimulationSystem
+
+Makes a homonuclear diatomic molecule with a diatomic separation d in Bohr with 
+the specified charge.
+"""
 function make_diatomic_system(element::String,d::Number,charge::Int)
-    # Makes a homonuclear diatomic molecule with a diatomic separation d in 
-    # Bohr with the specified charge.
     return make_diatomic_system(element,element,d,charge)
 end
 
+"""
+    full_model_reset()
+
+Sets all the empirical coefficients to zero and recalculates the Thomas-Fermi 
+and von Weizacker kinetic energies for the atoms allowed in the basis-set.
+"""
 function full_model_reset()
-    # Sets all the empirical coefficients to zero and recalculates the 
-    # Thomas-Fermi and von Weizacker kinetic energies for the atoms allowed 
-    # in the basis-set.
     reset_fitted_coeffs()
     load_basis_set(true)
 

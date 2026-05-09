@@ -220,70 +220,114 @@ function MolecularSystem()
         energy, chemical_potential)
 end
 
+"""
+    number_of_atoms(molecule::Molecule) → n_atoms::Int
+
+Returns the number of atoms in the molecule.
+"""
 function number_of_atoms(molecule::Molecule)
-    # Returns the number of atoms in the molecule.
     return length(molecule.atoms)
 end
 
+"""
+    atom_atomic_number(molecule::Molecule, i::Int) → Z::Number
+
+Returns the atomic number of the iᵗʰ atom.
+"""
 function atom_atomic_number(molecule::Molecule, i::Int)
-    # Returns the atomic number of the iᵗʰ atom.
     return molecule.atoms[i].atomic_number
 end
 
+"""
+    atom_core_electrons(molecule::Molecule, i::Int) → N::Number
+
+Returns the number of core electrons.
+"""
 function atom_core_electrons(molecule::Molecule, i::Int)
-    # Returns the number of core electrons.
     return molecule.atoms[i].core_electrons
 end
 
+"""
+    atom_valence_electrons(molecule::Molecule, i::Int) → N::Number
+
+Returns the number of valence electrons.
+"""
 function atom_valence_electrons(molecule::Molecule, i::Int)
-    # Returns the number of valence electrons.
     return molecule.atoms[i].valence_electrons
 end
 
+"""
+    atom_position(molecule::Molecule, i::Int) → r::Vector{Number}
+
+Returns the position vector of the iᵗʰ atom.
+"""
 function atom_position(molecule::Molecule, i::Int)
-    # Returns the position vector of the iᵗʰ atom.
     return molecule.atoms[i].position
 end
 
+"""
+    atom_polarization_coeff(molecule::Molecule, i::Int) → ζ::Real
+
+Returns the polarization coefficient of the iᵗʰ atom.
+"""
 function atom_polarization_coeff(molecule::Molecule, i::Int)
-    # Returns the polarization coefficient of the iᵗʰ atom.
     return molecule.atoms[i].polarization_coefficient
 end
 
+"""
+    set_atom_pol_coeff!(molecule::Molecule, ζ::Number, i::Int)
+
+Sets the atom iᵗʰ atom's polarization coefficient and its corresponding 
+electron cloud.
+"""
 function set_atom_pol_coeff!(molecule::Molecule, ζ::Number, i::Int)
-    # Sets the atom iᵗʰ atom's polarization coefficient and its corresponding 
-    # electron cloud.
     molecule.atoms[i].polarization_coefficient = ζ
 end
 
+"""
+    set_atom_partial_charge!(molecule::Molecule, ρ::Number, i::Int)
+
+Sets the atom iᵗʰ atom's polarization coefficient and its corresponding 
+electron cloud so that they match the desired partial charge.
+"""
 function set_atom_partial_charge!(molecule::Molecule, ρ::Number, i::Int)
-    # Sets the atom iᵗʰ atom's polarization coefficient and its corresponding 
-    # electron cloud so that they match the desired partial charge.
     z_eff = atom_valence_electrons(molecule,i)
     ζ = (z_eff - ρ) / z_eff
     set_atom_pol_coeff!(molecule,ζ,i)
 end
 
+"""
+    set_mol_pol_coeffs!(molecule::Molecule, ζ::Vector)
+
+Sets the polarization coefficients of the atoms of the molecules. If the
+coefficient vector's size is greater than the number of atoms the program will 
+crash.
+"""
 function set_mol_pol_coeffs!(molecule::Molecule, ζ::Vector)
-    # Sets the polarization coefficients of the atoms of the molecules. If the
-    # coefficient vector's size is greater than the number of atoms the 
-    # program will crash.
     for i in eachindex(ζ)
         set_atom_pol_coeff!(molecule,ζ[i],i)
     end
 end
 
+"""
+    set_mol_partial_charges!(molecule::Molecule, ρ::Vector)
+
+Sets the polarization coefficients of the atoms of the molecules. If the
+coefficient vector's size is greater than the number of atoms the program will 
+crash.
+"""
 function set_mol_partial_charges!(molecule::Molecule, ρ::Vector)
-    # Sets the polarization coefficients of the atoms of the molecules. If the
-    # coefficient vector's size is greater than the number of atoms the 
-    # program will crash.
     for i in eachindex(ζ)
         set_atom_partial_charge!(molecule,ρ[i],i)
     end
 end
 
+"""
+    set_atom_coordinates!(molecule::Molecule, r::Vector, i::Int)
+
+Sets the coordinates of the iᵗʰ atom and its corresponding electron cloud.
+"""
 function set_atom_coordinates!(molecule::Molecule, r::Vector, i::Int)
-    # Sets the coordinates of the iᵗʰ atom and its corresponding electron cloud.
     molecule.atoms[i].coordinates[:] = r[:]
 end
 

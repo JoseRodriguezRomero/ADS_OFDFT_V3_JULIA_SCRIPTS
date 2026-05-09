@@ -2,9 +2,13 @@ using Glob
 
 include("ForceFieldBase.jl")
 
+"""
+    thomas_fermi_ke(electron_cloud::ElectronCloud) → T::Real
+
+Calculates the Thomas-Fermi kinetic energy of the atom whose atomic number is 
+specified in the argument of this function.
+"""
 function thomas_fermi_ke(electron_cloud::ElectronCloud)
-    # Calculates the Thomas-Fermi kinetic energy of the atom whose 
-    # atomic number is specified in the argument of this function.
     tf_coeff = (3.0/10.0) * ((3*(π^2))^(2.0/3.0))
 
     num_clouds = length(electron_cloud.basis_function_amplitude)
@@ -29,9 +33,13 @@ function thomas_fermi_ke(electron_cloud::ElectronCloud)
     return tf_coeff*(sol[1])
 end
 
+"""
+    von_weizsacker_ke(electron_cloud::ElectronCloud) → T::Real
+
+Calculates the von Weizsäcker kinetic energy of the atom whose atomic number is 
+specified in the argument of this function.
+"""
 function von_weizsacker_ke(electron_cloud::ElectronCloud)
-    # Calculates the von Weizsäcker kinetic energy of the atom whose atomic 
-    # number is specified in the argument of this function.
     vw_coeff = (1.0/8.0)
 
     num_clouds = length(electron_cloud.basis_function_amplitude)
